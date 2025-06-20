@@ -1,0 +1,47 @@
+{
+  "name": "eagleshifts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "devhttps": "next dev --experimental-https",
+    "dev": "next dev --experimental-https",
+    "build": "npx prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:pull:dev": "dotenv -e .env.local -- npx prisma db pull",
+    "db:push:dev": "dotenv -e .env.local -- npx prisma db push",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^7.1.1",
+    "@mui/material": "^7.1.1",
+    "@mui/material-nextjs": "^7.1.1",
+    "@prisma/client": "^6.9.0",
+    "@toolpad/core": "^0.16.0",
+    "better-auth": "^1.2.9",
+    "better-auth-nile": "^0.4.0",
+    "next": "15.3.3",
+    "next-client-cookies": "^2.1.0",
+    "nodemailer": "^7.0.3",
+    "path-browserify": "^1.0.1",
+    "pg": "^8.16.0",
+    "prisma": "^6.9.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsx": "^4.20.3"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@types/node": "^24.0.1",
+    "@types/nodemailer": "^6.4.17",
+    "@types/path-browserify": "^1.0.3",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.3",
+    "typescript": "^5.8.3"
+  }
+}
