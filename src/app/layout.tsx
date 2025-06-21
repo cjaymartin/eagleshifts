@@ -127,24 +127,20 @@ export default async function RootLayout({
                     <ReactQueryProvider>
                         <SubdomainProvider>
                             <CookiesProvider>
-                                <OrganizationAuthProvider>
-                                    <React.Suspense
-                                        fallback={<LinearProgress />}
-                                    >
-                                        <ThemeProvider theme={theme}>
-                                            <NextAppProvider
-                                                navigation={NAVIGATION}
-                                                branding={BRANDING}
-                                                authentication={authentication}
-                                                session={session}
-                                            >
-                                                <NotificationsProvider>
-                                                    {children}
-                                                </NotificationsProvider>
-                                            </NextAppProvider>
-                                        </ThemeProvider>
-                                    </React.Suspense>
-                                </OrganizationAuthProvider>
+                                <React.Suspense fallback={<LinearProgress />}>
+                                    <ThemeProvider theme={theme}>
+                                        <NextAppProvider
+                                            navigation={NAVIGATION}
+                                            branding={BRANDING}
+                                            authentication={authentication}
+                                            session={session}
+                                        >
+                                            <NotificationsProvider>
+                                                {children}
+                                            </NotificationsProvider>
+                                        </NextAppProvider>
+                                    </ThemeProvider>
+                                </React.Suspense>
                             </CookiesProvider>
                         </SubdomainProvider>
                     </ReactQueryProvider>

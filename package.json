@@ -10,6 +10,7 @@
     "lint": "next lint",
     "db:pull:dev": "dotenv -e .env.local -- npx prisma db pull",
     "db:push:dev": "dotenv -e .env.local -- npx prisma db push",
+    "local:mkadmin": "dotenv -e .env.local -- tsx src/scripts/mkadmin.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
 
 export default async function OrganizationAuthProvider({
     children,
@@ -20,7 +21,7 @@ export default async function OrganizationAuthProvider({
             console.log('AOE');
             console.log(e);
         });
-    if (!activeOrg) {
+    if (activeOrg) {
         return children;
     }
 
@@ -50,6 +51,7 @@ export default async function OrganizationAuthProvider({
             },
         })
         .catch(async () => {
+            await tryToClaimAdmin();
             await auth.api.signOut({
                 headers: await headers(),
             });
