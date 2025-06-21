@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "devhttps": "next dev --experimental-https",
-    "dev": "next dev --experimental-https",
+    "dev": "next dev",
     "build": "npx prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
@@ -20,7 +20,9 @@
     "@mui/material": "^7.1.1",
     "@mui/material-nextjs": "^7.1.1",
     "@prisma/client": "^6.9.0",
+    "@tanstack/react-query": "^5.80.10",
     "@toolpad/core": "^0.16.0",
+    "@uidotdev/usehooks": "^2.4.1",
     "better-auth": "^1.2.9",
     "better-auth-nile": "^0.4.0",
     "next": "15.3.3",

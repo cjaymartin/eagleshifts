@@ -33,7 +33,7 @@
     &quot;javascript.nodejs.core.library.typings.version&quot;: &quot;24.0.3&quot;,
     &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/cjaym/Projects/eagleshifts/src/app/(dashboard)/superadmin/tenants&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/cjaym/Projects/eagleshifts/src/components&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -41,24 +41,25 @@
     &quot;nodejs_interpreter_path&quot;: &quot;node&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;yarn&quot;,
     &quot;npm.dev.executor&quot;: &quot;Run&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;settings.nodejs&quot;,
+    &quot;prettierjs.PrettierConfiguration.Package&quot;: &quot;C:\\Users\\cjaym\\Projects\\eagleshifts\\node_modules\\prettier&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;settings.javascript.prettier&quot;,
     &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\cjaym\\Projects\\eagleshifts\\node_modules\\typescript\\lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\(dashboard)\superadmin\tenants" />
       <recent name="C:\Users\cjaym\Projects\eagleshifts\src\components" />
+      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\(dashboard)\superadmin\tenants" />
       <recent name="C:\Users\cjaym\Projects\eagleshifts\public" />
       <recent name="C:\Users\cjaym\OneDrive\Documents\Projects\eagleshifts\src\components" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\auth\login\organization\_components" />
+      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\auth\login\organization" />
       <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\(dashboard)\superadmin\tenants" />
       <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\(dashboard)\superadmin\tenants\[...any]" />
       <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\(dashboard)" />
-      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\lib" />
-      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\api\auth" />
     </key>
   </component>
   <component name="RunManager" selected="npm.dev">
@@ -98,7 +99,7 @@
       <workItem from="1749945673849" duration="13065000" />
       <workItem from="1750202652016" duration="8682000" />
       <workItem from="1750280345299" duration="2993000" />
-      <workItem from="1750293980418" duration="31047000" />
+      <workItem from="1750293980418" duration="54669000" />
     </task>
     <servers />
   </component>

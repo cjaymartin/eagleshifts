@@ -1095,6 +1095,18 @@
   dependencies:
     tslib "^2.8.0"
 
+"@tanstack/query-core@5.80.10":
+  version "5.80.10"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.80.10.tgz#0de47f63a946662987a467c151808b144211c793"
+  integrity sha512-mUNQOtzxkjL6jLbyChZoSBP6A5gQDVRUiPvW+/zw/9ftOAz+H754zCj3D8PwnzPKyHzGkQ9JbH48ukhym9LK1Q==
+
+"@tanstack/react-query@^5.80.10":
+  version "5.80.10"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.80.10.tgz#adfb5637ac5ae77d3532293558b8dd33a6895035"
+  integrity sha512-6zM098J8sLy9oU60XAdzUlAH4wVzoMVsWUWiiE/Iz4fd67PplxeyL4sw/MPcVJJVhbwGGXCsHn9GrQt2mlAzig==
+  dependencies:
+    "@tanstack/query-core" "5.80.10"
+
 "@toolpad/core@^0.16.0":
   version "0.16.0"
   resolved "https://registry.yarnpkg.com/@toolpad/core/-/core-0.16.0.tgz#9558b8bf3fdb4b9acdb0de0f9ce539ba93dbb3a2"
@@ -1287,6 +1299,11 @@
   dependencies:
     "@typescript-eslint/types" "8.34.1"
     eslint-visitor-keys "^4.2.1"
+
+"@uidotdev/usehooks@^2.4.1":
+  version "2.4.1"
+  resolved "https://registry.yarnpkg.com/@uidotdev/usehooks/-/usehooks-2.4.1.tgz#4b733eaeae09a7be143c6c9ca158b56cc1ea75bf"
+  integrity sha512-1I+RwWyS+kdv3Mv0Vmc+p0dPYH0DTRAo04HLyXReYBL9AeseDWUJyi4THuksBJcu9F0Pih69Ak150VDnqbVnXg==
 
 "@unrs/resolver-binding-android-arm-eabi@1.9.0":
   version "1.9.0"

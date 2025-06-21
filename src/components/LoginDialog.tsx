@@ -9,7 +9,8 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Divider from '@mui/material/Divider';
 import FormLabel from '@mui/material/FormLabel';
 import FormControl from '@mui/material/FormControl';
-import Link from '@mui/material/Link';
+import NextLink from 'next/link';
+import MuiLink from '@mui/material/Link';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
@@ -22,6 +23,8 @@ import {signIn} from "@/lib/auth-client";
 import {useState} from "react";
 import {useSubdomainContext} from "@/components/providers/SubdomainProviderClient";
 import {useCookies} from "next-client-cookies";
+import {Organization} from "@/generated/prisma";
+import {Container, Grid} from "@mui/material";
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -65,7 +68,12 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
   },
 }));
 
-export default function SignIn(props: { disableCustomTheme?: boolean }) {
+type SignInProps = {
+  disableCustomTheme?: boolean;
+  activeOrganization?: Organization;
+}
+
+export default function SignIn({ disableCustomTheme, activeOrganization }: SignInProps) {
   const subdomain = useSubdomainContext();
   const cookies = useCookies();
 
@@ -111,6 +119,8 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     return isValid;
   };
 
+
+
   return (
     <React.Fragment>
       <CssBaseline enableColorScheme />
@@ -135,6 +145,21 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               gap: 2,
             }}
           >
+            {activeOrganization && <React.Fragment>
+              <Card sx={{paddingTop: 0, paddingBottom: 1, paddingLeft: 2, paddingRight: 2, marginBottom: 2}}>
+              <Typography variant="overline">To</Typography>
+              <Stack justifyContent="center" alignItems="center" sx={{marginTop: -2, marginBottom: 2}}>
+                <Typography variant="h5">
+                  {activeOrganization.name}
+                </Typography>
+                <Typography variant="caption">
+
+                  <MuiLink component={NextLink} href="/auth/login/organization">Login to a different organization</MuiLink>
+
+                </Typography>
+              </Stack>
+              </Card>
+            </React.Fragment>}
             <FormControl>
               <FormLabel htmlFor="email">Email</FormLabel>
               <TextField
@@ -205,7 +230,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               }}>
               Login With Magic Link
             </Button>
-            <Link
+            <MuiLink
               component="button"
               type="button"
               onClick={handleClickOpen}
@@ -213,7 +238,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               sx={{ alignSelf: 'center' }}
             >
               Forgot your password?
-            </Link>
+            </MuiLink>
           </Box>
           <Divider>or</Divider>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -261,13 +286,13 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             {/*</Button>*/}
             <Typography sx={{ textAlign: 'center' }}>
               Don&apos;t have an account?{' '}
-              <Link
+              <MuiLink
                 href="/auth/sign_up"
                 variant="body2"
                 sx={{ alignSelf: 'center' }}
               >
                 Sign up
-              </Link>
+              </MuiLink>
             </Typography>
           </Box>
         </Card>

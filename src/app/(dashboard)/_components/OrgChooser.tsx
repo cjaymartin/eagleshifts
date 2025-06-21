@@ -8,6 +8,12 @@ import {useRouter} from "next/navigation";
 import {useCookies} from "next-client-cookies";
 
 export default function OrgChooser() {
+  const session = authClient.useSession();
+  if (!session) {
+    return null; // or a loading state, or redirect to login
+  }
+
+
   const { data: organizations } = authClient.useListOrganizations()
   const { data: currentOrganization } = authClient.useActiveOrganization()
   const subdomain = useSubdomainContext();
