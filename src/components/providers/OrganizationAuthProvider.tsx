@@ -1,7 +1,6 @@
 import { auth } from '@/lib/auth';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
 
 export default async function OrganizationAuthProvider({
     children,
@@ -39,10 +38,6 @@ export default async function OrganizationAuthProvider({
         return redirect('/');
     }
 
-    if (activeOrg?.slug === loginOrganizationSlug) {
-        return children; //yay!
-    }
-
     await auth.api
         .setActiveOrganization({
             headers: await headers(),
@@ -51,7 +46,6 @@ export default async function OrganizationAuthProvider({
             },
         })
         .catch(async () => {
-            await tryToClaimAdmin();
             await auth.api.signOut({
                 headers: await headers(),
             });

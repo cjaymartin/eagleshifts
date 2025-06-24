@@ -19,6 +19,7 @@ import {
     useOrganizationBySlugMutation,
 } from '@/app/auth/login/organization/queries';
 import { CheckCircle, Search } from '@mui/icons-material';
+import { useRouter } from 'next/navigation';
 
 const Card = styled(MuiCard)(({ theme }) => ({
     display: 'flex',
@@ -62,23 +63,12 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
     },
 }));
 
-type SignInProps = {};
-
 export default function OrganizationSignIn() {
     const cookies = useCookies();
+    const router = useRouter();
 
-    const [loading, setLoading] = useState(false);
-    const [slug, setSlug] = useState(
-        cookies.get('login-organization-slug') || ''
-    );
+    const [loading] = useState(false);
     const [txtSlug, setTxtSlug] = useState('');
-    // const {
-    //     mutate: getOrganizationMutation,
-    //     isPending: mutateLoading,
-    //     isError: mutateError,
-    //     data: organization,
-    //     reset: resetOrganizationMutation,
-    // } = useOrganizationBySlugMutation();
 
     const {
         mutateAsync: getOrganizationMutation,
@@ -88,33 +78,37 @@ export default function OrganizationSignIn() {
     } = useOrganizationBySlugMutation();
 
     const initialSlug = useMemo(() => {
-        const slug = cookies.get('login-organization-slug') || '';
-        return slug;
-    }, []);
+        return cookies.get('login-organization-slug') || '';
+    }, [cookies]);
     const { data: initialOrganization } = useOrganizationBySlug(initialSlug);
 
-    function clearOrganization(e: React.MouseEvent<HTMLAnchorElement>) {
+    async function handleCheckOrganization(
+        e:
+            | React.FormEvent<HTMLFormElement>
+            | React.MouseEvent<HTMLButtonElement, MouseEvent>
+    ) {
+        const slug = txtSlug.trim();
         e.preventDefault();
-        setSlug('');
-        cookies.set('login-organization-slug', '');
-    }
-    function resetOrganization() {
-        setSlug(initialSlug);
-        cookies.set('login-organization-slug', initialSlug ?? '');
+        await getOrganizationMutation(slug);
     }
 
-    console.log('KAY');
-    console.log({
-        slug,
-        initialSlug,
-        slugCookie: cookies.get('login-organization-slug'),
-        organization: organization,
-        orgBySlugLoading: isOrgBySlugLoading,
-        initialOrganization,
-    });
+    async function handleFormSubmission(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
 
-    async function handleCheckOrganization() {
+        const slug = txtSlug.trim();
+        if (!slug) {
+            return;
+        }
+        const slugCookie = cookies.get('login-organization-slug') || '';
+
         await getOrganizationMutation(txtSlug);
+
+        const orgMatches = organization && slug === slugCookie;
+        const orgMatchesInitial = organization && slug === initialSlug;
+
+        if (orgMatches || orgMatchesInitial) {
+            router.push('/auth/login');
+        }
     }
 
     return (
@@ -122,7 +116,6 @@ export default function OrganizationSignIn() {
             <CssBaseline enableColorScheme />
             <SignInContainer direction="column" justifyContent="space-between">
                 <Card variant="outlined">
-                    {/*<EagleShiftsIcon />*/}
                     <Typography
                         component="h1"
                         variant="h4"
@@ -147,46 +140,50 @@ export default function OrganizationSignIn() {
                                 color="text.secondary"
                                 sx={{ mb: 3 }}
                             >
-                                Enter your organization's unique identifier to
-                                continue
+                                Enter your organization&#39;s unique identifier
+                                to continue
                             </Typography>
                             <Box sx={{ mb: 3 }}>
-                                <TextField
-                                    fullWidth
-                                    id="org-slug"
-                                    label="Organization Slug"
-                                    placeholder="e.g., acme-corp"
-                                    value={txtSlug}
-                                    onChange={(e) => {
-                                        setTxtSlug(e.target.value);
-                                        resetOrganizationMutation();
-                                    }}
-                                    variant="outlined"
-                                    InputProps={{
-                                        endAdornment: (
-                                            <IconButton
-                                                onClick={
-                                                    handleCheckOrganization
-                                                }
-                                                disabled={
-                                                    !txtSlug.trim() ||
-                                                    isOrgBySlugLoading
-                                                }
-                                                size="small"
-                                                sx={{ mr: -1 }}
-                                            >
-                                                {isOrgBySlugLoading ? (
-                                                    <CircularProgress
-                                                        size={20}
-                                                    />
-                                                ) : (
-                                                    <Search />
-                                                )}
-                                            </IconButton>
-                                        ),
-                                    }}
-                                    helperText="This is usually provided by your organization administrator"
-                                />
+                                <form onSubmit={handleFormSubmission}>
+                                    <TextField
+                                        fullWidth
+                                        id="org-slug"
+                                        label="Organization Slug"
+                                        placeholder="e.g., acme-corp"
+                                        value={txtSlug}
+                                        onChange={(e) => {
+                                            setTxtSlug(e.target.value);
+                                            resetOrganizationMutation();
+                                        }}
+                                        variant="outlined"
+                                        InputProps={{
+                                            endAdornment: (
+                                                <IconButton
+                                                    //If this is type=submit, then onClick takes over instead of onSubmit
+                                                    //type="submit"
+                                                    onClick={
+                                                        handleCheckOrganization
+                                                    }
+                                                    disabled={
+                                                        !txtSlug.trim() ||
+                                                        isOrgBySlugLoading
+                                                    }
+                                                    size="small"
+                                                    sx={{ mr: -1 }}
+                                                >
+                                                    {isOrgBySlugLoading ? (
+                                                        <CircularProgress
+                                                            size={20}
+                                                        />
+                                                    ) : (
+                                                        <Search />
+                                                    )}
+                                                </IconButton>
+                                            ),
+                                        }}
+                                        helperText="This is usually provided by your organization administrator"
+                                    />
+                                </form>
                             </Box>
                         </React.Fragment>
 
@@ -208,13 +205,6 @@ export default function OrganizationSignIn() {
                                         gap: 2,
                                     }}
                                 >
-                                    {/*<Avatar*/}
-                                    {/*    src={organization.logo}*/}
-                                    {/*    alt={`${organization.name} logo`}*/}
-                                    {/*    sx={{ width: 32, height: 32 }}*/}
-                                    {/*>*/}
-                                    {/*    <Business />*/}
-                                    {/*</Avatar>*/}
                                     <Box>
                                         <Typography
                                             variant="subtitle2"
@@ -267,13 +257,13 @@ export default function OrganizationSignIn() {
                                 }}
                                 sx={{
                                     width: '100%',
-                                    mb: 3,
                                     p: 2,
+                                    mb: 2,
 
                                     border: '1px solid',
                                     borderColor: 'grey.300',
                                     borderRadius: 1,
-                                    mb: 1,
+
                                     '&:hover': {
                                         bgcolor: 'grey.50',
                                     },
@@ -281,13 +271,6 @@ export default function OrganizationSignIn() {
                             >
                                 <Stack direction="row" width="100%">
                                     <Box sx={{ ml: 5 }}>
-                                        {/*<Avatar*/}
-                                        {/*    src={organization.logo}*/}
-                                        {/*    alt={`${organization.name} logo`}*/}
-                                        {/*    sx={{ width: 32, height: 32 }}*/}
-                                        {/*>*/}
-                                        {/*    <Business />*/}
-                                        {/*</Avatar>*/}
                                         <Typography
                                             variant="subtitle2"
                                             fontWeight="600"
