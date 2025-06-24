@@ -19,6 +19,7 @@ import {
 import { nextCookies } from 'better-auth/next-js';
 import path from 'path-browserify';
 import { createAuthMiddleware, APIError } from 'better-auth/api';
+import { cookies, headers } from 'next/headers';
 
 const prisma = new PrismaClient();
 export const auth = betterAuth({
@@ -69,6 +70,22 @@ export const auth = betterAuth({
         }),
         magicLink({
             async sendMagicLink({ email, url }) {
+                const cookieStore = await cookies();
+                const loginOrganizationSlug = cookieStore.get(
+                    'login-organization-slug'
+                )?.value;
+
+                if (!loginOrganizationSlug) {
+                    console.log('BLAHHHHHHHHHHHHHHH');
+                    throw new APIError('BAD_REQUEST', {
+                        status: 400,
+                        message: 'Login organization slug is required',
+                    });
+                }
+
+                const urlWithOrg = new URL(url);
+                urlWithOrg.searchParams.set('orgSlug', loginOrganizationSlug);
+
                 const transporter = nodemailer.createTransport({
                     host: process.env.EMAIL_SERVER,
                     port: 587,
@@ -84,12 +101,12 @@ export const auth = betterAuth({
                     from: `"Auth System" <${process.env.EMAIL_FROM}>`,
                     to: email,
                     subject: 'Your Magic Link',
-                    text: `Click the following link to sign in: ${url}`,
+                    text: `Click the following link to sign in: ${urlWithOrg}`,
                     html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2>Sign in to your account</h2>
               <p>Click the button below to sign in to your account. This link is valid for a limited time.</p>
-              <a href="${url}" style="display: inline-block; background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 16px 0;">Sign in</a>                         
+              <a href="${urlWithOrg}" style="display: inline-block; background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 16px 0;">Sign in</a>                         
               <p>If you didn't request this link, you can safely ignore this email.</p>
             </div>
           `,
@@ -121,6 +138,18 @@ export const auth = betterAuth({
         //       secure: true
         //     }
         //   }
+    },
+    hooks: {
+        after: createAuthMiddleware(async (ctx) => {
+            if (ctx.path === '/magic-link/verify') {
+                if (ctx?.query?.orgSlug) {
+                    const orgSlug = ctx?.query?.orgSlug as string;
+                    const cookieStore = await cookies();
+                    cookieStore.set('login-organization-slug', orgSlug);
+                }
+                return;
+            }
+        }),
     },
     // defaultCookieAttributes: { // Ensure these also reflect dev/prod setting
     //   secure: process.env.NODE_ENV === "production" ? true : false,

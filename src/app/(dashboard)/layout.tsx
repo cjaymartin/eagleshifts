@@ -12,7 +12,7 @@ export default function DashboardPagesLayout(props: {
         <OrganizationAuthProvider>
             <DashboardLayout
                 slots={{
-                    //toolbarActions: DashboardToolbarActions,
+                    toolbarActions: DashboardToolbarActions,
                     appTitle: MultitenantAppTitle,
                 }}
             >

@@ -2,15 +2,10 @@
 
 import { NextAppProvider } from '@toolpad/core/nextjs';
 import React, { useState, useEffect } from 'react';
-import EagleShiftIcon from '@/components/EagleShiftIcon';
-import { Branding, NotificationsProvider } from '@toolpad/core';
+import { NotificationsProvider } from '@toolpad/core';
 import { usePathname } from 'next/navigation';
-
-const BRANDING: Branding = {
-    logo: <EagleShiftIcon width="3rem" />,
-    title: 'EagleShifts',
-    homeUrl: '/toolpad/core/introduction',
-};
+import { authClient } from '@/lib/auth-client';
+import { branding } from '@/config/branding';
 
 type SmartAppProviderProps = {
     children: React.ReactNode;
@@ -21,6 +16,7 @@ export default function SmartAppProvider({ children }: SmartAppProviderProps) {
         Array<{ title: string; segment: string }>
     >([]);
     const pathname = usePathname();
+    const { data: session } = authClient.useSession();
 
     useEffect(() => {
         // Regular navigation for standard users
@@ -79,9 +75,9 @@ export default function SmartAppProvider({ children }: SmartAppProviderProps) {
     return (
         <NextAppProvider
             navigation={navigation}
-            branding={BRANDING}
+            branding={branding}
             authentication={authentication}
-            session={null}
+            session={session}
         >
             <NotificationsProvider>{children}</NotificationsProvider>
         </NextAppProvider>
