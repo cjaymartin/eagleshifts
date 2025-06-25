@@ -11,6 +11,8 @@ import SubdomainProvider from '@/components/providers/SubdomainProvider';
 import { CookiesProvider } from 'next-client-cookies/server';
 import ReactQueryProvider from '@/components/providers/ReactQueryProvider';
 import SmartAppProvider from '@/components/providers/SmartAppProvider';
+import { ClientLocalizationProvider } from '@/components/providers/ClientLocalizationProvider';
+import { DialogsProvider } from '@toolpad/core';
 
 const roboto = Roboto({
     weight: ['300', '400', '500', '700'],
@@ -42,21 +44,27 @@ export default function RootLayout({
     return (
         <html lang="en" className={roboto.variable} suppressHydrationWarning>
             <body>
-                <AppRouterCacheProvider>
-                    <ReactQueryProvider>
-                        <SubdomainProvider>
-                            <CookiesProvider>
-                                <React.Suspense fallback={<LinearProgress />}>
-                                    <ThemeProvider theme={theme}>
-                                        <SmartAppProvider>
-                                            {children}
-                                        </SmartAppProvider>
-                                    </ThemeProvider>
-                                </React.Suspense>
-                            </CookiesProvider>
-                        </SubdomainProvider>
-                    </ReactQueryProvider>
-                </AppRouterCacheProvider>
+                <ClientLocalizationProvider>
+                    <DialogsProvider>
+                        <AppRouterCacheProvider>
+                            <ReactQueryProvider>
+                                <SubdomainProvider>
+                                    <CookiesProvider>
+                                        <React.Suspense
+                                            fallback={<LinearProgress />}
+                                        >
+                                            <ThemeProvider theme={theme}>
+                                                <SmartAppProvider>
+                                                    {children}
+                                                </SmartAppProvider>
+                                            </ThemeProvider>
+                                        </React.Suspense>
+                                    </CookiesProvider>
+                                </SubdomainProvider>
+                            </ReactQueryProvider>
+                        </AppRouterCacheProvider>
+                    </DialogsProvider>
+                </ClientLocalizationProvider>
             </body>
         </html>
     );

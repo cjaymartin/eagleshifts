@@ -5,24 +5,31 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d58e61e2-8c55-42b2-878e-5572cbd53eb3" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/deleteme/store/LogEntry.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/deleteme/store/Shift.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/deleteme/store/ShiftOffer.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/deleteme/store/ShiftRequest.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/deleteme/store/TeamUser.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/deleteme/store/schema/availabilitySchema.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/deleteme/store/schema/shiftOfferSchema.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/deleteme/store/schema/shiftSchema.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/deleteme/store/schema/teamUserSchema.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/config/branding.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/api/app.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/api/shifts.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/api/users.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/api/utils/elysiaUserService.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/(dashboard)/package.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftDialog.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftFilters.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftForm.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftRow.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/actions.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/page.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/api/[[...slugs]]/route.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/components/providers/ClientLocalizationProvider.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/lib/eden.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/lib/hooks/useAuth.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/queries/shifts.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/queries/user.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/_components/MultitenantAppTitle.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/_components/MultitenantAppTitle.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/_components/OrgHeader.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/_components/OrgHeader.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/LoginDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/LoginDialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/schema.prisma" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/superadmin/tenants/tenant-datasource.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/superadmin/tenants/tenant-datasource.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/zfavicon.ico" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/favicon.ico" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/providers/SmartAppProvider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/providers/SmartAppProvider.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/auth.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -33,6 +40,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;abraxas&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;git@github.com:abraxas/skeleton.git&quot;,
+    &quot;accountId&quot;: &quot;78f898b2-0c09-4a9f-b2ba-d0c13a0b820d&quot;
+  }
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
 }</component>
@@ -41,46 +60,46 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "javascript.nodejs.core.library.configured.version": "21.6.2",
-    "javascript.nodejs.core.library.typings.version": "24.0.3",
-    "js.debugger.nextJs.config.created.client": "true",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "C:/Users/cjaym/Projects/eagleshifts/deleteme",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_interpreter_path": "node",
-    "nodejs_package_manager_path": "yarn",
-    "npm.dev.executor": "Run",
-    "prettierjs.PrettierConfiguration.Package": "C:\\Users\\cjaym\\Projects\\eagleshifts\\node_modules\\prettier",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "ts.external.directory.path": "C:\\Users\\cjaym\\Projects\\eagleshifts\\node_modules\\typescript\\lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;javascript.nodejs.core.library.configured.version&quot;: &quot;21.6.2&quot;,
+    &quot;javascript.nodejs.core.library.typings.version&quot;: &quot;24.0.3&quot;,
+    &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/cjaym/Projects/eagleshifts/src/app/(dashboard)/shifts/_components&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_interpreter_path&quot;: &quot;node&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;yarn&quot;,
+    &quot;npm.dev.executor&quot;: &quot;Run&quot;,
+    &quot;prettierjs.PrettierConfiguration.Package&quot;: &quot;C:\\Users\\cjaym\\Projects\\eagleshifts\\node_modules\\prettier&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\cjaym\\Projects\\eagleshifts\\node_modules\\typescript\\lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\(dashboard)\shifts\_components" />
+      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\(dashboard)\shifts\_components\ShiftAssignmentTool" />
       <recent name="C:\Users\cjaym\Projects\eagleshifts\deleteme" />
       <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\(dashboard)\superadmin" />
       <recent name="C:\Users\cjaym\Projects\eagleshifts\src\components" />
-      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\(dashboard)\superadmin\tenants" />
-      <recent name="C:\Users\cjaym\Projects\eagleshifts\public" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\(dashboard)\shifts\_components" />
+      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\api\[[...slugs]]" />
+      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\api" />
+      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\(dashboard)\shifts\_components\ShiftAssignmentTool" />
       <recent name="C:\Users\cjaym\Projects\eagleshifts\src\config" />
-      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\auth\login" />
-      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\auth\login\organization\_components" />
-      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\auth\login\organization" />
-      <recent name="C:\Users\cjaym\Projects\eagleshifts\src\app\(dashboard)\superadmin\tenants" />
     </key>
   </component>
   <component name="RunManager" selected="npm.dev">
@@ -122,7 +141,8 @@
       <workItem from="1750280345299" duration="2993000" />
       <workItem from="1750293980418" duration="69839000" />
       <workItem from="1750772383827" duration="180000" />
-      <workItem from="1750772569737" duration="3685000" />
+      <workItem from="1750772569737" duration="21628000" />
+      <workItem from="1750813692159" duration="16666000" />
     </task>
     <servers />
   </component>

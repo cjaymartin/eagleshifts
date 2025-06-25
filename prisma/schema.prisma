@@ -106,6 +106,7 @@ model Organization {
   metadata    String?
   members     Member[]
   invitations Invitation[]
+  Shift       Shift[]
 
   @@unique([slug])
   @@map("organization")
@@ -121,6 +122,13 @@ model Member {
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   role         String
   createdAt    DateTime
+
+  // Relationships with new models
+  assignedShifts Shift[]        @relation("ShiftAssignments")
+  availabilities Availability[]
+  shiftOffers    ShiftOffer[]
+  shiftRequests  ShiftRequest[]
+  logs           LogEntry[]
 
   @@map("member")
 }
@@ -149,4 +157,91 @@ model tenants {
   updated    DateTime  @default(dbgenerated("LOCALTIMESTAMP")) @db.Timestamp(6)
   deleted    DateTime? @db.Timestamp(6)
   compute_id String?   @db.Uuid
+}
+
+model Shift {
+  id             String @id @default(cuid())
+  organizationId String
+
+  title      String
+  location   String?
+  date       DateTime
+  startTime  DateTime
+  endTime    DateTime
+  slots      Int
+  notes      String?
+  adminNotes String?
+  timezone   String   @default("America/New_York")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relationships
+  organization  Organization   @relation(fields: [organizationId], references: [id])
+  assignments   Member[]       @relation("ShiftAssignments")
+  shiftOffers   ShiftOffer[]
+  shiftRequests ShiftRequest[]
+
+  @@map("shift")
+}
+
+model Availability {
+  id          String   @id @default(cuid())
+  startDate   DateTime
+  endDate     DateTime
+  desc        String
+  isAvailable Boolean
+  weeks       Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+
+  @@map("availability")
+}
+
+model ShiftOffer {
+  id        String   @id @default(cuid())
+  outcome   String
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  shiftId  String
+  shift    Shift  @relation(fields: [shiftId], references: [id])
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+
+  @@map("shift_offer")
+}
+
+model ShiftRequest {
+  id        String   @id @default(cuid())
+  status    String // pending, approved, rejected
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  shiftId  String
+  shift    Shift  @relation(fields: [shiftId], references: [id])
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+
+  @@map("shift_request")
+}
+
+model LogEntry {
+  id        String   @id @default(cuid())
+  action    String
+  details   String?
+  timestamp DateTime @default(now())
+
+  // Relationships
+  memberId String?
+  member   Member? @relation(fields: [memberId], references: [id])
+
+  @@map("log")
 }

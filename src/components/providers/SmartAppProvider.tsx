@@ -26,8 +26,8 @@ export default function SmartAppProvider({ children }: SmartAppProviderProps) {
                 segment: '',
             },
             {
-                title: 'About',
-                segment: 'about',
+                title: 'Shifts',
+                segment: 'shifts',
             },
             {
                 title: 'Contact',
