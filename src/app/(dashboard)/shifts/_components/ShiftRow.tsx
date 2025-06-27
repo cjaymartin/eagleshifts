@@ -1,22 +1,23 @@
 'use client';
 
-import React, { useContext, useEffect } from 'react';
-//import { DialogContext } from '../../context/DialogContext'
+import React from 'react';
 import { IconButton, TableCell } from '@mui/material';
 import dayjs from 'dayjs';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useAuthQuery } from '@/queries/user';
+import { useAuthQuery } from '@/queries/users';
 import { useDialogs } from '@toolpad/core';
 import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
-//import useAuth from '../../components/hooks/useAuth'
+import { inferRouterOutputs } from '@trpc/server';
+import { AppRouter } from '@/api/trpc/[trpc]';
+import { useShiftDeleteMutation } from '@/queries/shifts';
 
 // Helper function to format time from ISO to AM/PM format
-const formatTime = (time) => {
+const formatTime = (time: string) => {
     if (!time) return '';
 
     // Handle ISO format strings
-    if (typeof time === 'string' && time.includes('T')) {
+    if (time.includes('T')) {
         // Parse the ISO string and convert to AM/PM format
         return dayjs(time).format('hh:mm a');
     }
@@ -25,43 +26,30 @@ const formatTime = (time) => {
     return time;
 };
 
-export function ShiftRow(props) {
+export type ShiftRowProps = {
+    shift: inferRouterOutputs<AppRouter>['shifts']['byId'];
+};
+
+export function ShiftRow(props: ShiftRowProps) {
     const dialogs = useDialogs();
 
     const shift = props?.shift || {};
-    //const linkLocation = useLocation();
-    //const [_, setDialog] = useContext(DialogContext);
-    const { setNew: openAddShiftDialog } = props;
     const { data: session } = useAuthQuery();
     const role = session?.user?.role ?? 'guest';
 
     const isAdmin = ['admin', 'owner'].includes(role);
 
-    //This catches a view/edit request from the "ShiftRequests" page...
-    //const { shiftId: fromShiftId } = linkLocation.state || {};
-    // useEffect(() => {
-    //     if (fromShiftId && fromShiftId === shift.id) {
-    //         handleEdit();
-    //     }
-    // }, [fromShiftId]);
-
-    const id = shift?.id;
-
     function handleEdit() {
         dialogs.open(ShiftDialog, shift);
-        // setDialog({
-        //     type: 'shift',
-        //     open: true,
-        //     doc: shift,
-        //     form: shift,
-        // });
     }
 
-    function handleDelete() {
-        shift.delete();
+    const { mutate: deleteShift } = useShiftDeleteMutation();
+
+    async function handleDelete() {
+        deleteShift(shift);
     }
 
-    const filledSlots = shift.assignments?.length || 0;
+    const filledSlots = shift.shiftAssignments?.length || 0;
 
     return (
         <React.Fragment>
@@ -73,7 +61,8 @@ export function ShiftRow(props) {
                 {shift.date && dayjs(shift.date).format('YYYY-MM-DD')}
             </TableCell>
             <TableCell>
-                {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
+                {formatTime(shift.startTime.toString())} -{' '}
+                {formatTime(shift.endTime.toString())}
             </TableCell>
             <TableCell>
                 {filledSlots} / {shift.slots}

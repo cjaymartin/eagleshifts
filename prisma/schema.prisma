@@ -123,13 +123,16 @@ model Member {
   role         String
   createdAt    DateTime
 
-  // Relationships with new models
-  assignedShifts Shift[]        @relation("ShiftAssignments")
-  availabilities Availability[]
-  shiftOffers    ShiftOffer[]
-  shiftRequests  ShiftRequest[]
-  logs           LogEntry[]
+  icalSlug             String? @unique
+  isAvailableByDefault Boolean @default(true)
+  phoneNumber          String?
 
+  availabilities   Availability[]
+  shiftAssignments shiftAssignment[]
+  shiftRequests    ShiftRequest[]
+  logs             LogEntry[]
+
+  @@unique([organizationId, userId])
   @@map("member")
 }
 
@@ -176,10 +179,11 @@ model Shift {
   updatedAt  DateTime @updatedAt
 
   // Relationships
-  organization  Organization   @relation(fields: [organizationId], references: [id])
-  assignments   Member[]       @relation("ShiftAssignments")
-  shiftOffers   ShiftOffer[]
-  shiftRequests ShiftRequest[]
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  //assignments   Member[]       @relation("ShiftAssignments")
+  shiftAssignments shiftAssignment[]
+  shiftRequests    ShiftRequest[]
+  memberId         String?
 
   @@map("shift")
 }
@@ -190,7 +194,6 @@ model Availability {
   endDate     DateTime
   desc        String
   isAvailable Boolean
-  weeks       Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -201,7 +204,7 @@ model Availability {
   @@map("availability")
 }
 
-model ShiftOffer {
+model shiftAssignment {
   id        String   @id @default(cuid())
   outcome   String
   reason    String?
@@ -214,7 +217,7 @@ model ShiftOffer {
   memberId String
   member   Member @relation(fields: [memberId], references: [id])
 
-  @@map("shift_offer")
+  @@map("shift_assignment")
 }
 
 model ShiftRequest {

@@ -13,8 +13,6 @@
     "local:mkadmin": "dotenv -e .env.local -- tsx src/scripts/mkadmin.ts"
   },
   "dependencies": {
-    "@ap0nia/eden-react-query": "^1.6.1",
-    "@elysiajs/eden": "^1.3.2",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
@@ -26,10 +24,13 @@
     "@prisma/client": "^6.9.0",
     "@tanstack/react-query": "^5.80.10",
     "@toolpad/core": "^0.16.0",
+    "@trpc/client": "^11.0.0",
+    "@trpc/next": "^11.0.0",
+    "@trpc/react-query": "^11.4.2",
+    "@trpc/server": "^11.0.0",
     "@uidotdev/usehooks": "^2.4.1",
     "better-auth": "^1.2.9",
     "better-auth-nile": "^0.4.0",
-    "elysia": "^1.3.5",
     "file-saver": "^2.0.5",
     "file-type": "^21.0.0",
     "lodash": "^4.17.21",
@@ -43,6 +44,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.58.1",
     "react-hook-form-mui": "^7.6.2",
+    "superjson": "^2.2.2",
     "tsx": "^4.20.3",
     "xlsx": "^0.18.5"
   },
@@ -56,6 +58,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
+    "trpc-client-devtools-link": "^0.1.1",
     "typescript": "^5.8.3"
   }
 }

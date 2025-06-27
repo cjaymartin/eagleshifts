@@ -14,7 +14,7 @@ import { DatePicker } from '@mui/x-date-pickers';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useForm, Controller } from 'react-hook-form';
 import dayjs from 'dayjs';
-import { useAuthQuery, useTeamUsersQuery } from '@/queries/user';
+import { useAuthQuery, useTeamUsersQuery } from '@/queries/users';
 import { PickerValue } from '@mui/x-date-pickers/internals';
 
 const defaultFilters: ShiftFormFilterSchema = {

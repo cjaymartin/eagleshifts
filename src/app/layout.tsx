@@ -9,10 +9,11 @@ import { ThemeProvider } from '@mui/material/styles';
 import { theme } from '@/lib/DefaultTheme';
 import SubdomainProvider from '@/components/providers/SubdomainProvider';
 import { CookiesProvider } from 'next-client-cookies/server';
-import ReactQueryProvider from '@/components/providers/ReactQueryProvider';
+// import ReactQueryProvider from '@/components/providers/ReactQueryProvider';
 import SmartAppProvider from '@/components/providers/SmartAppProvider';
 import { ClientLocalizationProvider } from '@/components/providers/ClientLocalizationProvider';
 import { DialogsProvider } from '@toolpad/core';
+import { TRPCProvider } from '@/lib/trpc/Provider';
 
 const roboto = Roboto({
     weight: ['300', '400', '500', '700'],
@@ -47,7 +48,8 @@ export default function RootLayout({
                 <ClientLocalizationProvider>
                     <DialogsProvider>
                         <AppRouterCacheProvider>
-                            <ReactQueryProvider>
+                            <TRPCProvider>
+                                {/*<ReactQueryProvider>*/}
                                 <SubdomainProvider>
                                     <CookiesProvider>
                                         <React.Suspense
@@ -61,7 +63,8 @@ export default function RootLayout({
                                         </React.Suspense>
                                     </CookiesProvider>
                                 </SubdomainProvider>
-                            </ReactQueryProvider>
+                                {/*</ReactQueryProvider>*/}
+                            </TRPCProvider>
                         </AppRouterCacheProvider>
                     </DialogsProvider>
                 </ClientLocalizationProvider>

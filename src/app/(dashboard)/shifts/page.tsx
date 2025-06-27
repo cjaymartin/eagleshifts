@@ -18,27 +18,27 @@ import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
 import Download from '@mui/icons-material/Download';
-import { useShiftListQuery } from '@/queries/shifts';
 import { ShiftRow } from './_components/ShiftRow';
-import { useAuthQuery } from '@/queries/user';
+import { useAuthQuery, useTeamUsersLookupQuery } from '@/queries/users';
 import { ShiftFilters, ShiftFilterSchema } from './_components/ShiftFilters';
-//import { useTeamUsers } from '../../store/TeamUser';
+import { trpc } from '@/lib/trpc/client';
+import { useDialogs } from '@toolpad/core';
+import ShiftForm from '@/app/(dashboard)/shifts/_components/ShiftForm';
+import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
 
 export default function Shifts() {
     //const { setNew: openAddShiftDialog } = useShiftDialogHelpers();
-
+    const dialogs = useDialogs();
     function openAddShiftDialog() {}
 
     const { data: session } = useAuthQuery();
     const role = session?.user?.role ?? 'guest';
-    //const role = 'owner';
     const isAdmin = ['admin', 'owner'].includes(role);
     const [filters, setFilters] = useState<ShiftFilterSchema>();
-    //const { userLookup } = useTeamUsers();
-    const userLookup = {};
+    const { data: userLookupData } = useTeamUsersLookupQuery();
+    const userLookup = userLookupData || {};
 
-    //let { shifts } = useFilteredShifts({ ...(filters || {}) });
-    const { data: shifts } = useShiftListQuery(filters);
+    const { data: shifts } = trpc.shifts.list.useQuery(filters);
 
     console.log({ shifts });
 
@@ -51,9 +51,10 @@ export default function Shifts() {
 
         const csvData = shifts?.map((x) => {
             const { title, location, date, startTime, endTime, slots } = x;
-            const assignments = x.assignments
-                .map((x) => userLookup[x])
-                .map((x) => x.displayName || x.email)
+            const assignments = x.shiftAssignments
+                .map((assignment) => userLookup[assignment.memberId])
+                .filter(Boolean) // Filter out undefined values
+                .map((user) => user.displayName || user.email)
                 .join(', ');
             return {
                 Shift: title,
@@ -115,7 +116,7 @@ export default function Shifts() {
             </Box>
             {isAdmin && (
                 <Container>
-                    <IconButton onClick={() => openAddShiftDialog()}>
+                    <IconButton onClick={() => dialogs.open(ShiftDialog, null)}>
                         <AddIcon /> Add Shift
                     </IconButton>
                 </Container>

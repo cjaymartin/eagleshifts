@@ -10,19 +10,21 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { DialogProps } from '@toolpad/core';
 import ShiftForm from '@/app/(dashboard)/shifts/_components/ShiftForm';
+import { inferRouterOutputs } from '@trpc/server';
+import { AppRouter } from '@/api/trpc/[trpc]';
 
 export default function ShiftDialog({
     payload,
     open,
     onClose,
-}: DialogProps<string>) {
+}: DialogProps<
+    inferRouterOutputs<AppRouter>['shifts']['byId'] | undefined | null
+>) {
     //const [dialog] = useDialogContext();
     //const { reset: resetDialog } = useShiftDialogHelpers();
     //const [form] = useDialogForm();
 
-    function resetDialog() {}
-
-    const isNew = false; //dialog?.new;
+    const isNew = !payload; //dialog?.new;
     //const open = dialog?.open && dialog?.type === 'shift';
 
     function handleClose() {
@@ -53,8 +55,8 @@ export default function ShiftDialog({
             <DialogContent>
                 <Container sx={{ background: 'white', marginTop: 1 }}>
                     <ShiftForm
-                        isNew={isNew}
-                        shiftId={payload.id}
+                        isNew={!!isNew}
+                        shiftId={payload?.id}
                         shift={payload}
                         handleClose={handleClose}
                     />

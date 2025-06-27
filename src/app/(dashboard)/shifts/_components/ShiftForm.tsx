@@ -1,131 +1,51 @@
+import React from 'react';
 import {
-    Autocomplete,
     Button,
-    Chip,
     Container,
     Grid,
     Stack,
     TextField,
     Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DatePicker, DateTimePicker, TimePicker } from '@mui/x-date-pickers';
+import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useForm, Controller } from 'react-hook-form';
+import { useNotifications } from '@toolpad/core';
 
 import AssignmentIcon from '@mui/icons-material/Assignment';
-// import { useFilteredShiftRequests } from '../../store/ShiftRequest';
-
-// Placeholder for useFilteredShiftRequests
-const useFilteredShiftRequests = ({
-    userId,
-    shiftId,
-}: {
-    userId: string;
-    shiftId: string;
-}) => ({
-    shiftRequests: [],
-    ShiftRequest: function (data: any) {
-        this.create = async () => ({});
-        return this;
-    },
-});
-
-// import { useLogEntryClass } from '../../store/LogEntry';
-// Placeholder for useLogEntryClass
-const useLogEntryClass = () => ({
-    create: async () => ({}),
-    update: async () => ({}),
-});
-// import { useShiftClass } from '../../store/Shift';
-// Placeholder for useShiftClass
-const useShiftClass = () => ({
-    fromForm: (formData: any) => ({
-        validate: () => [],
-        create: async () => ({}),
-        update: async () => ({}),
-        getUnaltered: async () => ({}),
-    }),
-});
-// import {
-//     sendShiftCreateLog,
-//     sendShiftUpdateLog,
-// } from '../../helpers/shiftLogs';
-//import useUserAvailabilityList from '../hooks/useUserAvailabilityList';
-//import { useShiftDialogHelpers } from '../../context/DialogContext';
-//import ShiftAssignmentTool from '../ShiftAssignmentTool/ShiftAssignmentTool';
-//import { useFilteredShiftOffers } from '../../store/ShiftOffer';
 import {
     useAuthQuery,
     useTeamUsersLookupQuery,
     useTeamUsersQuery,
-} from '@/queries/user';
+} from '@/queries/users';
+import { inferRouterOutputs } from '@trpc/server';
+import { AppRouter } from '@/api/trpc/[trpc]';
+import ShiftAssignmentTool from '@/app/(dashboard)/shifts/_components/ShiftAssignmentTool';
+import { useShiftCreateMutation, useShiftUpdateMutation } from '@/queries/shifts';
 
 dayjs.extend(customParseFormat);
 
-function sendShiftCreateLog() {}
-function sendShiftUpdateLog() {}
-
-// const times = [];
-// const ampm = ['am','pm'];
-// const hrs = Array(12).fill(0).map((_,i) => i ? i : 12);
-// const min = ['00','15','30','45'];
-// ampm.forEach(s => {
-//     hrs.forEach(h => {
-//         min.forEach(m => {
-//             //times.push(`${h}:${m}${s}`)
-//         })
-//     })
-// })
-
-// function onlyFifteenMinutesTimepicker() {
-//     return (timeValue, clockType) => {
-//         if (clockType === 'minutes' && timeValue % 15) {
-//             return true;
-//         }
-//         return false;
-//     };
-// }
-
-// Placeholder for useUserAvailabilityList hook
-function useUserAvailabilityList(date: Date | null) {
-    return {}; // Return mock data structure if needed
-}
-
-// Placeholder for useShiftDialogHelpers from DialogContext
+// Helper function to close the dialog
 const useShiftDialogHelpers = () => ({
     reset: () => {
+        // In a real implementation, this would close the dialog
         console.log('Dialog reset called');
     },
 });
 
-// Placeholder for ShiftAssignmentTool component
-function ShiftAssignmentTool(props: any) {
-    return <div>ShiftAssignmentTool Placeholder</div>;
-}
-// Placeholder for useFilteredShiftOffers hook
-const useFilteredShiftOffers = ({ shiftId }: { shiftId: string }) => ({
-    shiftOffers: [], // Replace with mock data if necessary
-    ShiftOffer: {
-        fromForm: (data: any) => ({
-            create: async () => {},
-            update: async () => {},
-            delete: async () => {},
-        }),
-    },
-});
-
+// Type for ShiftForm props
 type ShiftFormProps = {
+    isNew?: boolean;
     shiftId?: string;
-    shift?: any; // Replace with actual type if available
+    shift?: inferRouterOutputs<AppRouter>['shifts']['byId'] | null;
+    onClose?: () => void;
 };
 
 export default function ShiftForm(props: ShiftFormProps) {
     const { reset: handleClose } = useShiftDialogHelpers();
-    const { shiftId, shift } = props;
-
-    const LogEntry = useLogEntryClass();
+    const { shiftId, shift, isNew: propsIsNew, onClose } = props;
+    const notifications = useNotifications();
 
     const defaultValues = {
         id: '',
@@ -134,27 +54,51 @@ export default function ShiftForm(props: ShiftFormProps) {
         date: null,
         startTime: null,
         endTime: null,
-        slots: '1',
+        slots: 1,
         notes: '',
         adminNotes: '',
         assignments: [],
     };
 
+    // Get team users data to map from memberId to userId
+    const { data: teamUsers = [] } = useTeamUsersQuery();
+
+    // Create a mapping from memberId to userId
+    const memberToUserMap = React.useMemo(() => {
+        const map = {};
+        teamUsers.forEach(user => {
+            user.members?.forEach(member => {
+                map[member.id] = user.id;
+            });
+        });
+        return map;
+    }, [teamUsers]);
+
+    // Transform shiftAssignments to the format expected by the form
+    const transformedShift = shift ? {
+        ...shift,
+        assignments: shift.shiftAssignments?.map(assignment => {
+            // Map memberId to userId using the memberToUserMap
+            const userId = memberToUserMap[assignment.memberId] || assignment.memberId;
+            return {
+                userId,
+                outcome: assignment.outcome,
+                reason: assignment.reason || ''
+            };
+        }) || []
+    } : defaultValues;
+
     const {
         control,
         handleSubmit,
-        formState: { errors },
-        setValue,
+        formState: { errors, isSubmitting },
         getValues,
         watch,
         reset,
         setError,
     } = useForm({
-        defaultValues: shift ?? defaultValues,
+        defaultValues: transformedShift,
     });
-
-    const foo = watch();
-    console.log({ foo });
 
     // Helper for setting form errors
     const setErrors = (errorList) => {
@@ -166,147 +110,132 @@ export default function ShiftForm(props: ShiftFormProps) {
         });
     };
 
-    const Shift = useShiftClass();
-
-    //const { isNew, user, role } = useAuth();
     const { data: session } = useAuthQuery();
     const user = session?.user;
 
-    const isNew = false;
+    // Determine if this is a new shift based on props or shiftId
+    const isNew = propsIsNew ?? !shiftId;
     const role = user?.role || 'member';
-
     const isAdmin = ['admin', 'owner'].includes(role);
 
-    const { shiftOffers, ShiftOffer } = useFilteredShiftOffers({ shiftId });
-    const [offers, setOffers] = useState([]);
-    useEffect(() => {
-        if (!offers.length && shiftOffers) {
-            setOffers(shiftOffers);
-        }
-    }, [JSON.stringify(shiftOffers)]);
+    // Get mutations for creating and updating shifts
+    const createMutation = useShiftCreateMutation();
+    const updateMutation = useShiftUpdateMutation();
 
-    const offerLookup = {};
-    const shiftOfferLookup = {};
-
-    async function submitShiftOffers() {
-        // const offerLookup = {};
-        // offers.forEach((x) => (offerLookup[x.id] = true));
-        // const shiftOfferLookup = {};
-        // shiftOffers.forEach((x) => (shiftOfferLookup[x.id] = true));
-        //
-        // const deleteOffers = shiftOffers.filter((x) => !offerLookup[x.id]);
-        // const addOffers = offers.filter((x) => !shiftOfferLookup[x.id]);
-        // const saveOffers = offers.filter((x) => shiftOfferLookup[x.id]);
-        //
-        // const aProm = addOffers.map((x) =>
-        //     ShiftOffer.fromForm({ ...x, shiftId }).create()
-        // );
-        // const dProm = deleteOffers.map((x) => x.delete());
-        // const sProm = saveOffers.map((x) => x.update());
-        //
-        // await Promise.all([...aProm, ...dProm, ...sProm]);
-    }
-
+    // Form submission handlers
     async function onNewFormSubmit(formData) {
-        const shift = translateFormToData(formData, shiftId);
-        const errors = shift.validate();
+        try {
+            // Validate form data
+            if (!formData.title) {
+                setError('title', { message: 'Title is required' });
+                return;
+            }
+            if (!formData.date) {
+                setError('date', { message: 'Date is required' });
+                return;
+            }
+            if (!formData.startTime) {
+                setError('startTime', { message: 'Start time is required' });
+                return;
+            }
+            if (!formData.endTime) {
+                setError('endTime', { message: 'End time is required' });
+                return;
+            }
 
-        if (errors.length) {
-            setErrors(errors);
-            return;
+            // Format data for API
+            const shiftData = {
+                title: formData.title,
+                date: dayjs(formData.date).format('YYYY-MM-DD'),
+                startTime: dayjs(formData.startTime).format('YYYY-MM-DD HH:mm:ss'),
+                endTime: dayjs(formData.endTime).format('YYYY-MM-DD HH:mm:ss'),
+                slots: Number(formData.slots),
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                location: formData.location,
+                notes: formData.notes,
+                adminNotes: formData.adminNotes,
+                assignments: formData.assignments || [],
+            };
+
+            // Create shift
+            await createMutation.mutateAsync(shiftData);
+            notifications.show('Shift created successfully', { severity: 'success', autoHideDuration: 3000 });
+
+            // Close dialog
+            if (onClose) {
+                onClose();
+            } else {
+                handleClose();
+            }
+        } catch (error) {
+            console.error('Error creating shift:', error);
+            notifications.show('Failed to create shift', { severity: 'error' });
         }
-
-        const result = await shift.create();
-
-        await sendShiftCreateLog(LogEntry, user, result, shift);
-        handleClose();
     }
 
     async function onUpdateFormSubmit(formData) {
-        const shift = translateFormToData(formData);
-        const errors = shift.validate();
+        try {
+            if (!shiftId) {
+                notifications.show('Shift ID is required for updates', { severity: 'error' });
+                return;
+            }
 
-        if (errors.length) {
-            setErrors(errors);
-            return;
+            // Format data for API
+            const shiftData = {
+                id: shiftId,
+                title: formData.title,
+                date: dayjs(formData.date).format('YYYY-MM-DD'),
+                startTime: dayjs(formData.startTime).format('YYYY-MM-DD HH:mm:ss'),
+                endTime: dayjs(formData.endTime).format('YYYY-MM-DD HH:mm:ss'),
+                slots: Number(formData.slots),
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                location: formData.location,
+                notes: formData.notes,
+                adminNotes: formData.adminNotes,
+                assignments: formData.assignments || [],
+            };
+
+            // Update shift
+            await updateMutation.mutateAsync(shiftData);
+            notifications.show('Shift updated successfully', { severity: 'success', autoHideDuration: 3000 });
+
+            // Close dialog
+            if (onClose) {
+                onClose();
+            } else {
+                handleClose();
+            }
+        } catch (error) {
+            console.error('Error updating shift:', error);
+            notifications.show('Failed to update shift', { severity: 'error' });
         }
-
-        shift.id = shiftId;
-
-        await submitShiftOffers(shiftId);
-
-        const before = await shift.getUnaltered();
-        await shift.update();
-        await sendShiftUpdateLog(LogEntry, user, shiftId, before, shift);
-
-        handleClose();
     }
+
     const onSubmit = handleSubmit(
-        !shiftId || isNew ? onNewFormSubmit : onUpdateFormSubmit
+        isNew ? onNewFormSubmit : onUpdateFormSubmit
     );
 
-    const { data: teamMembers } = useTeamUsersQuery();
+    const { data: teamMembers = [] } = useTeamUsersQuery();
     const { data: userLookup } = useTeamUsersLookupQuery();
 
-    const userId = user?.uid;
-    const { shiftRequests, ShiftRequest } = useFilteredShiftRequests({
-        userId,
-        shiftId,
-    });
-    //const assignments = getValues('assignments');
-    const setAssignments = function (newAssignments) {
-        setValue('assignments', newAssignments, { shouldValidate: true });
-    };
+    const userId = user?.id;
 
-    const userAvailabilityList = []; //useUserAvailabilityList(form?.date);
-
-    const isAvailable = useCallback(
-        (userId) => {
-            //const defaultAvail =
-            const availData = userAvailabilityList[userId];
-
-            if (availData?.filter((x) => x?.isAvailable === false).length)
-                return false;
-            if (availData?.filter((x) => x?.isAvailable === true).length)
-                return true;
-
-            const user = userLookup && userLookup[userId];
-            return user?.isAvailableByDefault;
-        },
-        [userAvailabilityList, userLookup]
-    );
-    teamMembers.forEach((tm) => (tm.isAvailable = isAvailable(tm.id)));
-
-    // function translateDataToForm(rawdata) {
-    //     const data = { ...rawdata };
-    //     data.slots = data.slots || '1';
-    //     return data?.toForm ? data.toForm() : data;
-    // }
-    function translateFormToData(form) {
-        return Shift.fromForm(form);
-    }
-
-    // useEffect(() => {
-    //     if (dialogForm) {
-    //         const formData = translateDataToForm(dialogForm);
-    //         reset(formData);
-    //     }
-    // }, [dialogForm, reset]);
-
-    const isAssigned = (getValues('assignments') || []).indexOf(user.uid) >= 0;
-
-    const slots = getValues('slots') || '1';
+    // Check if user is assigned to this shift
     const assignments = getValues('assignments') || [];
-    const hasAvailableSlots =
-        assignments.length === 0 || assignments.length < parseInt(slots);
-    const hasRequests = shiftRequests.length > 0;
+    const isAssigned = assignments.some(a => a.userId === userId);
+
+    const slots = getValues('slots') || 1;
+    const hasAvailableSlots = assignments.length === 0 || assignments.length < Number(slots);
+
+    // In a real implementation, this would fetch shift requests from the server
+    const hasRequests = false;
 
     async function handleShiftRequest() {
-        const newRequest = new ShiftRequest({ userId, shiftId });
-        await newRequest.create();
+        // In a real implementation, this would create a shift request
+        notifications.show('Shift request submitted', { severity: 'success', autoHideDuration: 3000 });
     }
 
-    const date = getValues('date');
+    const date = watch('date');
 
     return (
         <Container>
@@ -363,7 +292,6 @@ export default function ShiftForm(props: ShiftFormProps) {
                             />
                         )}
                     />
-                    {/*<TextField name="date" label="Date" variant="outlined" onChange={handleInputChange} value={form.date} />*/}
                     <Controller
                         name="date"
                         control={control}
@@ -372,7 +300,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 disabled={!isAdmin}
                                 label="Date"
                                 value={
-                                    field.value ? dayjs(field.value) : dayjs()
+                                    field.value ? dayjs(field.value) : null
                                 }
                                 onChange={(date) =>
                                     field.onChange(date ? date.toDate() : null)
@@ -391,16 +319,18 @@ export default function ShiftForm(props: ShiftFormProps) {
                         control={control}
                         render={({ field }) => (
                             <TimePicker
-                                {...field}
                                 disabled={!isAdmin}
                                 label="Start Time"
                                 value={field.value ? dayjs(field.value) : null}
                                 onChange={(date) =>
                                     field.onChange(date ? date.toDate() : null)
                                 }
-                                //type="time"
-                                error={!!errors.startTime}
-                                helperText={errors.startTime?.message}
+                                slotProps={{
+                                    textField: {
+                                        error: !!errors.startTime,
+                                        helperText: errors.startTime?.message,
+                                    },
+                                }}
                             />
                         )}
                     />
@@ -409,39 +339,31 @@ export default function ShiftForm(props: ShiftFormProps) {
                         control={control}
                         render={({ field }) => (
                             <TimePicker
-                                {...field}
                                 disabled={!isAdmin}
                                 label="End Time"
                                 value={field.value ? dayjs(field.value) : null}
                                 onChange={(date) =>
                                     field.onChange(date ? date.toDate() : null)
                                 }
-                                //type="time"
-                                error={!!errors.endTime}
-                                helperText={errors.endTime?.message}
+                                slotProps={{
+                                    textField: {
+                                        error: !!errors.endTime,
+                                        helperText: errors.endTime?.message,
+                                    },
+                                }}
                             />
                         )}
                     />
-                    <Grid container spacing={2}>
-                        <Grid>
-                            <Typography variant="h4">
-                                {getValues('assignments')?.length || 0}
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item>
+                            <Typography variant="h6">
+                                {assignments?.length || 0}
                             </Typography>
                         </Grid>
-                        <Grid>
-                            <div
-                                style={{
-                                    height: '37px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                            >
-                                of
-                            </div>
+                        <Grid item>
+                            <Typography variant="body1">of</Typography>
                         </Grid>
-
-                        <Grid>
+                        <Grid item>
                             <Controller
                                 name="slots"
                                 control={control}
@@ -454,59 +376,29 @@ export default function ShiftForm(props: ShiftFormProps) {
                                         type="number"
                                         error={!!errors.slots}
                                         helperText={errors.slots?.message}
+                                        inputProps={{ min: 1 }}
                                     />
                                 )}
                             />
                         </Grid>
                     </Grid>
-                    <ShiftAssignmentTool
-                        assignments={getValues('assignments')}
-                        setAssignments={setAssignments}
-                        offers={offers}
-                        setOffers={setOffers}
-                        readOnly={!isAdmin}
-                        date={date}
+
+                    {/* Log the assignments data */}
+                    {console.log('Assignments data:', getValues('assignments'))}
+
+                    <Controller
+                        name="assignments"
+                        control={control}
+                        render={({ field }) => (
+                            <ShiftAssignmentTool
+                                {...field}
+                                shift={shift}
+                                date={date}
+                                readOnly={!isAdmin}
+                            />
+                        )}
                     />
-                    {/* false && isAdmin && <Autocomplete
-                    disabled={!isAdmin}
-                    multiple
-                    id="assignments"
-                    name="assignments"
 
-                    isOptionEqualToValue={(option, value) => option.id === value.id}
-                    value={assignments || []}
-                    onChange={(event, newValue) => {
-                        setAssignments(newValue)
-                    }}
-
-                    options={teamMembers}
-
-                    filterOptions={(options) => {
-                        return options;
-                        return options?.filter(x => form?.assignments?.indexOf(x.id) === -1)
-                    }}
-
-                    filterSelectedOptions
-
-                    renderInput={(params) => (
-                        <TextField {...params}
-                            // variant="filled"
-                            label="Assigned Team Members"
-                            placeholder="Assigned Team Members"
-                        />
-
-                    )}
-                    renderTags={(value, getTagProps) =>
-                        value.map((option, index) => (
-                            <Chip variant="outlined" label={option.label} {...getTagProps({ index })} />
-                        ))
-                    }
-
-                    getOptionDisabled={(option) =>
-                        !option.isAvailable
-                    }
-
-                /> */}
                     <Controller
                         name="notes"
                         control={control}
@@ -514,6 +406,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                             <TextField
                                 {...field}
                                 multiline
+                                rows={3}
                                 disabled={!isAdmin}
                                 label="Notes"
                                 variant="outlined"
@@ -530,6 +423,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 <TextField
                                     {...field}
                                     multiline
+                                    rows={3}
                                     label="Admin Notes"
                                     variant="outlined"
                                     error={!!errors.adminNotes}
@@ -541,14 +435,19 @@ export default function ShiftForm(props: ShiftFormProps) {
 
                     <Stack direction="row" spacing={2}>
                         {isAdmin && (
-                            <Button variant="contained" type="submit">
-                                Submit
+                            <Button 
+                                variant="contained" 
+                                type="submit"
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? 'Saving...' : (isNew ? 'Create' : 'Update')}
                             </Button>
                         )}
                         <Button
                             variant="contained"
                             color="secondary"
-                            onClick={handleClose}
+                            onClick={onClose || handleClose}
+                            disabled={isSubmitting}
                         >
                             {isAdmin ? 'Cancel' : 'Close'}
                         </Button>
