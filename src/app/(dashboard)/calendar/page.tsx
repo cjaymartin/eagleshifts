@@ -145,8 +145,8 @@ export default function Calendar() {
                 id: shift.id,
                 title: shift.title,
                 allDay: false,
-                start: dayjs(shift.startTime).toDate(),
-                end: dayjs(shift.endTime).toDate(),
+                start: dayjs(shift.startTime, 'YYYY-MM-DD').toDate(),
+                end: dayjs(shift.endTime, 'YYYY-MM-DD').toDate(),
             };
         }) || [];
 

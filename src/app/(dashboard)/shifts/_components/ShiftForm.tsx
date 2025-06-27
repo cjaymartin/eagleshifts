@@ -77,6 +77,10 @@ export default function ShiftForm(props: ShiftFormProps) {
     // Transform shiftAssignments to the format expected by the form
     const transformedShift = shift ? {
         ...shift,
+        // Parse dates using the YYYY-MM-DD format
+        date: shift.date ? dayjs(shift.date, 'YYYY-MM-DD').toDate() : null,
+        startTime: shift.startTime ? dayjs(shift.startTime, 'YYYY-MM-DD').toDate() : null,
+        endTime: shift.endTime ? dayjs(shift.endTime, 'YYYY-MM-DD').toDate() : null,
         assignments: shift.shiftAssignments?.map(assignment => {
             // Map memberId to userId using the memberToUserMap
             const userId = memberToUserMap[assignment.memberId] || assignment.memberId;

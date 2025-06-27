@@ -22,16 +22,16 @@ export default function SmartAppProvider({ children }: SmartAppProviderProps) {
         // Regular navigation for standard users
         const REGULAR_NAVIGATION = [
             {
-                title: 'Home',
-                segment: '',
+                title: 'Calendar',
+                segment: 'calendar',
             },
             {
                 title: 'Shifts',
                 segment: 'shifts',
             },
             {
-                title: 'Contact',
-                segment: 'contact',
+                title: 'Availability',
+                segment: 'availability',
             },
         ];
 

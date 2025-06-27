@@ -2,6 +2,22 @@ import { z } from 'zod';
 import { router, adminProcedure } from '@/server/trpc';
 import { Prisma, User } from '@/generated/prisma';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
+// Extend dayjs with UTC plugin
+dayjs.extend(utc);
+
+// Helper function to convert date strings to YYYY-MM-DD format
+function formatDateString(dateString: string): string {
+    return dayjs.utc(dateString).format('YYYY-MM-DD');
+}
+
+// Helper function to parse date strings without timezone issues
+function parseDateString(dateString: string): Date {
+    // Parse the date string as YYYY-MM-DD and set the time to noon UTC
+    // This ensures that the date will be the same regardless of timezone
+    return dayjs.utc(`${formatDateString(dateString)}T12:00:00Z`).toDate();
+}
 
 export const availabilityRouter = router({
     list: adminProcedure
@@ -25,9 +41,9 @@ export const availabilityRouter = router({
                     where.endDate = {};
 
                     if (input.startDate)
-                        where.startDate.gte = new Date(input.startDate);
+                        where.startDate.gte = parseDateString(input.startDate);
                     if (input.endDate)
-                        where.endDate.lte = new Date(input.endDate);
+                        where.endDate.lte = parseDateString(input.endDate);
                 }
 
                 if (input.isAvailable !== undefined) {
@@ -49,7 +65,14 @@ export const availabilityRouter = router({
                 },
             });
 
-            return availabilities;
+            // Format dates as YYYY-MM-DD strings for the response
+            return availabilities.map((availability) => ({
+                ...availability,
+                startDate: formatDateString(
+                    availability.startDate.toISOString()
+                ),
+                endDate: formatDateString(availability.endDate.toISOString()),
+            }));
         }),
 
     byDate: adminProcedure
@@ -111,7 +134,14 @@ export const availabilityRouter = router({
                 throw new Error('Availability not found');
             }
 
-            return availability;
+            // Format dates as YYYY-MM-DD strings for the response
+            return {
+                ...availability,
+                startDate: formatDateString(
+                    availability.startDate.toISOString()
+                ),
+                endDate: formatDateString(availability.endDate.toISOString()),
+            };
         }),
 
     create: adminProcedure
@@ -127,15 +157,22 @@ export const availabilityRouter = router({
         .mutation(async ({ ctx, input }) => {
             const availability = await ctx.prisma.availability.create({
                 data: {
-                    startDate: new Date(input.startDate),
-                    endDate: new Date(input.endDate),
+                    startDate: parseDateString(input.startDate),
+                    endDate: parseDateString(input.endDate),
                     desc: input.desc,
                     isAvailable: input.isAvailable,
                     memberId: input.memberId,
                 },
             });
 
-            return availability;
+            // Format dates as YYYY-MM-DD strings for the response
+            return {
+                ...availability,
+                startDate: formatDateString(
+                    availability.startDate.toISOString()
+                ),
+                endDate: formatDateString(availability.endDate.toISOString()),
+            };
         }),
 
     update: adminProcedure
@@ -156,15 +193,22 @@ export const availabilityRouter = router({
                 data: {
                     ...updateData,
                     startDate: updateData.startDate
-                        ? new Date(updateData.startDate)
+                        ? parseDateString(updateData.startDate)
                         : undefined,
                     endDate: updateData.endDate
-                        ? new Date(updateData.endDate)
+                        ? parseDateString(updateData.endDate)
                         : undefined,
                 },
             });
 
-            return availability;
+            // Format dates as YYYY-MM-DD strings for the response
+            return {
+                ...availability,
+                startDate: formatDateString(
+                    availability.startDate.toISOString()
+                ),
+                endDate: formatDateString(availability.endDate.toISOString()),
+            };
         }),
 
     delete: adminProcedure

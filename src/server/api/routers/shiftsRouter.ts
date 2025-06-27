@@ -1,6 +1,23 @@
 import { z } from 'zod';
 import { router, adminProcedure, memberProcedure } from '@/server/trpc';
 import { Prisma } from '@/generated/prisma';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
+// Extend dayjs with UTC plugin
+dayjs.extend(utc);
+
+// Helper function to convert date strings to YYYY-MM-DD format
+function formatDateString(dateString: string): string {
+    return dayjs.utc(dateString).format('YYYY-MM-DD');
+}
+
+// Helper function to parse date strings without timezone issues
+function parseDateString(dateString: string): Date {
+    // Parse the date string as YYYY-MM-DD and set the time to noon UTC
+    // This ensures that the date will be the same regardless of timezone
+    return dayjs.utc(`${formatDateString(dateString)}T12:00:00Z`).toDate();
+}
 
 export const shiftsRouter = router({
     seed: adminProcedure.query(async ({ ctx }) => {
@@ -75,11 +92,9 @@ export const shiftsRouter = router({
                 if (input.startDate || input.endDate) {
                     where.date = {};
                     if (input.startDate)
-                        where.date.gte = new Date(
-                            input.startDate
-                        ).toISOString();
+                        where.date.gte = parseDateString(input.startDate);
                     if (input.endDate)
-                        where.date.lte = new Date(input.endDate).toISOString();
+                        where.date.lte = parseDateString(input.endDate);
                 }
 
                 // Handle assigned filter
@@ -88,23 +103,23 @@ export const shiftsRouter = router({
                     const members = await ctx.prisma.member.findMany({
                         where: {
                             organizationId: ctx.user.organizationId,
-                            userId: input.assigned
+                            userId: input.assigned,
                         },
                         select: {
-                            id: true
-                        }
+                            id: true,
+                        },
                     });
 
                     // Get the member IDs
-                    const memberIds = members.map(member => member.id);
+                    const memberIds = members.map((member) => member.id);
 
                     // Filter shifts where any of the shift assignments have a member with one of the member IDs
                     where.shiftAssignments = {
-                        some: { 
+                        some: {
                             memberId: {
-                                in: memberIds
+                                in: memberIds,
                             },
-                            outcome: "assigned"
+                            outcome: 'assigned',
                         },
                     };
                 }
@@ -117,34 +132,34 @@ export const shiftsRouter = router({
                         // Either no assignments at all
                         { shiftAssignments: { none: {} } },
                         // Or some assignments but we'll filter further in memory
-                        { shiftAssignments: { some: { outcome: "assigned" } } }
+                        { shiftAssignments: { some: { outcome: 'assigned' } } },
                     ];
                 } else if (input.unfilled === 'filled') {
                     // We'll fetch shifts with at least one assignment and filter them later
-                    where.shiftAssignments = { some: { outcome: "assigned" } };
+                    where.shiftAssignments = { some: { outcome: 'assigned' } };
                 } else if (input.unfilled === 'mine') {
                     // Find the member records for the current user in the current organization
                     const members = await ctx.prisma.member.findMany({
                         where: {
                             organizationId: ctx.user.organizationId,
-                            userId: ctx.user.id
+                            userId: ctx.user.id,
                         },
                         select: {
-                            id: true
-                        }
+                            id: true,
+                        },
                     });
 
                     // Get the member IDs
-                    const memberIds = members.map(member => member.id);
+                    const memberIds = members.map((member) => member.id);
 
                     // Filter shifts where any of the shift assignments have a member with one of the member IDs
-                    where.shiftAssignments = { 
-                        some: { 
+                    where.shiftAssignments = {
+                        some: {
                             memberId: {
-                                in: memberIds
+                                in: memberIds,
                             },
-                            outcome: "assigned"
-                        } 
+                            outcome: 'assigned',
+                        },
                     };
                 }
             }
@@ -160,11 +175,14 @@ export const shiftsRouter = router({
             });
 
             // Apply additional filtering for "filled" and "unfilled" that can't be done in Prisma
-            if (input?.unfilled === 'filled' || input?.unfilled === 'unfilled') {
-                return shifts.filter(shift => {
+            if (
+                input?.unfilled === 'filled' ||
+                input?.unfilled === 'unfilled'
+            ) {
+                return shifts.filter((shift) => {
                     // Count assignments with outcome "assigned"
                     const assignedCount = shift.shiftAssignments.filter(
-                        assignment => assignment.outcome === 'assigned'
+                        (assignment) => assignment.outcome === 'assigned'
                     ).length;
 
                     if (input.unfilled === 'filled') {
@@ -177,7 +195,13 @@ export const shiftsRouter = router({
                 });
             }
 
-            return shifts;
+            // Format dates as YYYY-MM-DD strings for the response
+            return shifts.map((shift) => ({
+                ...shift,
+                date: formatDateString(shift.date.toISOString()),
+                startTime: formatDateString(shift.startTime.toISOString()),
+                endTime: formatDateString(shift.endTime.toISOString()),
+            }));
         }),
 
     byId: memberProcedure
@@ -198,7 +222,13 @@ export const shiftsRouter = router({
                 throw new Error('Shift not found');
             }
 
-            return shift;
+            // Format dates as YYYY-MM-DD strings for the response
+            return {
+                ...shift,
+                date: formatDateString(shift.date.toISOString()),
+                startTime: formatDateString(shift.startTime.toISOString()),
+                endTime: formatDateString(shift.endTime.toISOString()),
+            };
         }),
 
     create: adminProcedure
@@ -213,13 +243,15 @@ export const shiftsRouter = router({
                 notes: z.string().optional(),
                 adminNotes: z.string().optional(),
                 timezone: z.string().optional().default('America/New_York'),
-                assignments: z.array(
-                    z.object({
-                        userId: z.string(),
-                        outcome: z.enum(['assigned', 'waiting', 'refused']),
-                        reason: z.string().optional()
-                    })
-                ).optional(),
+                assignments: z
+                    .array(
+                        z.object({
+                            userId: z.string(),
+                            outcome: z.enum(['assigned', 'waiting', 'refused']),
+                            reason: z.string().optional(),
+                        })
+                    )
+                    .optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -228,9 +260,9 @@ export const shiftsRouter = router({
                     organizationId: ctx.user.organizationId,
                     title: input.title,
                     location: input.location,
-                    date: new Date(input.date),
-                    startTime: new Date(input.startTime),
-                    endTime: new Date(input.endTime),
+                    date: parseDateString(input.date),
+                    startTime: parseDateString(input.startTime),
+                    endTime: parseDateString(input.endTime),
                     slots: input.slots,
                     notes: input.notes,
                     adminNotes: input.adminNotes,
@@ -250,25 +282,27 @@ export const shiftsRouter = router({
                     where: {
                         organizationId: ctx.user.organizationId,
                         userId: {
-                            in: input.assignments.map(a => a.userId)
-                        }
+                            in: input.assignments.map((a) => a.userId),
+                        },
                     },
                     select: {
                         id: true,
-                        userId: true
-                    }
+                        userId: true,
+                    },
                 });
 
                 // Create a mapping from userId to memberId
                 const userToMemberMap = {};
-                members.forEach(member => {
+                members.forEach((member) => {
                     userToMemberMap[member.userId] = member.id;
                 });
 
                 // Create assignments using the correct member IDs
                 await ctx.prisma.shiftAssignment.createMany({
                     data: input.assignments
-                        .filter(assignment => userToMemberMap[assignment.userId]) // Only include users that have a valid member record
+                        .filter(
+                            (assignment) => userToMemberMap[assignment.userId]
+                        ) // Only include users that have a valid member record
                         .map((assignment) => ({
                             shiftId: shift.id,
                             memberId: userToMemberMap[assignment.userId],
@@ -286,7 +320,13 @@ export const shiftsRouter = router({
                 return updatedShift;
             }
 
-            return shift;
+            // Format dates as YYYY-MM-DD strings for the response
+            return {
+                ...shift,
+                date: formatDateString(shift.date.toISOString()),
+                startTime: formatDateString(shift.startTime.toISOString()),
+                endTime: formatDateString(shift.endTime.toISOString()),
+            };
         }),
 
     update: adminProcedure
@@ -302,13 +342,15 @@ export const shiftsRouter = router({
                 notes: z.string().optional(),
                 adminNotes: z.string().optional(),
                 timezone: z.string(),
-                assignments: z.array(
-                    z.object({
-                        userId: z.string(),
-                        outcome: z.enum(['assigned', 'waiting', 'refused']),
-                        reason: z.string().optional()
-                    })
-                ).optional(),
+                assignments: z
+                    .array(
+                        z.object({
+                            userId: z.string(),
+                            outcome: z.enum(['assigned', 'waiting', 'refused']),
+                            reason: z.string().optional(),
+                        })
+                    )
+                    .optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -323,9 +365,9 @@ export const shiftsRouter = router({
                     data: {
                         title: data.title,
                         location: data.location,
-                        date: new Date(data.date),
-                        startTime: new Date(data.startTime),
-                        endTime: new Date(data.endTime),
+                        date: parseDateString(data.date),
+                        startTime: parseDateString(data.startTime),
+                        endTime: parseDateString(data.endTime),
                         slots: data.slots,
                         notes: data.notes,
                         adminNotes: data.adminNotes,
@@ -351,25 +393,28 @@ export const shiftsRouter = router({
                         where: {
                             organizationId: ctx.user.organizationId,
                             userId: {
-                                in: data.assignments.map(a => a.userId)
-                            }
+                                in: data.assignments.map((a) => a.userId),
+                            },
                         },
                         select: {
                             id: true,
-                            userId: true
-                        }
+                            userId: true,
+                        },
                     });
 
                     // Create a mapping from userId to memberId
                     const userToMemberMap = {};
-                    members.forEach(member => {
+                    members.forEach((member) => {
                         userToMemberMap[member.userId] = member.id;
                     });
 
                     // Create assignments using the correct member IDs
                     await ctx.prisma.shiftAssignment.createMany({
                         data: data.assignments
-                            .filter(assignment => userToMemberMap[assignment.userId]) // Only include users that have a valid member record
+                            .filter(
+                                (assignment) =>
+                                    userToMemberMap[assignment.userId]
+                            ) // Only include users that have a valid member record
                             .map((assignment) => ({
                                 shiftId: id,
                                 memberId: userToMemberMap[assignment.userId],
@@ -389,10 +434,27 @@ export const shiftsRouter = router({
                         where: { id },
                         include: { shiftAssignments: true },
                     });
-                    return updatedShift;
+
+                    // Format dates as YYYY-MM-DD strings for the response
+                    return {
+                        ...updatedShift,
+                        date: formatDateString(updatedShift.date.toISOString()),
+                        startTime: formatDateString(
+                            updatedShift.startTime.toISOString()
+                        ),
+                        endTime: formatDateString(
+                            updatedShift.endTime.toISOString()
+                        ),
+                    };
                 }
 
-                return shift;
+                // Format dates as YYYY-MM-DD strings for the response
+                return {
+                    ...shift,
+                    date: formatDateString(shift.date.toISOString()),
+                    startTime: formatDateString(shift.startTime.toISOString()),
+                    endTime: formatDateString(shift.endTime.toISOString()),
+                };
             } catch (error) {
                 throw new Error(`Failed to update shift: ${error.message}`);
             }

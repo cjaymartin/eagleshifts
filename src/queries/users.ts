@@ -43,3 +43,23 @@ export function useTeamUserByIdQuery(userId: string) {
         enabled: !!teamUserLookup && !!userId,
     });
 }
+
+export function useMemberByIdQuery(memberId: string) {
+    return trpc.users.getMemberById.useQuery(
+        { memberId },
+        {
+            enabled: !!memberId,
+        }
+    );
+}
+
+export function useUpdateDefaultAvailabilityMutation() {
+    const utils = trpc.useUtils();
+    return trpc.users.updateDefaultAvailability.useMutation({
+        onSuccess: () => {
+            // Invalidate queries that might be affected by this update
+            utils.users.invalidate();
+            utils.availability.invalidate();
+        },
+    });
+}
