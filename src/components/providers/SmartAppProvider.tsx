@@ -33,6 +33,10 @@ export default function SmartAppProvider({ children }: SmartAppProviderProps) {
                 title: 'Availability',
                 segment: 'availability',
             },
+            {
+                title: 'Shift Requests',
+                segment: 'requests',
+            },
         ];
 
         // Super admin navigation

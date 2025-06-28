@@ -13,7 +13,6 @@ export function useTeamUsersQuery() {
 export function useTeamUsersLookupQuery() {
     const { data: teamUsers } = useTeamUsersQuery();
     const baseQueryKey = getQueryKey(trpc.users.list, undefined, 'query');
-    console.log({ baseQueryKey });
 
     return useQuery({
         queryKey: [...baseQueryKey, 'lookup'],

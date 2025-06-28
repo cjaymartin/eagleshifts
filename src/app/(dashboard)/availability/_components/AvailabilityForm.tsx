@@ -24,10 +24,10 @@ import { useNotifications } from '@toolpad/core';
 import { useAuthQuery, useTeamUsersQuery } from '@/queries/users';
 import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/api/trpc/[trpc]';
-import { 
-    useAvailabilityCreateMutation, 
-    useAvailabilityUpdateMutation, 
-    useAvailabilityDeleteMutation 
+import {
+    useAvailabilityCreateMutation,
+    useAvailabilityUpdateMutation,
+    useAvailabilityDeleteMutation,
 } from '@/queries/availability';
 
 dayjs.extend(customParseFormat);
@@ -43,7 +43,14 @@ type AvailabilityFormProps = {
 };
 
 export default function AvailabilityForm(props: AvailabilityFormProps) {
-    const { availabilityId, availability, isNew: propsIsNew, onClose, userId, memberId } = props;
+    const {
+        availabilityId,
+        availability,
+        isNew: propsIsNew,
+        onClose,
+        userId,
+        memberId,
+    } = props;
     const notifications = useNotifications();
 
     const defaultValues = {
@@ -56,11 +63,17 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
     };
 
     // Transform availability data to the format expected by the form
-    const transformedAvailability = availability ? {
-        ...availability,
-        startDate: availability.startDate ? dayjs(availability.startDate, 'YYYY-MM-DD').toDate() : null,
-        endDate: availability.endDate ? dayjs(availability.endDate, 'YYYY-MM-DD').toDate() : null,
-    } : defaultValues;
+    const transformedAvailability = availability
+        ? {
+              ...availability,
+              startDate: availability.startDate
+                  ? dayjs.utc(availability.startDate, 'YYYY-MM-DD').toDate()
+                  : null,
+              endDate: availability.endDate
+                  ? dayjs.utc(availability.endDate, 'YYYY-MM-DD').toDate()
+                  : null,
+          }
+        : defaultValues;
 
     const {
         control,
@@ -119,7 +132,10 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
 
             // Create availability
             await createMutation.mutateAsync(availabilityData);
-            notifications.show('Availability created successfully', { severity: 'success', autoHideDuration: 3000 });
+            notifications.show('Availability created successfully', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
 
             // Close dialog
             if (onClose) {
@@ -127,14 +143,18 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             }
         } catch (error) {
             console.error('Error creating availability:', error);
-            notifications.show('Failed to create availability', { severity: 'error' });
+            notifications.show('Failed to create availability', {
+                severity: 'error',
+            });
         }
     }
 
     async function onUpdateFormSubmit(formData) {
         try {
             if (!availabilityId) {
-                notifications.show('Availability ID is required for updates', { severity: 'error' });
+                notifications.show('Availability ID is required for updates', {
+                    severity: 'error',
+                });
                 return;
             }
 
@@ -149,7 +169,10 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
 
             // Update availability
             await updateMutation.mutateAsync(availabilityData);
-            notifications.show('Availability updated successfully', { severity: 'success', autoHideDuration: 3000 });
+            notifications.show('Availability updated successfully', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
 
             // Close dialog
             if (onClose) {
@@ -157,20 +180,27 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             }
         } catch (error) {
             console.error('Error updating availability:', error);
-            notifications.show('Failed to update availability', { severity: 'error' });
+            notifications.show('Failed to update availability', {
+                severity: 'error',
+            });
         }
     }
 
     async function handleDelete() {
         try {
             if (!availabilityId) {
-                notifications.show('Availability ID is required for deletion', { severity: 'error' });
+                notifications.show('Availability ID is required for deletion', {
+                    severity: 'error',
+                });
                 return;
             }
 
             // Delete availability
             await deleteMutation.mutateAsync({ id: availabilityId });
-            notifications.show('Availability deleted successfully', { severity: 'success', autoHideDuration: 3000 });
+            notifications.show('Availability deleted successfully', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
 
             // Close dialog
             if (onClose) {
@@ -178,13 +208,13 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             }
         } catch (error) {
             console.error('Error deleting availability:', error);
-            notifications.show('Failed to delete availability', { severity: 'error' });
+            notifications.show('Failed to delete availability', {
+                severity: 'error',
+            });
         }
     }
 
-    const onSubmit = handleSubmit(
-        isNew ? onNewFormSubmit : onUpdateFormSubmit
-    );
+    const onSubmit = handleSubmit(isNew ? onNewFormSubmit : onUpdateFormSubmit);
 
     return (
         <Container>
@@ -198,14 +228,21 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                                 <DatePicker
                                     disabled={!isAdmin}
                                     label="Start Date"
-                                    value={field.value ? dayjs(field.value) : null}
+                                    value={
+                                        field.value
+                                            ? dayjs.utc(field.value)
+                                            : null
+                                    }
                                     onChange={(date) =>
-                                        field.onChange(date ? date.toDate() : null)
+                                        field.onChange(
+                                            date ? date.toDate() : null
+                                        )
                                     }
                                     slotProps={{
                                         textField: {
                                             error: !!errors.startDate,
-                                            helperText: errors.startDate?.message,
+                                            helperText:
+                                                errors.startDate?.message,
                                         },
                                     }}
                                 />
@@ -218,9 +255,15 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                                 <DatePicker
                                     disabled={!isAdmin}
                                     label="End Date"
-                                    value={field.value ? dayjs(field.value) : null}
+                                    value={
+                                        field.value
+                                            ? dayjs.utc(field.value)
+                                            : null
+                                    }
                                     onChange={(date) =>
-                                        field.onChange(date ? date.toDate() : null)
+                                        field.onChange(
+                                            date ? date.toDate() : null
+                                        )
                                     }
                                     slotProps={{
                                         textField: {
@@ -245,10 +288,22 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                                     row={true}
                                     {...field}
                                     value={field.value ? true : false}
-                                    onChange={(e) => field.onChange(e.target.value === 'true')}
+                                    onChange={(e) =>
+                                        field.onChange(
+                                            e.target.value === 'true'
+                                        )
+                                    }
                                 >
-                                    <FormControlLabel value={true} control={<Radio />} label="Available" />
-                                    <FormControlLabel value={false} control={<Radio />} label="Unavailable" />
+                                    <FormControlLabel
+                                        value={true}
+                                        control={<Radio />}
+                                        label="Available"
+                                    />
+                                    <FormControlLabel
+                                        value={false}
+                                        control={<Radio />}
+                                        label="Unavailable"
+                                    />
                                 </RadioGroup>
                             </FormControl>
                         )}
@@ -273,12 +328,16 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
 
                     <Stack direction="row" spacing={2}>
                         {isAdmin && (
-                            <Button 
-                                variant="contained" 
+                            <Button
+                                variant="contained"
                                 type="submit"
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? 'Saving...' : (isNew ? 'Create' : 'Update')}
+                                {isSubmitting
+                                    ? 'Saving...'
+                                    : isNew
+                                      ? 'Create'
+                                      : 'Update'}
                             </Button>
                         )}
                         {!isNew && isAdmin && (

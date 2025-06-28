@@ -4,11 +4,13 @@ import { protectedProcedure } from '@/server/trpc';
 import { shiftsRouter } from './routers/shiftsRouter';
 import { usersRouter } from './routers/usersRouter';
 import { availabilityRouter } from '@/server/api/routers/availabilityRouter';
+import { requestsRouter } from '@/server/api/routers/requestsRouter';
 
 export const appRouter = router({
     shifts: shiftsRouter,
     users: usersRouter,
     availability: availabilityRouter,
+    requests: requestsRouter,
 
     session: router({
         get: router({

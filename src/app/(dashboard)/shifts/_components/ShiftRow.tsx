@@ -11,6 +11,9 @@ import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
 import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/api/trpc/[trpc]';
 import { useShiftDeleteMutation } from '@/queries/shifts';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 // Helper function to format time from ISO to AM/PM format
 const formatTime = (time: string) => {
@@ -19,7 +22,7 @@ const formatTime = (time: string) => {
     // Handle ISO format strings
     if (time.includes('T')) {
         // Parse the ISO string and convert to AM/PM format
-        return dayjs(time).format('hh:mm a');
+        return dayjs.utc(time).format('hh:mm a');
     }
 
     // Return as is if it's the old format
@@ -58,7 +61,7 @@ export function ShiftRow(props: ShiftRowProps) {
             <TableCell>{shift.location}</TableCell>
 
             <TableCell>
-                {shift.date && dayjs(shift.date).format('YYYY-MM-DD')}
+                {shift.date && dayjs.utc(shift.date).format('YYYY-MM-DD')}
             </TableCell>
             <TableCell>
                 {formatTime(shift.startTime.toString())} -{' '}

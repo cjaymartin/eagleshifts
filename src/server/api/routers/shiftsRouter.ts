@@ -19,6 +19,27 @@ function parseDateString(dateString: string): Date {
     return dayjs.utc(`${formatDateString(dateString)}T12:00:00Z`).toDate();
 }
 
+// Helper function to adjust a time to match the date of a given date
+function adjustTimeToDate(timeString: string, dateString: string): Date {
+    // Extract the date part from the shift date
+    const dateOnly = dayjs.utc(dateString).format('YYYY-MM-DD');
+    // Extract the time part from the time
+    const timeOnly = dayjs.utc(timeString).format('HH:mm:ss');
+    // Combine them and create a new Date
+
+    console.log({
+        cmd: 'adjusttime',
+        timeString,
+        dateString,
+        dateOnly,
+        timeOnly,
+        prev: `${dateOnly}T${timeOnly}Z`,
+        rval: dayjs.utc(`${dateOnly}T${timeOnly}Z`).toDate(),
+    });
+
+    return dayjs.utc(`${dateOnly}T${timeOnly}Z`).toDate();
+}
+
 export const shiftsRouter = router({
     seed: adminProcedure.query(async ({ ctx }) => {
         // Check if the organization has any shifts
@@ -199,8 +220,8 @@ export const shiftsRouter = router({
             return shifts.map((shift) => ({
                 ...shift,
                 date: formatDateString(shift.date.toISOString()),
-                startTime: formatDateString(shift.startTime.toISOString()),
-                endTime: formatDateString(shift.endTime.toISOString()),
+                startTime: shift.startTime,
+                endTime: shift.endTime,
             }));
         }),
 
@@ -261,8 +282,8 @@ export const shiftsRouter = router({
                     title: input.title,
                     location: input.location,
                     date: parseDateString(input.date),
-                    startTime: parseDateString(input.startTime),
-                    endTime: parseDateString(input.endTime),
+                    startTime: adjustTimeToDate(input.startTime, input.date),
+                    endTime: adjustTimeToDate(input.endTime, input.date),
                     slots: input.slots,
                     notes: input.notes,
                     adminNotes: input.adminNotes,
@@ -366,8 +387,8 @@ export const shiftsRouter = router({
                         title: data.title,
                         location: data.location,
                         date: parseDateString(data.date),
-                        startTime: parseDateString(data.startTime),
-                        endTime: parseDateString(data.endTime),
+                        startTime: adjustTimeToDate(data.startTime, data.date),
+                        endTime: adjustTimeToDate(data.endTime, data.date),
                         slots: data.slots,
                         notes: data.notes,
                         adminNotes: data.adminNotes,

@@ -67,9 +67,11 @@ export function ShiftFilters({
         const formattedFilters: ShiftFilterSchema = {
             ...data,
             startDate: data.startDate
-                ? dayjs(data.startDate).toDate()
+                ? dayjs.utc(data.startDate).toDate()
                 : undefined,
-            endDate: data.endDate ? dayjs(data.endDate).toDate() : undefined,
+            endDate: data.endDate
+                ? dayjs.utc(data.endDate).toDate()
+                : undefined,
             assigned: data.assigned?.id ?? undefined,
             unfilled: data.unfilled?.id,
         };
@@ -216,7 +218,7 @@ export function ShiftFilters({
                                             {...field}
                                             value={
                                                 field.value
-                                                    ? dayjs(field.value)
+                                                    ? dayjs.utc(field.value)
                                                     : null
                                             }
                                             onChange={(date) =>

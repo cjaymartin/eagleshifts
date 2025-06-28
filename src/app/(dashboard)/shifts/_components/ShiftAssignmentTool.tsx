@@ -79,7 +79,6 @@ export default function ShiftAssignmentTool({
                                                 ? { ...x, ...data }
                                                 : x
                                     );
-                                    console.log({ newAssignments, data });
                                     onChange(newAssignments);
                                 }}
                                 onDelete={() => {

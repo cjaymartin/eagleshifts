@@ -3,6 +3,7 @@
 import React, { useCallback, useState } from 'react';
 import { Box, Container, Grid, IconButton } from '@mui/material';
 import dayjs from 'dayjs';
+
 import {
     Calendar as BigCalendar,
     luxonLocalizer,
@@ -22,6 +23,7 @@ import AddIcon from '@mui/icons-material/Add';
 
 // Create a localizer for the calendar
 const localizer = luxonLocalizer(DateTime);
+Settings.defaultZone = 'UTC'; // Set default timezone to UTC
 
 // Colored wrapper for date cells
 const ColoredDateCellWrapper: React.FC<{ children: React.ReactElement }> = ({
@@ -145,8 +147,8 @@ export default function Calendar() {
                 id: shift.id,
                 title: shift.title,
                 allDay: false,
-                start: dayjs(shift.startTime, 'YYYY-MM-DD').toDate(),
-                end: dayjs(shift.endTime, 'YYYY-MM-DD').toDate(),
+                start: dayjs.utc(shift.startTime).toDate(),
+                end: dayjs.utc(shift.endTime).toDate(),
             };
         }) || [];
 
@@ -156,6 +158,8 @@ export default function Calendar() {
     } = {
         timeSlotWrapper: ColoredDateCellWrapper,
     };
+
+    console.log({ calendarEvents });
 
     return (
         <Box>

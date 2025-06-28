@@ -47,7 +47,7 @@ export default function Shifts() {
     const fileExtension = '.xlsx';
 
     const exportToXLSX = () => {
-        const fileName = 'shifts-' + dayjs().format('YYYY-MM-DD');
+        const fileName = 'shifts-' + dayjs.utc().format('YYYY-MM-DD');
 
         const csvData = shifts?.map((x) => {
             const { title, location, date, startTime, endTime, slots } = x;

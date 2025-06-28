@@ -1,7 +1,19 @@
 'use client';
 
 import React, { useCallback, useState, useEffect } from 'react';
-import { Box, Container, Grid, IconButton, Checkbox, FormControlLabel, FormGroup, Paper, Typography, Autocomplete, TextField } from '@mui/material';
+import {
+    Box,
+    Container,
+    Grid,
+    IconButton,
+    Checkbox,
+    FormControlLabel,
+    FormGroup,
+    Paper,
+    Typography,
+    Autocomplete,
+    TextField,
+} from '@mui/material';
 import dayjs from 'dayjs';
 import {
     Calendar as BigCalendar,
@@ -10,7 +22,12 @@ import {
 } from 'react-big-calendar';
 import { DateTime, Settings } from 'luxon';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { useAuthQuery, useTeamUsersQuery, useMemberByIdQuery, useUpdateDefaultAvailabilityMutation } from '@/queries/users';
+import {
+    useAuthQuery,
+    useTeamUsersQuery,
+    useMemberByIdQuery,
+    useUpdateDefaultAvailabilityMutation,
+} from '@/queries/users';
 import { trpc } from '@/lib/trpc/client';
 import { useDialogs, useNotifications } from '@toolpad/core';
 import AddIcon from '@mui/icons-material/Add';
@@ -18,6 +35,7 @@ import AvailabilityDialog from './_components/AvailabilityDialog';
 
 // Create a localizer for the calendar
 const localizer = luxonLocalizer(DateTime);
+Settings.defaultZone = 'UTC'; // Set default timezone to UTC
 
 // Colored wrapper for date cells
 const ColoredDateCellWrapper: React.FC<{ children: React.ReactElement }> = ({
@@ -39,10 +57,11 @@ export default function Availability() {
     // Dialog handling
     const dialogs = useDialogs();
 
-
     // State for selected user (for admins)
     const [selectedUserId, setSelectedUserId] = useState<string | null>(userId);
-    const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+    const [selectedMemberId, setSelectedMemberId] = useState<string | null>(
+        null
+    );
 
     // Get team users for admin selection
     const { data: teamUsers = [] } = useTeamUsersQuery();
@@ -60,7 +79,7 @@ export default function Availability() {
     // Update selected member ID when user changes
     useEffect(() => {
         if (selectedUserId && teamUsers.length > 0) {
-            const user = teamUsers.find(user => user.id === selectedUserId);
+            const user = teamUsers.find((user) => user.id === selectedUserId);
             if (user && user.members && user.members.length > 0) {
                 setSelectedMemberId(user.members[0].id);
             }
@@ -75,7 +94,9 @@ export default function Availability() {
     }, [memberData]);
 
     // Update default availability
-    const handleDefaultAvailabilityChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleDefaultAvailabilityChange = async (
+        event: React.ChangeEvent<HTMLInputElement>
+    ) => {
         const isAvailable = event.target.checked;
 
         if (!selectedMemberId) {
@@ -90,10 +111,15 @@ export default function Availability() {
             });
 
             setDefaultAvailable(isAvailable);
-            notifications.show('Default availability updated successfully', { severity: 'success', autoHideDuration: 3000 });
+            notifications.show('Default availability updated successfully', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
         } catch (error) {
             console.error('Failed to update default availability:', error);
-            notifications.show('Failed to update default availability', { severity: 'error' });
+            notifications.show('Failed to update default availability', {
+                severity: 'error',
+            });
         }
     };
 
@@ -106,7 +132,10 @@ export default function Availability() {
     const availabilityLookup = React.useMemo(() => {
         return (
             availabilities?.reduce<Record<string, (typeof availabilities)[0]>>(
-                (acc, availability) => ({ ...acc, [availability.id]: availability }),
+                (acc, availability) => ({
+                    ...acc,
+                    [availability.id]: availability,
+                }),
                 {}
             ) || {}
         );
@@ -159,16 +188,18 @@ export default function Availability() {
             const isAvailable = availability?.isAvailable;
 
             return {
-                ...(!isSelected && !isAvailable && {
-                    style: {
-                        backgroundColor: '#994444',
-                    },
-                }),
-                ...(isSelected && !isAvailable && {
-                    style: {
-                        backgroundColor: '#772222',
-                    },
-                }),
+                ...(!isSelected &&
+                    !isAvailable && {
+                        style: {
+                            backgroundColor: '#994444',
+                        },
+                    }),
+                ...(isSelected &&
+                    !isAvailable && {
+                        style: {
+                            backgroundColor: '#772222',
+                        },
+                    }),
             };
         },
         [availabilityLookup]
@@ -185,10 +216,15 @@ export default function Availability() {
         availabilities?.map((availability) => {
             return {
                 id: availability.id,
-                title: availability.desc || (availability.isAvailable ? 'Available' : 'Unavailable'),
+                title:
+                    availability.desc ||
+                    (availability.isAvailable ? 'Available' : 'Unavailable'),
                 allDay: true,
-                start: dayjs(availability.startDate, 'YYYY-MM-DD').toDate(),
-                end: dayjs(availability.endDate, 'YYYY-MM-DD').add(1, 'day').toDate(), // Add 1 day to make the end date inclusive
+                start: dayjs.utc(availability.startDate, 'YYYY-MM-DD').toDate(),
+                end: dayjs
+                    .utc(availability.endDate, 'YYYY-MM-DD')
+                    .add(1, 'day')
+                    .toDate(), // Add 1 day to make the end date inclusive
             };
         }) || [];
 
@@ -201,20 +237,32 @@ export default function Availability() {
 
     return (
         <Box>
-
             {/* Admin user selection */}
             {isAdmin && (
                 <Paper sx={{ m: 2, p: 2, background: '#ffffee' }}>
                     <Typography>User</Typography>
                     <Autocomplete
-                        value={teamUsers.find(user => user.id === selectedUserId) || null}
+                        value={
+                            teamUsers.find(
+                                (user) => user.id === selectedUserId
+                            ) || null
+                        }
                         onChange={(event, newValue) => {
                             setSelectedUserId(newValue?.id || userId);
                         }}
                         options={teamUsers}
-                        getOptionLabel={(option) => option.name || option.displayName || option.email || ''}
+                        getOptionLabel={(option) =>
+                            option.name ||
+                            option.displayName ||
+                            option.email ||
+                            ''
+                        }
                         renderInput={(params) => (
-                            <TextField {...params} label="User" placeholder="Choose One" />
+                            <TextField
+                                {...params}
+                                label="User"
+                                placeholder="Choose One"
+                            />
                         )}
                     />
                 </Paper>
@@ -258,15 +306,17 @@ export default function Availability() {
 
             {/* Add button for creating new availability */}
             <Container sx={{ m: 5 }}>
-                <IconButton onClick={() => {
-                    const newAvailability = {
-                        startDate: new Date(),
-                        endDate: new Date(),
-                        memberId: selectedMemberId,
-                        isAvailable: true,
-                    };
-                    dialogs.open(AvailabilityDialog, newAvailability);
-                }}>
+                <IconButton
+                    onClick={() => {
+                        const newAvailability = {
+                            startDate: new Date(),
+                            endDate: new Date(),
+                            memberId: selectedMemberId,
+                            isAvailable: true,
+                        };
+                        dialogs.open(AvailabilityDialog, newAvailability);
+                    }}
+                >
                     <AddIcon /> Add Availability
                 </IconButton>
             </Container>

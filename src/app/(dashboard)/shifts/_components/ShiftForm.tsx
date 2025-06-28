@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useForm, Controller } from 'react-hook-form';
 import { useNotifications } from '@toolpad/core';
@@ -22,9 +23,13 @@ import {
 import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/api/trpc/[trpc]';
 import ShiftAssignmentTool from '@/app/(dashboard)/shifts/_components/ShiftAssignmentTool';
-import { useShiftCreateMutation, useShiftUpdateMutation } from '@/queries/shifts';
+import {
+    useShiftCreateMutation,
+    useShiftUpdateMutation,
+} from '@/queries/shifts';
 
 dayjs.extend(customParseFormat);
+dayjs.extend(utc);
 
 // Helper function to close the dialog
 const useShiftDialogHelpers = () => ({
@@ -66,8 +71,8 @@ export default function ShiftForm(props: ShiftFormProps) {
     // Create a mapping from memberId to userId
     const memberToUserMap = React.useMemo(() => {
         const map = {};
-        teamUsers.forEach(user => {
-            user.members?.forEach(member => {
+        teamUsers.forEach((user) => {
+            user.members?.forEach((member) => {
                 map[member.id] = user.id;
             });
         });
@@ -75,22 +80,31 @@ export default function ShiftForm(props: ShiftFormProps) {
     }, [teamUsers]);
 
     // Transform shiftAssignments to the format expected by the form
-    const transformedShift = shift ? {
-        ...shift,
-        // Parse dates using the YYYY-MM-DD format
-        date: shift.date ? dayjs(shift.date, 'YYYY-MM-DD').toDate() : null,
-        startTime: shift.startTime ? dayjs(shift.startTime, 'YYYY-MM-DD').toDate() : null,
-        endTime: shift.endTime ? dayjs(shift.endTime, 'YYYY-MM-DD').toDate() : null,
-        assignments: shift.shiftAssignments?.map(assignment => {
-            // Map memberId to userId using the memberToUserMap
-            const userId = memberToUserMap[assignment.memberId] || assignment.memberId;
-            return {
-                userId,
-                outcome: assignment.outcome,
-                reason: assignment.reason || ''
-            };
-        }) || []
-    } : defaultValues;
+    const transformedShift = shift
+        ? {
+              ...shift,
+              // Parse dates using the YYYY-MM-DD format
+              date: shift.date
+                  ? dayjs.utc(shift.date, 'YYYY-MM-DD').toDate()
+                  : null,
+              startTime: shift.startTime
+                  ? dayjs.utc(shift.startTime).toDate()
+                  : null,
+              endTime: shift.endTime ? dayjs.utc(shift.endTime).toDate() : null,
+              assignments:
+                  shift.shiftAssignments?.map((assignment) => {
+                      // Map memberId to userId using the memberToUserMap
+                      const userId =
+                          memberToUserMap[assignment.memberId] ||
+                          assignment.memberId;
+                      return {
+                          userId,
+                          outcome: assignment.outcome,
+                          reason: assignment.reason || '',
+                      };
+                  }) || [],
+          }
+        : defaultValues;
 
     const {
         control,
@@ -103,6 +117,13 @@ export default function ShiftForm(props: ShiftFormProps) {
     } = useForm({
         defaultValues: transformedShift,
     });
+
+    console.log('FORMING');
+    console.log(props.shift);
+    const sd = watch('startTime');
+    const ed = watch('endTime');
+    console.log('Start Time:', sd);
+    console.log('End Time:', ed);
 
     // Helper for setting form errors
     const setErrors = (errorList) => {
@@ -148,11 +169,16 @@ export default function ShiftForm(props: ShiftFormProps) {
             }
 
             // Format data for API
+            // Note: server will ensure startTime and endTime have the same date as the shift date
             const shiftData = {
                 title: formData.title,
-                date: dayjs(formData.date).format('YYYY-MM-DD'),
-                startTime: dayjs(formData.startTime).format('YYYY-MM-DD HH:mm:ss'),
-                endTime: dayjs(formData.endTime).format('YYYY-MM-DD HH:mm:ss'),
+                date: dayjs.utc(formData.date).format('YYYY-MM-DD'),
+                startTime: dayjs
+                    .utc(formData.startTime)
+                    .format('YYYY-MM-DD HH:mm:ss'),
+                endTime: dayjs
+                    .utc(formData.endTime)
+                    .format('YYYY-MM-DD HH:mm:ss'),
                 slots: Number(formData.slots),
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 location: formData.location,
@@ -163,7 +189,10 @@ export default function ShiftForm(props: ShiftFormProps) {
 
             // Create shift
             await createMutation.mutateAsync(shiftData);
-            notifications.show('Shift created successfully', { severity: 'success', autoHideDuration: 3000 });
+            notifications.show('Shift created successfully', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
 
             // Close dialog
             if (onClose) {
@@ -180,17 +209,24 @@ export default function ShiftForm(props: ShiftFormProps) {
     async function onUpdateFormSubmit(formData) {
         try {
             if (!shiftId) {
-                notifications.show('Shift ID is required for updates', { severity: 'error' });
+                notifications.show('Shift ID is required for updates', {
+                    severity: 'error',
+                });
                 return;
             }
 
             // Format data for API
+            // Note: server will ensure startTime and endTime have the same date as the shift date
             const shiftData = {
                 id: shiftId,
                 title: formData.title,
-                date: dayjs(formData.date).format('YYYY-MM-DD'),
-                startTime: dayjs(formData.startTime).format('YYYY-MM-DD HH:mm:ss'),
-                endTime: dayjs(formData.endTime).format('YYYY-MM-DD HH:mm:ss'),
+                date: dayjs.utc(formData.date).format('YYYY-MM-DD'),
+                startTime: dayjs
+                    .utc(formData.startTime)
+                    .format('YYYY-MM-DD HH:mm:ss'),
+                endTime: dayjs
+                    .utc(formData.endTime)
+                    .format('YYYY-MM-DD HH:mm:ss'),
                 slots: Number(formData.slots),
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 location: formData.location,
@@ -201,7 +237,10 @@ export default function ShiftForm(props: ShiftFormProps) {
 
             // Update shift
             await updateMutation.mutateAsync(shiftData);
-            notifications.show('Shift updated successfully', { severity: 'success', autoHideDuration: 3000 });
+            notifications.show('Shift updated successfully', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
 
             // Close dialog
             if (onClose) {
@@ -215,9 +254,7 @@ export default function ShiftForm(props: ShiftFormProps) {
         }
     }
 
-    const onSubmit = handleSubmit(
-        isNew ? onNewFormSubmit : onUpdateFormSubmit
-    );
+    const onSubmit = handleSubmit(isNew ? onNewFormSubmit : onUpdateFormSubmit);
 
     const { data: teamMembers = [] } = useTeamUsersQuery();
     const { data: userLookup } = useTeamUsersLookupQuery();
@@ -226,17 +263,21 @@ export default function ShiftForm(props: ShiftFormProps) {
 
     // Check if user is assigned to this shift
     const assignments = getValues('assignments') || [];
-    const isAssigned = assignments.some(a => a.userId === userId);
+    const isAssigned = assignments.some((a) => a.userId === userId);
 
     const slots = getValues('slots') || 1;
-    const hasAvailableSlots = assignments.length === 0 || assignments.length < Number(slots);
+    const hasAvailableSlots =
+        assignments.length === 0 || assignments.length < Number(slots);
 
     // In a real implementation, this would fetch shift requests from the server
     const hasRequests = false;
 
     async function handleShiftRequest() {
         // In a real implementation, this would create a shift request
-        notifications.show('Shift request submitted', { severity: 'success', autoHideDuration: 3000 });
+        notifications.show('Shift request submitted', {
+            severity: 'success',
+            autoHideDuration: 3000,
+        });
     }
 
     const date = watch('date');
@@ -304,7 +345,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 disabled={!isAdmin}
                                 label="Date"
                                 value={
-                                    field.value ? dayjs(field.value) : null
+                                    field.value ? dayjs.utc(field.value) : null
                                 }
                                 onChange={(date) =>
                                     field.onChange(date ? date.toDate() : null)
@@ -325,7 +366,9 @@ export default function ShiftForm(props: ShiftFormProps) {
                             <TimePicker
                                 disabled={!isAdmin}
                                 label="Start Time"
-                                value={field.value ? dayjs(field.value) : null}
+                                value={
+                                    field.value ? dayjs.utc(field.value) : null
+                                }
                                 onChange={(date) =>
                                     field.onChange(date ? date.toDate() : null)
                                 }
@@ -345,7 +388,9 @@ export default function ShiftForm(props: ShiftFormProps) {
                             <TimePicker
                                 disabled={!isAdmin}
                                 label="End Time"
-                                value={field.value ? dayjs(field.value) : null}
+                                value={
+                                    field.value ? dayjs.utc(field.value) : null
+                                }
                                 onChange={(date) =>
                                     field.onChange(date ? date.toDate() : null)
                                 }
@@ -439,12 +484,16 @@ export default function ShiftForm(props: ShiftFormProps) {
 
                     <Stack direction="row" spacing={2}>
                         {isAdmin && (
-                            <Button 
-                                variant="contained" 
+                            <Button
+                                variant="contained"
                                 type="submit"
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? 'Saving...' : (isNew ? 'Create' : 'Update')}
+                                {isSubmitting
+                                    ? 'Saving...'
+                                    : isNew
+                                      ? 'Create'
+                                      : 'Update'}
                             </Button>
                         )}
                         <Button

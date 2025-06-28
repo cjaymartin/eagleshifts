@@ -16,7 +16,7 @@ function formatDateString(dateString: string): string {
 function parseDateString(dateString: string): Date {
     // Parse the date string as YYYY-MM-DD and set the time to noon UTC
     // This ensures that the date will be the same regardless of timezone
-    return dayjs.utc(`${formatDateString(dateString)}T12:00:00Z`).toDate();
+    return dayjs.utc(`${formatDateString(dateString)}T00:00:00Z`).toDate();
 }
 
 export const availabilityRouter = router({
@@ -82,7 +82,7 @@ export const availabilityRouter = router({
             })
         )
         .query(async ({ ctx, input }) => {
-            const targetDate = dayjs(input.date);
+            const targetDate = dayjs.utc(input.date);
             if (!targetDate.isValid()) {
                 throw new Error('Invalid date format. Use YYYY-MM-DD.');
             }
