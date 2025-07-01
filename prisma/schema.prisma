@@ -152,16 +152,6 @@ model Invitation {
   @@map("invitation")
 }
 
-/// This table is shit from Nile
-model tenants {
-  id         String    @id @default(dbgenerated("public.uuid_generate_v7()")) @db.Uuid
-  name       String?
-  created    DateTime  @default(dbgenerated("LOCALTIMESTAMP")) @db.Timestamp(6)
-  updated    DateTime  @default(dbgenerated("LOCALTIMESTAMP")) @db.Timestamp(6)
-  deleted    DateTime? @db.Timestamp(6)
-  compute_id String?   @db.Uuid
-}
-
 model Shift {
   id             String @id @default(cuid())
   organizationId String

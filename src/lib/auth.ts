@@ -28,7 +28,7 @@ export const auth = betterAuth({
         provider: 'postgresql', // or "mysql", "postgresql", ...etc
     }),
     emailAndPassword: {
-        enabled: true,
+        enabled: false,
     },
     socialProviders: {
         google: {
@@ -55,7 +55,7 @@ export const auth = betterAuth({
         // },
         //}),
         //passkey(),
-        // admin(),
+        admin(),
         // openAPI(),
         //bearer(),
         // admin(),

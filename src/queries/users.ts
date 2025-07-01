@@ -62,3 +62,39 @@ export function useUpdateDefaultAvailabilityMutation() {
         },
     });
 }
+
+// Team management mutations
+
+export function useUpdateMemberMutation() {
+    const utils = trpc.useUtils();
+    return trpc.users.updateMember.useMutation({
+        onSuccess: () => {
+            // Invalidate users list to show the updated member
+            utils.users.invalidate();
+        },
+    });
+}
+
+export function useDeleteUserMutation() {
+    const utils = trpc.useUtils();
+    return trpc.users.delete.useMutation({
+        onSuccess: () => {
+            // Invalidate users list to remove the deleted user
+            utils.users.invalidate();
+        },
+    });
+}
+
+export function useImitateUserMutation() {
+    return trpc.users.imitate.useMutation({
+        onSuccess: (data) => {
+            // Handle the imitation session
+            // This could involve setting a cookie or storing the session token
+            console.log('Imitation successful:', data);
+
+            // In a real implementation, you might redirect or update the UI
+            // For now, we'll just reload the page
+            window.location.href = '/';
+        },
+    });
+}

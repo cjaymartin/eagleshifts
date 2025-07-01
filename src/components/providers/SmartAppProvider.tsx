@@ -37,6 +37,10 @@ export default function SmartAppProvider({ children }: SmartAppProviderProps) {
                 title: 'Shift Requests',
                 segment: 'requests',
             },
+            {
+                title: 'My Team',
+                segment: 'team',
+            },
         ];
 
         // Super admin navigation

@@ -1,5 +1,5 @@
 import { router } from '@/server/trpc';
-import { protectedProcedure } from '@/server/trpc';
+import { protectedProcedure, publicProcedure } from '@/server/trpc';
 
 import { shiftsRouter } from './routers/shiftsRouter';
 import { usersRouter } from './routers/usersRouter';
@@ -14,7 +14,7 @@ export const appRouter = router({
 
     session: router({
         get: router({
-            index: protectedProcedure.query(({ ctx }) => {
+            index: publicProcedure.query(({ ctx }) => {
                 return {
                     user: ctx.user,
                     session: ctx.session,
