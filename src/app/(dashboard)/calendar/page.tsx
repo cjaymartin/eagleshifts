@@ -159,8 +159,6 @@ export default function Calendar() {
         timeSlotWrapper: ColoredDateCellWrapper,
     };
 
-    console.log({ calendarEvents });
-
     return (
         <Box>
             {/* Use the same ShiftFilters component as the shifts page */}

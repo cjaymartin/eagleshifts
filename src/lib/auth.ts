@@ -1,9 +1,8 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-// If your Prisma file is located elsewhere, you can change the path
-import { PrismaClient } from '@/generated/prisma';
 import nodemailer from 'nodemailer';
 //import {nile} from "better-auth-nile"
+import { prisma } from '@/lib/prisma';
 import {
     //  bearer,
     admin,
@@ -20,8 +19,8 @@ import { nextCookies } from 'better-auth/next-js';
 import path from 'path-browserify';
 import { createAuthMiddleware, APIError } from 'better-auth/api';
 import { cookies, headers } from 'next/headers';
+import crypto from 'crypto';
 
-const prisma = new PrismaClient();
 export const auth = betterAuth({
     //basePath: path.join(process.env.NEXT_PUBLIC_APP_URL ?? "", "/auth/api"),
     database: prismaAdapter(prisma, {
@@ -55,7 +54,7 @@ export const auth = betterAuth({
         // },
         //}),
         //passkey(),
-        admin(),
+        //admin(),
         // openAPI(),
         //bearer(),
         // admin(),
@@ -66,6 +65,37 @@ export const auth = betterAuth({
             allowUserToCreateOrganization: (user) => {
                 console.log('ALLOW USER TO CREATE ORGANIZATION', user);
                 return true;
+            },
+            async sendInvitationEmail(data) {
+                const inviteLink = `http://localhost:3000/auth/accept-invitation?invitation=${data.id}`;
+
+                const transporter = nodemailer.createTransport({
+                    host: process.env.EMAIL_SERVER,
+                    port: 587,
+                    secure: false, // true for 465, false for other ports
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASSWORD,
+                    },
+                });
+
+                await transporter.sendMail({
+                    from: `"Team Invitations" <${process.env.EMAIL_FROM}>`,
+                    to: data.email,
+                    subject: 'You are invited!',
+                    text: `Hi ${data.email},\n\n${data.inviter.user.name} (${data.inviter.user.email}) has invited you to join the team "${data.organization.name}".\n\nClick the following link to accept the invitation: ${inviteLink}\n\nIf you did not expect this invitation, you can ignore this email.`,
+                    html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2>You're Invited!</h2>
+              <p><strong>${data.inviter.user.name}</strong> (<a href="mailto:${data.inviter.user.email}">${data.inviter.user.email}</a>) has invited you to join the team "<strong>${data.organization.name}</strong>".</p>
+              <p>Click the button below to accept the invitation:</p>
+              <a href="${inviteLink}" style="display: inline-block; background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 16px 0;">Accept Invitation</a>
+              <p>If you did not expect this email, you can safely ignore it.</p>
+            </div>
+        `,
+                });
+
+                console.log(`Invitation sent to ${data.email}`);
             },
         }),
         magicLink({
@@ -156,3 +186,12 @@ export const auth = betterAuth({
     //   httpOnly: true, // Generally safe
     //   sameSite: "none", // Required for cross-domain
 });
+
+//for use later.  This method can sign the cookie value with the global secret, allowing user imitation
+export function signCookie(val: string, secret: string) {
+    return (
+        val +
+        '.' +
+        crypto.createHmac('sha256', secret).update(val).digest('base64')
+    );
+}

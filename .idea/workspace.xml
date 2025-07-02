@@ -5,15 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d58e61e2-8c55-42b2-878e-5572cbd53eb3" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/app/(dashboard)/team/actions.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/auth/accept-invitation/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/schema.prisma" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/providers/SmartAppProvider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/providers/SmartAppProvider.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/calendar/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/providers/OrganizationAuthProvider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/providers/OrganizationAuthProvider.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/auth.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/prisma.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/prisma.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/queries/users.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/queries/users.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server/api/root.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/root.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/server/api/routers/usersRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/usersRouter.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server/trpc.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/trpc.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -138,11 +140,23 @@
       <workItem from="1750772383827" duration="180000" />
       <workItem from="1750772569737" duration="21628000" />
       <workItem from="1750813692159" duration="47798000" />
-      <workItem from="1750979785524" duration="44990000" />
+      <workItem from="1750979785524" duration="52252000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/src/app/(dashboard)/team/_components/TeamForm.tsx</url>
+          <line>107</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

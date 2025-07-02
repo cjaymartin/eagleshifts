@@ -1,12 +1,11 @@
 import { router, adminProcedure, memberProcedure } from '@/server/trpc';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
-import { auth } from '@/lib/auth';
+import { auth, signCookie } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 export const usersRouter = router({
     list: adminProcedure.query(async ({ ctx }) => {
-        console.log({ ctxuser: ctx.user });
-
         // Get all users who are members of the current organization
         const users = await ctx.prisma.user.findMany({
             where: {
@@ -28,11 +27,20 @@ export const usersRouter = router({
         console.dir({ users });
 
         // Map users to include their role and organizationId
-        const mappedUsers = users.map((user) => ({
-            ...user,
-            role: user.members[0]?.role,
-            organizationId: user.members[0]?.organizationId,
-        }));
+        // Prioritize member data (name, image) over user data
+        const mappedUsers = users.map((user) => {
+            const member = user.members[0];
+            return {
+                ...user,
+                ...member,
+                // Prioritize member name and image if available
+                name: member.name || user.name,
+                image: member.image || user.image,
+                member: undefined,
+                userId: user.id,
+                id: member.id,
+            };
+        });
 
         return mappedUsers;
     }),
@@ -51,9 +59,22 @@ export const usersRouter = router({
             const updatedMember = await ctx.prisma.member.update({
                 where: { id: memberId },
                 data: { isAvailableByDefault },
+                include: {
+                    user: true,
+                },
             });
 
-            return updatedMember;
+            // Return blended data similar to list procedure
+            const blendedData = {
+                ...updatedMember.user,
+                ...updatedMember,
+                // Prioritize member name and image if available
+                name: updatedMember.name || updatedMember.user.name,
+                image: updatedMember.image || updatedMember.user.image,
+                user: undefined,
+            };
+
+            return blendedData;
         }),
 
     getMemberById: adminProcedure
@@ -76,7 +97,17 @@ export const usersRouter = router({
                 throw new Error('Member not found');
             }
 
-            return member;
+            // Return blended data similar to list procedure
+            const blendedData = {
+                ...member.user,
+                ...member,
+                // Prioritize member name and image if available
+                name: member.name || member.user.name,
+                image: member.image || member.user.image,
+                user: undefined,
+            };
+
+            return blendedData;
         }),
 
     // Update a member's role
@@ -119,17 +150,33 @@ export const usersRouter = router({
                 data: {
                     ...(role && { role }),
                 },
+                include: {
+                    user: true,
+                },
             });
 
-            // If displayName is provided, update the user
+            // If displayName is provided, update the member's name field
             if (displayName) {
-                await ctx.prisma.user.update({
-                    where: { id: currentMember.userId },
+                await ctx.prisma.member.update({
+                    where: { id: memberId },
                     data: { name: displayName },
                 });
+
+                // Update the member name in our result
+                updatedMember.name = displayName;
             }
 
-            return updatedMember;
+            // Return blended data similar to list procedure
+            const blendedData = {
+                ...updatedMember.user,
+                ...updatedMember,
+                // Prioritize member name and image if available
+                name: updatedMember.name || updatedMember.user.name,
+                image: updatedMember.image || updatedMember.user.image,
+                user: undefined,
+            };
+
+            return blendedData;
         }),
 
     // Delete a member
@@ -167,20 +214,49 @@ export const usersRouter = router({
             return { success: true, message: 'Member deleted successfully' };
         }),
 
+    deleteInvitation: adminProcedure
+        .input(
+            z.object({
+                invitationId: z.string(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { invitationId } = input;
+
+            // Find the invitation to check permissions
+            const invitation = await ctx.prisma.invitation.findUnique({
+                where: { id: invitationId },
+            });
+
+            if (!invitation) {
+                throw new Error('Invitation not found');
+            }
+
+            // Delete the invitation
+            await ctx.prisma.invitation.delete({
+                where: { id: invitationId },
+            });
+
+            return {
+                success: true,
+                message: 'Invitation deleted successfully',
+            };
+        }),
+
     // Imitate a user (for admins/owners only)
     imitate: adminProcedure
         .input(
             z.object({
-                userId: z.string(),
+                memberId: z.string(),
             })
         )
         .mutation(async ({ ctx, input }) => {
-            const { userId } = input;
+            const { memberId } = input;
 
             // Get the member to check permissions
             const member = await ctx.prisma.member.findFirst({
                 where: {
-                    userId,
+                    id: memberId,
                     organizationId: ctx.user.organizationId,
                 },
                 include: {
@@ -211,13 +287,23 @@ export const usersRouter = router({
                 },
             });
 
+            console.log({ session });
+
+            const cookievalue = await signCookie(
+                session.token,
+                process.env.BETTER_AUTH_SECRET
+            );
+
+            const cookieData = await cookies();
+
             return {
                 success: true,
-                message: `Imitating user ${member.user.name || member.user.email}`,
+                message: `Imitating user ${member.name || member.user.name || member.user.email}`,
                 session: {
                     id: session.id,
                     token: session.token,
                 },
+                cookie: cookievalue,
             };
         }),
 });

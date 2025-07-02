@@ -35,6 +35,9 @@ export const createTRPCContext = async () => {
     return {
         user: {
             ...session.user,
+            // Prioritize member name and image if available
+            name: member.name || session.user.name,
+            image: member.image || session.user.image,
             role: member.role,
             organizationId: session.session.activeOrganizationId,
         },

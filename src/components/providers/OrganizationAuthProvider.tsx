@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
 
 export default async function OrganizationAuthProvider({
     children,
@@ -36,6 +37,25 @@ export default async function OrganizationAuthProvider({
             headers: await headers(),
         });
         return redirect('/');
+    }
+
+    // Check if the user has an outstanding invitation
+    const invitation = await prisma.invitation.findFirst({
+        where: {
+            email: session.user.email,
+            organization: {
+                slug: loginOrganizationSlug,
+            },
+        },
+    });
+    if (invitation) {
+        //accept the invitation
+        await auth.api.acceptInvitation({
+            headers: await headers(),
+            body: {
+                invitationId: invitation.id,
+            },
+        });
     }
 
     await auth.api
