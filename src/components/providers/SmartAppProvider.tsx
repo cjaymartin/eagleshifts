@@ -1,7 +1,7 @@
 'use client';
 
 import { NextAppProvider } from '@toolpad/core/nextjs';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { NotificationsProvider } from '@toolpad/core';
 import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
@@ -11,12 +11,13 @@ type SmartAppProviderProps = {
     children: React.ReactNode;
 };
 
-export default function SmartAppProvider({ children }: SmartAppProviderProps) {
+// This component will handle the session loading
+function SessionAwareProvider({ children }: { children: React.ReactNode }) {
     const [navigation, setNavigation] = useState<
         Array<{ title: string; segment: string }>
     >([]);
     const pathname = usePathname();
-    const { data: session } = authClient.useSession();
+    const { data: session, isPending } = authClient.useSession();
 
     useEffect(() => {
         // Regular navigation for standard users
@@ -80,6 +81,12 @@ export default function SmartAppProvider({ children }: SmartAppProviderProps) {
         },
     };
 
+    // If session is still loading, return null or a loading indicator
+    // This will be caught by the Suspense boundary in SmartAppProvider
+    if (isPending) {
+        return null;
+    }
+
     return (
         <NextAppProvider
             navigation={navigation}
@@ -89,5 +96,13 @@ export default function SmartAppProvider({ children }: SmartAppProviderProps) {
         >
             <NotificationsProvider>{children}</NotificationsProvider>
         </NextAppProvider>
+    );
+}
+
+export default function SmartAppProvider({ children }: SmartAppProviderProps) {
+    return (
+        <Suspense fallback={null}>
+            <SessionAwareProvider>{children}</SessionAwareProvider>
+        </Suspense>
     );
 }
