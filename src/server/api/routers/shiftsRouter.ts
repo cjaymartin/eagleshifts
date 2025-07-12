@@ -3,6 +3,7 @@ import { router, adminProcedure, memberProcedure } from '@/server/trpc';
 import { Prisma } from '@/generated/prisma';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import { TRPCError } from '@trpc/server';
 
 // Extend dayjs with UTC plugin
 dayjs.extend(utc);
@@ -240,7 +241,10 @@ export const shiftsRouter = router({
             });
 
             if (!shift) {
-                throw new Error('Shift not found');
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Shift not found',
+                });
             }
 
             // Format dates as YYYY-MM-DD strings for the response
@@ -446,7 +450,10 @@ export const shiftsRouter = router({
                 }
 
                 if (!shift) {
-                    throw new Error('Shift not found');
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Shift not found',
+                    });
                 }
 
                 // If assignments were updated, fetch the updated shift with the new assignments
@@ -477,7 +484,10 @@ export const shiftsRouter = router({
                     endTime: formatDateString(shift.endTime.toISOString()),
                 };
             } catch (error) {
-                throw new Error(`Failed to update shift: ${error.message}`);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: `Failed to update shift: ${error.message}`,
+                });
             }
         }),
 
@@ -493,12 +503,18 @@ export const shiftsRouter = router({
                 });
 
                 if (!shift) {
-                    throw new Error('Shift not found');
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Shift not found',
+                    });
                 }
 
                 return { success: true, message: 'Shift deleted successfully' };
             } catch (error) {
-                throw new Error(`Failed to delete shift: ${error.message}`);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: `Failed to delete shift: ${error.message}`,
+                });
             }
         }),
 });

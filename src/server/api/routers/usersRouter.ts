@@ -1,10 +1,131 @@
-import { router, adminProcedure, memberProcedure } from '@/server/trpc';
+import {
+    router,
+    adminProcedure,
+    memberProcedure,
+    userProcedure,
+} from '@/server/trpc';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { auth, signCookie } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { TRPCError } from '@trpc/server';
 
 export const usersRouter = router({
+    // Get user by ID - all authenticated users can read user data
+    getUser: memberProcedure
+        .input(
+            z.object({
+                userId: z.string(),
+            })
+        )
+        .query(async ({ ctx, input }) => {
+            const user = await ctx.prisma.user.findUnique({
+                where: { id: input.userId },
+                include: {
+                    members: {
+                        where: {
+                            organizationId: ctx.user.organizationId,
+                        },
+                    },
+                },
+            });
+
+            if (!user) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'User not found',
+                });
+            }
+
+            // Map user to include their role and organizationId
+            // Prioritize member data (name, image) over user data
+            const member = user.members[0];
+            if (!member) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'User is not a member of this organization',
+                });
+            }
+
+            return {
+                ...user,
+                ...member,
+                // Prioritize member name and image if available
+                name: member.name || user.name,
+                image: member.image || user.image,
+                member: undefined,
+                userId: user.id,
+                id: member.id,
+            };
+        }),
+
+    // Update user profile - users can only update their own profile
+    updateProfile: userProcedure
+        .input(
+            z.object({
+                userId: z.string(),
+                displayName: z.string().optional(),
+                isAvailableByDefault: z.boolean().optional(),
+                // Add other fields that users are allowed to update
+                // based on the firestore rules
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            // Check if the user is updating their own profile
+            if (
+                !ctx.isUserData(input.userId) &&
+                ctx.user.role !== 'admin' &&
+                ctx.user.role !== 'owner'
+            ) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'You can only update your own profile',
+                });
+            }
+
+            // Find the member record for the user in the current organization
+            const member = await ctx.prisma.member.findFirst({
+                where: {
+                    userId: input.userId,
+                    organizationId: ctx.user.organizationId,
+                },
+                include: {
+                    user: true,
+                },
+            });
+
+            if (!member) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Member not found',
+                });
+            }
+
+            // Update the member record
+            const updatedMember = await ctx.prisma.member.update({
+                where: { id: member.id },
+                data: {
+                    ...(input.displayName && { name: input.displayName }),
+                    ...(input.isAvailableByDefault !== undefined && {
+                        isAvailableByDefault: input.isAvailableByDefault,
+                    }),
+                },
+                include: {
+                    user: true,
+                },
+            });
+
+            // Return blended data
+            return {
+                ...updatedMember.user,
+                ...updatedMember,
+                // Prioritize member name and image if available
+                name: updatedMember.name || updatedMember.user.name,
+                image: updatedMember.image || updatedMember.user.image,
+                user: undefined,
+            };
+        }),
+
     list: adminProcedure.query(async ({ ctx }) => {
         // Get all users who are members of the current organization
         const users = await ctx.prisma.user.findMany({
@@ -183,16 +304,16 @@ export const usersRouter = router({
     delete: adminProcedure
         .input(
             z.object({
-                userId: z.string(),
+                memberId: z.string(),
             })
         )
         .mutation(async ({ ctx, input }) => {
-            const { userId } = input;
+            const { memberId } = input;
 
             // Get the member to check permissions
             const member = await ctx.prisma.member.findFirst({
                 where: {
-                    userId,
+                    id: memberId,
                     organizationId: ctx.user.organizationId,
                 },
             });

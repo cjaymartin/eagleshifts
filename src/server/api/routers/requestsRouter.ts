@@ -3,6 +3,7 @@ import { router, adminProcedure, memberProcedure } from '@/server/trpc';
 import { Prisma } from '@/generated/prisma';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import { TRPCError } from '@trpc/server';
 
 // Extend dayjs with UTC plugin
 dayjs.extend(utc);
@@ -71,7 +72,10 @@ export const requestsRouter = router({
             });
 
             if (!request) {
-                throw new Error('Request not found');
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Request not found',
+                });
             }
 
             // Check if the user is allowed to view this request
@@ -92,7 +96,10 @@ export const requestsRouter = router({
 
                 // If the user is not the owner of the request, throw an error
                 if (member && request.memberId !== member.id) {
-                    throw new Error('You are not authorized to view this request');
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: 'You are not authorized to view this request',
+                    });
                 }
             }
 
@@ -163,7 +170,7 @@ export const requestsRouter = router({
             return request;
         }),
 
-    update: adminProcedure
+    update: memberProcedure
         .input(
             z.object({
                 id: z.string(),
@@ -180,16 +187,57 @@ export const requestsRouter = router({
                     },
                     include: {
                         shift: true,
+                        member: true,
                     },
                 });
 
                 if (!existingRequest) {
-                    throw new Error('Request not found');
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Request not found',
+                    });
                 }
 
                 // Check if the shift belongs to the current organization
                 if (existingRequest.shift.organizationId !== ctx.user.organizationId) {
-                    throw new Error('You are not authorized to update this request');
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: 'You are not authorized to update this request',
+                    });
+                }
+
+                // If the user is not an admin and is trying to approve/reject a request,
+                // or if they're trying to update someone else's request, throw an error
+                const role = ctx.user.role || 'member';
+                const isAdmin = ['admin', 'owner'].includes(role);
+
+                if (!isAdmin) {
+                    // Get the member ID for the current user
+                    const member = await ctx.prisma.member.findFirst({
+                        where: {
+                            organizationId: ctx.user.organizationId,
+                            userId: ctx.user.id,
+                        },
+                        select: {
+                            id: true,
+                        },
+                    });
+
+                    // If the user is not the owner of the request, throw an error
+                    if (member && existingRequest.memberId !== member.id) {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message: 'You can only update your own requests',
+                        });
+                    }
+
+                    // If the user is trying to approve/reject a request, throw an error
+                    if (input.status !== 'pending') {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message: 'Only admins can approve or reject requests',
+                        });
+                    }
                 }
 
                 // Update the request
@@ -262,7 +310,10 @@ export const requestsRouter = router({
                 });
 
                 if (!request) {
-                    throw new Error('Request not found');
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Request not found',
+                    });
                 }
 
                 // Check if the user is allowed to delete this request
@@ -283,7 +334,10 @@ export const requestsRouter = router({
 
                     // If the user is not the owner of the request, throw an error
                     if (member && request.memberId !== member.id) {
-                        throw new Error('You are not authorized to delete this request');
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message: 'You are not authorized to delete this request',
+                        });
                     }
                 }
 

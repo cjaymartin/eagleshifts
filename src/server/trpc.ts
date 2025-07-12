@@ -40,6 +40,7 @@ export const createTRPCContext = async () => {
             image: member.image || session.user.image,
             role: member.role,
             organizationId: session.session.activeOrganizationId,
+            memberId: member.id, // Add memberId to the context
         },
         session: session.session,
         prisma,
@@ -86,6 +87,22 @@ export const createRoleMiddleware = (minimumRole: string) => {
     });
 };
 
+// Middleware to check if the user is accessing their own data
+export const enforceUserIsAccessingOwnData = t.middleware(({ ctx, next, meta }) => {
+    if (!ctx.user) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' });
+    }
+
+    // Add a helper function to check if a user is accessing their own data
+    return next({
+        ctx: {
+            ...ctx,
+            isUserData: (userId: string) => userId === ctx.user.id,
+            isMemberData: (memberId: string) => memberId === ctx.user.memberId,
+        },
+    });
+});
+
 // Procedures with role requirements
 export const memberProcedure = protectedProcedure.use(
     createRoleMiddleware('member')
@@ -96,3 +113,6 @@ export const adminProcedure = protectedProcedure.use(
 export const ownerProcedure = protectedProcedure.use(
     createRoleMiddleware('owner')
 );
+
+// Procedure for users accessing their own data
+export const userProcedure = protectedProcedure.use(enforceUserIsAccessingOwnData);

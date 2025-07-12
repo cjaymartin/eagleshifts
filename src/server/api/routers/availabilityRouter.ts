@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, adminProcedure } from '@/server/trpc';
+import { router, adminProcedure, memberProcedure, userProcedure } from '@/server/trpc';
 import { Prisma, User } from '@/generated/prisma';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -20,7 +20,7 @@ function parseDateString(dateString: string): Date {
 }
 
 export const availabilityRouter = router({
-    list: adminProcedure
+    list: memberProcedure
         .input(
             z
                 .object({
@@ -75,7 +75,7 @@ export const availabilityRouter = router({
             }));
         }),
 
-    byDate: adminProcedure
+    byDate: memberProcedure
         .input(
             z.object({
                 date: z.date(), // Expected in YYYY-MM-DD format
@@ -116,7 +116,7 @@ export const availabilityRouter = router({
             });
         }),
 
-    byId: adminProcedure
+    byId: memberProcedure
         .input(
             z.object({
                 id: z.string(),
@@ -144,7 +144,7 @@ export const availabilityRouter = router({
             };
         }),
 
-    create: adminProcedure
+    create: userProcedure
         .input(
             z.object({
                 startDate: z.string(),
@@ -155,6 +155,14 @@ export const availabilityRouter = router({
             })
         )
         .mutation(async ({ ctx, input }) => {
+            // Check if the user is creating availability for themselves
+            if (!ctx.isMemberData(input.memberId) && ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'You can only create availability for yourself',
+                });
+            }
+
             const availability = await ctx.prisma.availability.create({
                 data: {
                     startDate: parseDateString(input.startDate),
@@ -175,7 +183,7 @@ export const availabilityRouter = router({
             };
         }),
 
-    update: adminProcedure
+    update: userProcedure
         .input(
             z.object({
                 id: z.string(),
@@ -187,6 +195,27 @@ export const availabilityRouter = router({
         )
         .mutation(async ({ ctx, input }) => {
             const { id, ...updateData } = input;
+
+            // Check if the availability record belongs to the user
+            const existingAvailability = await ctx.prisma.availability.findUnique({
+                where: { id },
+                select: { memberId: true },
+            });
+
+            if (!existingAvailability) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Availability record not found',
+                });
+            }
+
+            // Check if the user is updating their own availability
+            if (!ctx.isMemberData(existingAvailability.memberId) && ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'You can only update your own availability',
+                });
+            }
 
             const availability = await ctx.prisma.availability.update({
                 where: { id },
@@ -211,13 +240,34 @@ export const availabilityRouter = router({
             };
         }),
 
-    delete: adminProcedure
+    delete: userProcedure
         .input(
             z.object({
                 id: z.string(),
             })
         )
         .mutation(async ({ ctx, input }) => {
+            // Check if the availability record belongs to the user
+            const existingAvailability = await ctx.prisma.availability.findUnique({
+                where: { id: input.id },
+                select: { memberId: true },
+            });
+
+            if (!existingAvailability) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Availability record not found',
+                });
+            }
+
+            // Check if the user is deleting their own availability
+            if (!ctx.isMemberData(existingAvailability.memberId) && ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'You can only delete your own availability',
+                });
+            }
+
             await ctx.prisma.availability.delete({
                 where: { id: input.id },
             });

@@ -6,6 +6,8 @@ import { NotificationsProvider } from '@toolpad/core';
 import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
 import { branding } from '@/config/branding';
+import { useAuthQuery } from '@/queries/users';
+import theme from '@/lib/DefaultTheme';
 
 type SmartAppProviderProps = {
     children: React.ReactNode;
@@ -17,9 +19,14 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
         Array<{ title: string; segment: string }>
     >([]);
     const pathname = usePathname();
-    const { data: session, isPending } = authClient.useSession();
+    const { data: session, isPending } = useAuthQuery();
 
     useEffect(() => {
+        // Get user role from session
+
+        const userRole = session?.user?.role ?? 'guest';
+        const isAdminOrOwner = ['admin', 'owner'].includes(userRole);
+
         // Regular navigation for standard users
         const REGULAR_NAVIGATION = [
             {
@@ -38,11 +45,15 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
                 title: 'Shift Requests',
                 segment: 'requests',
             },
-            {
+        ];
+
+        // Add "My Team" menu item only for admin or owner roles
+        if (isAdminOrOwner) {
+            REGULAR_NAVIGATION.push({
                 title: 'My Team',
                 segment: 'team',
-            },
-        ];
+            });
+        }
 
         // Super admin navigation
         const SUPERADMIN_NAVIGATION = [
@@ -70,7 +81,7 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
             : REGULAR_NAVIGATION;
 
         setNavigation(selectedNavigation);
-    }, [pathname]);
+    }, [pathname, session]);
 
     const authentication = {
         signIn: async () => {
@@ -89,6 +100,7 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <NextAppProvider
+            theme={theme}
             navigation={navigation}
             branding={branding}
             authentication={authentication}

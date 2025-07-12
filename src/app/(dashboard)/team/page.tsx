@@ -50,19 +50,35 @@ function TeamPageSkeleton() {
                     <Table spacing={4} size="small">
                         <TableHead>
                             <TableRow>
-                                <TableCell><Skeleton variant="text" width="100%" /></TableCell>
-                                <TableCell><Skeleton variant="text" width="100%" /></TableCell>
-                                <TableCell><Skeleton variant="text" width="100%" /></TableCell>
-                                <TableCell><Skeleton variant="text" width="100%" /></TableCell>
+                                <TableCell>
+                                    <Skeleton variant="text" width="100%" />
+                                </TableCell>
+                                <TableCell>
+                                    <Skeleton variant="text" width="100%" />
+                                </TableCell>
+                                <TableCell>
+                                    <Skeleton variant="text" width="100%" />
+                                </TableCell>
+                                <TableCell>
+                                    <Skeleton variant="text" width="100%" />
+                                </TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {[...Array(5)].map((_, index) => (
                                 <TableRow key={index}>
-                                    <TableCell><Skeleton variant="text" width="100%" /></TableCell>
-                                    <TableCell><Skeleton variant="text" width="100%" /></TableCell>
-                                    <TableCell><Skeleton variant="text" width="100%" /></TableCell>
-                                    <TableCell><Skeleton variant="text" width="100%" /></TableCell>
+                                    <TableCell>
+                                        <Skeleton variant="text" width="100%" />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Skeleton variant="text" width="100%" />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Skeleton variant="text" width="100%" />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Skeleton variant="text" width="100%" />
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -86,16 +102,20 @@ function TeamContent() {
     const isAdmin = ['admin', 'owner'].includes(role);
 
     // Get team users data
-    const { data: teamUsers = [], isLoading: isTeamUsersLoading } = useTeamUsersQuery();
-    const { data: invitations = [], isLoading: isInvitationsLoading } = useInvitationListQuery();
+    const { data: teamUsers = [], isLoading: isTeamUsersLoading } =
+        useTeamUsersQuery();
+    const { data: invitations = [], isLoading: isInvitationsLoading } =
+        useInvitationListQuery();
 
     // Show loading state if any data is still loading
-    const isLoading = isSessionLoading || isTeamUsersLoading || isInvitationsLoading;
+    const isLoading =
+        isSessionLoading || isTeamUsersLoading || isInvitationsLoading;
 
     // Process data - do this even during loading to maintain hook order
-    const pendingInvitations = React.useMemo(() => 
-        invitations?.filter((x) => x.status === 'pending') ?? [],
-    [invitations]);
+    const pendingInvitations = React.useMemo(
+        () => invitations?.filter((x) => x.status === 'pending') ?? [],
+        [invitations]
+    );
 
     // Sort users by role and email - always call this hook regardless of loading state
     const sortedUsers = React.useMemo(() => {
@@ -123,10 +143,10 @@ function TeamContent() {
     const rejectInvitationMutation = useRejectInvitationMutation();
 
     // Handle user deletion
-    const handleDelete = async (userId: string) => {
+    const handleDelete = async (memberId: string) => {
         if (window.confirm('Are you sure you want to delete this user?')) {
             try {
-                await deleteUserMutation.mutateAsync({ userId });
+                await deleteUserMutation.mutateAsync({ memberId });
                 notifications.show('User deleted successfully', {
                     severity: 'success',
                 });
@@ -238,16 +258,25 @@ function TeamContent() {
                                 </TableHead>
                                 <TableBody>
                                     {sortedUsers.map((user) => (
-                                        <TableRow key={user.id} xs={12} sm={6} md={4}>
+                                        <TableRow
+                                            key={user.id}
+                                            xs={12}
+                                            sm={6}
+                                            md={4}
+                                        >
                                             <TableCell>{user.name}</TableCell>
                                             <TableCell>{user.email}</TableCell>
                                             <TableCell>{user.role}</TableCell>
-                                            <TableCell sx={{ textAlign: 'right' }}>
+                                            <TableCell
+                                                sx={{ textAlign: 'right' }}
+                                            >
                                                 {role === 'owner' &&
                                                     user.role !== 'owner' && (
                                                         <IconButton
                                                             onClick={() =>
-                                                                handleImitate(user.id)
+                                                                handleImitate(
+                                                                    user.id
+                                                                )
                                                             }
                                                             title="Imitate User"
                                                         >
@@ -255,7 +284,9 @@ function TeamContent() {
                                                         </IconButton>
                                                     )}
                                                 <IconButton
-                                                    onClick={() => handleEdit(user)}
+                                                    onClick={() =>
+                                                        handleEdit(user)
+                                                    }
                                                     title="Edit User"
                                                 >
                                                     <EditIcon />
@@ -265,7 +296,9 @@ function TeamContent() {
                                                         handleDelete(user.id)
                                                     }
                                                     title="Delete User"
-                                                    disabled={user.role === 'owner'}
+                                                    disabled={
+                                                        user.role === 'owner'
+                                                    }
                                                 >
                                                     <DeleteIcon />
                                                 </IconButton>
@@ -295,36 +328,45 @@ function TeamContent() {
                                             <TableRow>
                                                 <TableCell>Email</TableCell>
                                                 <TableCell>Role</TableCell>
-                                                <TableCell sx={{ textAlign: 'right' }}>
+                                                <TableCell
+                                                    sx={{ textAlign: 'right' }}
+                                                >
                                                     Actions
                                                 </TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                            {pendingInvitations?.map((invitation) => (
-                                                <TableRow key={invitation.id}>
-                                                    <TableCell>
-                                                        {invitation.email}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {invitation.role}
-                                                    </TableCell>
-                                                    <TableCell
-                                                        sx={{ textAlign: 'right' }}
+                                            {pendingInvitations?.map(
+                                                (invitation) => (
+                                                    <TableRow
+                                                        key={invitation.id}
                                                     >
-                                                        <IconButton
-                                                            onClick={() =>
-                                                                handleRejectInvitation(
-                                                                    invitation.id
-                                                                )
-                                                            }
-                                                            title="Delete Invitation"
+                                                        <TableCell>
+                                                            {invitation.email}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {invitation.role}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            sx={{
+                                                                textAlign:
+                                                                    'right',
+                                                            }}
                                                         >
-                                                            <DeleteIcon />
-                                                        </IconButton>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
+                                                            <IconButton
+                                                                onClick={() =>
+                                                                    handleRejectInvitation(
+                                                                        invitation.id
+                                                                    )
+                                                                }
+                                                                title="Delete Invitation"
+                                                            >
+                                                                <DeleteIcon />
+                                                            </IconButton>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )
+                                            )}
                                         </TableBody>
                                     </Table>
                                 </TableContainer>

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "devhttps": "next dev --experimental-https",
-    "dev": "next dev",
+    "dev": "cross-env NODE_OPTIONS='--inspect' next dev",
     "build": "npx prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
@@ -58,6 +58,7 @@
     "@types/path-browserify": "^1.0.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^7.0.3",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "trpc-client-devtools-link": "^0.1.1",

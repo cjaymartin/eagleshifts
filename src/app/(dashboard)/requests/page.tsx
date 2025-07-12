@@ -28,10 +28,10 @@ import { useAuthQuery, useTeamUsersLookupQuery } from '@/queries/users';
 import { trpc } from '@/lib/trpc/client';
 import { useDialogs, useNotifications } from '@toolpad/core';
 import RequestDialog from './_components/RequestDialog';
-import { 
-    useShiftRequestsListQuery, 
+import {
+    useShiftRequestsListQuery,
     useShiftRequestDeleteOldMutation,
-    useShiftRequestSeedQuery
+    useShiftRequestSeedQuery,
 } from '@/queries/requests';
 
 export default function Requests() {
@@ -64,29 +64,33 @@ export default function Requests() {
     const exportToXLSX = () => {
         const fileName = 'shift-requests-' + dayjs.utc().format('YYYY-MM-DD');
 
-        const csvData = requests?.map((request) => {
-            const { createdAt, status, reason } = request;
-            const shift = request.shift;
-            const member = request.member;
-            const userName = userLookup[member.userId]?.displayName || member.userId;
+        const csvData =
+            requests?.map((request) => {
+                const { createdAt, status, reason } = request;
+                const shift = request.shift;
+                const member = request.member;
+                const userName =
+                    userLookup[member.userId]?.name || member.userId;
 
-            return {
-                'Request Date': dayjs(createdAt).format('YYYY-MM-DD'),
-                'Shift': shift.title,
-                'Location': shift.location || '',
-                'Shift Date': dayjs(shift.date).format('YYYY-MM-DD'),
-                'Start Time': dayjs(shift.startTime).format('h:mm A'),
-                'End Time': dayjs(shift.endTime).format('h:mm A'),
-                'User': userName,
-                'Status': status.charAt(0).toUpperCase() + status.slice(1),
-                'Reason': reason || '',
-            };
-        }) || [];
+                return {
+                    'Request Date': dayjs(createdAt).format('YYYY-MM-DD'),
+                    Shift: shift.title,
+                    Location: shift.location || '',
+                    'Shift Date': dayjs(shift.date).format('YYYY-MM-DD'),
+                    'Start Time': dayjs(shift.startTime).format('h:mm A'),
+                    'End Time': dayjs(shift.endTime).format('h:mm A'),
+                    User: userName,
+                    Status: status.charAt(0).toUpperCase() + status.slice(1),
+                    Reason: reason || '',
+                };
+            }) || [];
 
         const ws = XLSX.utils.json_to_sheet(csvData);
         const wb = { Sheets: { data: ws }, SheetNames: ['data'] };
         const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+        const data = new Blob([excelBuffer], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
+        });
         FileSaver.saveAs(data, fileName + '.xlsx');
     };
 
@@ -95,10 +99,14 @@ export default function Requests() {
     const handleDeleteOldRequests = async () => {
         try {
             await deleteOldMutation.mutateAsync();
-            notifications.show('Old requests deleted successfully', { severity: 'success' });
+            notifications.show('Old requests deleted successfully', {
+                severity: 'success',
+            });
         } catch (error) {
             console.error('Error deleting old requests:', error);
-            notifications.show(`Error: ${error.message}`, { severity: 'error' });
+            notifications.show(`Error: ${error.message}`, {
+                severity: 'error',
+            });
         }
     };
 
@@ -107,19 +115,23 @@ export default function Requests() {
         try {
             const result = await seedQuery.refetch();
             if (result.data?.success) {
-                notifications.show(result.data.message, { severity: 'success' });
+                notifications.show(result.data.message, {
+                    severity: 'success',
+                });
             }
         } catch (error) {
             console.error('Error seeding requests:', error);
-            notifications.show(`Error: ${error.message}`, { severity: 'error' });
+            notifications.show(`Error: ${error.message}`, {
+                severity: 'error',
+            });
         }
     };
 
     // Status lookup for display
     const statusLookup = {
-        'pending': 'Pending',
-        'approved': 'Approved',
-        'rejected': 'Rejected',
+        pending: 'Pending',
+        approved: 'Approved',
+        rejected: 'Rejected',
     };
 
     return (
@@ -133,7 +145,9 @@ export default function Requests() {
                             <Switch
                                 defaultChecked
                                 value={pendingOnly}
-                                onChange={(_, checked) => setPendingOnly(checked)}
+                                onChange={(_, checked) =>
+                                    setPendingOnly(checked)
+                                }
                             />
                         }
                     />
@@ -158,21 +172,37 @@ export default function Requests() {
                     </TableHead>
                     <TableBody>
                         {requests?.map((request) => {
-                            const userName = userLookup[request.member.userId]?.displayName || request.member.userId;
+                            const userName =
+                                userLookup[request.member.userId]
+                                    ?.displayName || request.member.userId;
 
                             return (
                                 <TableRow key={request.id}>
-                                    <TableCell>{dayjs(request.createdAt).format('YYYY-MM-DD')}</TableCell>
+                                    <TableCell>
+                                        {dayjs(request.createdAt).format(
+                                            'YYYY-MM-DD'
+                                        )}
+                                    </TableCell>
                                     <TableCell>
                                         {request.shift.title}
                                         <br />
                                         {request.shift.location}
                                     </TableCell>
-                                    <TableCell>{dayjs(request.shift.date).format('YYYY-MM-DD')}</TableCell>
-                                    <TableCell>{userName}</TableCell>
-                                    <TableCell>{statusLookup[request.status]}</TableCell>
                                     <TableCell>
-                                        <IconButton onClick={() => openRequestDialog(request)}>
+                                        {dayjs(request.shift.date).format(
+                                            'YYYY-MM-DD'
+                                        )}
+                                    </TableCell>
+                                    <TableCell>{userName}</TableCell>
+                                    <TableCell>
+                                        {statusLookup[request.status]}
+                                    </TableCell>
+                                    <TableCell>
+                                        <IconButton
+                                            onClick={() =>
+                                                openRequestDialog(request)
+                                            }
+                                        >
                                             <VisibilityIcon />
                                         </IconButton>
                                     </TableCell>
@@ -192,19 +222,25 @@ export default function Requests() {
             {isAdmin && (
                 <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                     <Tooltip title="Deletes requests for shifts over 4 weeks in the past">
-                        <Button onClick={handleDeleteOldRequests} variant="outlined" color="warning">
+                        <Button
+                            onClick={handleDeleteOldRequests}
+                            variant="outlined"
+                            color="warning"
+                        >
                             Delete Old Requests
                         </Button>
                     </Tooltip>
 
                     <Tooltip title="Creates random requests for existing shifts">
-                        <Button 
-                            onClick={handleSeedRequests} 
-                            variant="outlined" 
+                        <Button
+                            onClick={handleSeedRequests}
+                            variant="outlined"
                             color="primary"
                             disabled={seedQuery.isFetching}
                         >
-                            {seedQuery.isFetching ? 'Seeding...' : 'Seed Random Requests'}
+                            {seedQuery.isFetching
+                                ? 'Seeding...'
+                                : 'Seed Random Requests'}
                         </Button>
                     </Tooltip>
                 </Box>

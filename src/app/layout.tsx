@@ -5,11 +5,9 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import './globals.css';
 import React from 'react';
 import { Roboto } from 'next/font/google';
-import { ThemeProvider } from '@mui/material/styles';
-import { theme } from '@/lib/DefaultTheme';
+import theme from '@/lib/DefaultTheme';
 import SubdomainProvider from '@/components/providers/SubdomainProvider';
 import { CookiesProvider } from 'next-client-cookies/server';
-// import ReactQueryProvider from '@/components/providers/ReactQueryProvider';
 import SmartAppProvider from '@/components/providers/SmartAppProvider';
 import { ClientLocalizationProvider } from '@/components/providers/ClientLocalizationProvider';
 import { DialogsProvider } from '@toolpad/core';
@@ -42,8 +40,12 @@ export default function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    console.log('THEME THEME THEME');
+    console.log({ theme });
+
     return (
         <html lang="en" className={roboto.variable} suppressHydrationWarning>
+            {/*<CssBaseline />*/}
             <body>
                 <ClientLocalizationProvider>
                     <DialogsProvider>
@@ -55,11 +57,9 @@ export default function RootLayout({
                                         <React.Suspense
                                             fallback={<LinearProgress />}
                                         >
-                                            <ThemeProvider theme={theme}>
-                                                <SmartAppProvider>
-                                                    {children}
-                                                </SmartAppProvider>
-                                            </ThemeProvider>
+                                            <SmartAppProvider>
+                                                {children}
+                                            </SmartAppProvider>
                                         </React.Suspense>
                                     </CookiesProvider>
                                 </SubdomainProvider>
