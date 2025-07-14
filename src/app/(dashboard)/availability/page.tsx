@@ -63,8 +63,15 @@ export default function Availability() {
         null
     );
 
-    // Get team users for admin selection
-    const { data: teamUsers = [] } = useTeamUsersQuery();
+    // Get team users for admin selection (only for admins)
+    const { data: teamUsers = [] } = isAdmin ? useTeamUsersQuery() : { data: [] };
+
+    // For non-admin users, set selectedMemberId to their own memberId
+    useEffect(() => {
+        if (!isAdmin && session?.user?.memberId) {
+            setSelectedMemberId(session.user.memberId);
+        }
+    }, [isAdmin, session]);
 
     // Get the selected member's data
     const { data: memberData } = useMemberByIdQuery(selectedMemberId || '');
@@ -214,17 +221,24 @@ export default function Availability() {
         end: Date;
     }> =
         availabilities?.map((availability) => {
+            // Parse dates in UTC to avoid timezone issues
+            const startDate = dayjs.utc(availability.startDate, 'YYYY-MM-DD');
+            // For the end date, we need to add 1 day to make it inclusive in the calendar
+            // but we need to ensure we stay in UTC to avoid timezone issues
+            const endDate = dayjs.utc(availability.endDate, 'YYYY-MM-DD').add(1, 'day');
+
+            console.log(`Availability ${availability.id}: startDate=${availability.startDate}, endDate=${availability.endDate}`);
+            console.log(`Calendar event: start=${startDate.format()}, end=${endDate.format()}`);
+
             return {
                 id: availability.id,
                 title:
                     availability.desc ||
                     (availability.isAvailable ? 'Available' : 'Unavailable'),
                 allDay: true,
-                start: dayjs.utc(availability.startDate, 'YYYY-MM-DD').toDate(),
-                end: dayjs
-                    .utc(availability.endDate, 'YYYY-MM-DD')
-                    .add(1, 'day')
-                    .toDate(), // Add 1 day to make the end date inclusive
+                // Use toDate() at the last moment to convert to JavaScript Date
+                start: startDate.toDate(),
+                end: endDate.toDate(),
             };
         }) || [];
 

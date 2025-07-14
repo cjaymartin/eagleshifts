@@ -5,24 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d58e61e2-8c55-42b2-878e-5572cbd53eb3" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/app/auth/accept-invitation/actions.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/requests/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/requests/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/team/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/team/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/auth/accept-invitation/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/auth/accept-invitation/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/globals.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/page.module.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/notpage.module.notcss" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/availability/_components/AvailabilityDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/availability/_components/AvailabilityDialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/availability/_components/AvailabilityForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/availability/_components/AvailabilityForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/availability/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/availability/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/providers/SmartAppProvider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/providers/SmartAppProvider.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/DefaultTheme.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/DefaultTheme.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/auth.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/server/api/routers/availabilityRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/availabilityRouter.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server/api/routers/requestsRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/requestsRouter.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server/api/routers/shiftsRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/shiftsRouter.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server/api/routers/usersRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/usersRouter.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server/trpc.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/trpc.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -162,7 +150,7 @@
       <workItem from="1750772569737" duration="21628000" />
       <workItem from="1750813692159" duration="47798000" />
       <workItem from="1750979785524" duration="65854000" />
-      <workItem from="1752166833190" duration="18409000" />
+      <workItem from="1752166833190" duration="21839000" />
     </task>
     <servers />
   </component>

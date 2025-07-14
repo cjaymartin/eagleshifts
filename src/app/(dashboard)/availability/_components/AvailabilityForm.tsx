@@ -59,7 +59,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
         endDate: null,
         isAvailable: true,
         desc: '',
-        memberId: memberId || userId || '',
+        memberId: memberId || '',
     };
 
     // Transform availability data to the format expected by the form
@@ -127,8 +127,16 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                 endDate: dayjs.utc(formData.endDate).format('YYYY-MM-DD'),
                 desc: formData.desc || '',
                 isAvailable: formData.isAvailable,
-                memberId: formData.memberId || memberId || userId,
+                memberId: formData.memberId || memberId || user?.memberId,
             };
+
+            // Ensure memberId is provided
+            if (!availabilityData.memberId) {
+                notifications.show('Member ID is required', {
+                    severity: 'error',
+                });
+                return;
+            }
 
             // Create availability
             await createMutation.mutateAsync(availabilityData);
@@ -226,7 +234,6 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                             control={control}
                             render={({ field }) => (
                                 <DatePicker
-                                    disabled={!isAdmin}
                                     label="Start Date"
                                     value={
                                         field.value
@@ -253,7 +260,6 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                             control={control}
                             render={({ field }) => (
                                 <DatePicker
-                                    disabled={!isAdmin}
                                     label="End Date"
                                     value={
                                         field.value
@@ -317,7 +323,6 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                                 {...field}
                                 multiline
                                 rows={3}
-                                disabled={!isAdmin}
                                 label="Description"
                                 variant="outlined"
                                 error={!!errors.desc}
@@ -327,19 +332,17 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                     />
 
                     <Stack direction="row" spacing={2}>
-                        {isAdmin && (
-                            <Button
-                                variant="contained"
-                                type="submit"
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting
-                                    ? 'Saving...'
-                                    : isNew
-                                      ? 'Create'
-                                      : 'Update'}
-                            </Button>
-                        )}
+                        <Button
+                            variant="contained"
+                            type="submit"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting
+                                ? 'Saving...'
+                                : isNew
+                                  ? 'Create'
+                                  : 'Update'}
+                        </Button>
                         {!isNew && isAdmin && (
                             <Button
                                 variant="contained"
@@ -356,7 +359,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                             onClick={onClose}
                             disabled={isSubmitting}
                         >
-                            {isAdmin ? 'Cancel' : 'Close'}
+                            Cancel
                         </Button>
                     </Stack>
                 </Stack>

@@ -54,7 +54,7 @@ export default function AvailabilityDialog({
                         availabilityId={payload?.id}
                         availability={payload}
                         onClose={handleClose}
-                        memberId={payload?.memberId || undefined}
+                        memberId={payload?.memberId}
                     />
                 </Container>
             </DialogContent>

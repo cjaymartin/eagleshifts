@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { router, adminProcedure, memberProcedure, userProcedure } from '@/server/trpc';
 import { Prisma, User } from '@/generated/prisma';
+import { TRPCError } from '@trpc/server';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 
@@ -35,6 +36,22 @@ export const availabilityRouter = router({
             // Build filter conditions
             const where: Prisma.AvailabilityWhereInput = {};
 
+            // For non-admin users, only show their own availability
+            const isAdmin = ctx.user.role === 'admin' || ctx.user.role === 'owner';
+            if (!isAdmin) {
+                // Ensure we have the user's memberId
+                if (!ctx.user.memberId) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: 'User memberId is required',
+                    });
+                }
+                where.memberId = ctx.user.memberId;
+            } else if (input?.memberId) {
+                // For admins, filter by memberId if provided
+                where.memberId = input.memberId;
+            }
+
             if (input) {
                 if (input.startDate || input.endDate) {
                     where.startDate = {};
@@ -48,10 +65,6 @@ export const availabilityRouter = router({
 
                 if (input.isAvailable !== undefined) {
                     where.isAvailable = input.isAvailable;
-                }
-
-                if (input.memberId) {
-                    where.memberId = input.memberId;
                 }
             }
 

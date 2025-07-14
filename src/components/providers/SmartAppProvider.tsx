@@ -41,19 +41,13 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
                 title: 'Availability',
                 segment: 'availability',
             },
-            {
-                title: 'Shift Requests',
-                segment: 'requests',
-            },
+            ...(['admin', 'owner'].includes(session?.user?.role ?? 'guest')
+                ? [
+                      { title: 'Shift Requests', segment: 'requests' },
+                      { title: 'My Team', segment: 'team' },
+                  ]
+                : []),
         ];
-
-        // Add "My Team" menu item only for admin or owner roles
-        if (isAdminOrOwner) {
-            REGULAR_NAVIGATION.push({
-                title: 'My Team',
-                segment: 'team',
-            });
-        }
 
         // Super admin navigation
         const SUPERADMIN_NAVIGATION = [
