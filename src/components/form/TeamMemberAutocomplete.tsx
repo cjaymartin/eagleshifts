@@ -42,9 +42,9 @@ export type TeamMemberAutocompleteProps = Omit<
     'onChange' | 'options' | 'renderInput' | 'renderOption'
 > & {
     date: Date; // Optional date for availability filtering
-    exclude?: string[]; // Array of user IDs to exclude
+    exclude?: string[]; // Array of member IDs to exclude
     label?: string; // Label for the autocomplete input
-    onChange?: (user: { id: string }) => void;
+    onChange?: (member: { id: string }) => void;
     //InputLabelProps?: Partial<InputLabelProps>;
 };
 
@@ -68,17 +68,25 @@ export default function TeamMemberAutocomplete(
         }, lookup);
     }, [exclude]);
 
-    const userOptions = useMemo(() => {
+    const memberOptions = useMemo(() => {
         if (!teamUsers || !userLookup) return [];
 
-        return teamUsers
-            .filter((user) => !excludeLookup[user.id])
-            .map((user) => {
+        // Flatten all members from all users
+        const allMembers = teamUsers.flatMap(user => 
+            (user.members || []).map(member => ({
+                ...member,
+                user
+            }))
+        );
+
+        return allMembers
+            .filter((member) => !excludeLookup[member.id])
+            .map((member) => {
                 const isAvailable =
-                    userAvailabilityListLookup?.[user.id]?.isAvailable ?? true;
+                    userAvailabilityListLookup?.[member.id]?.isAvailable ?? true;
                 return {
-                    ...user,
-                    label: user.name,
+                    ...member,
+                    label: member.name || member.user.name,
                     isAvailable,
                 };
             });
@@ -87,8 +95,8 @@ export default function TeamMemberAutocomplete(
     //const userAvailabilityList = useUserAvailabilityList(props.date); //.filter(x => !excludeLookup[props.id]);
     //const userOptions = rawUserOptions.filter((x) => !excludeLookup[x.id]);
 
-    function isAvailable(userId: string) {
-        const availData = userAvailabilityListLookup?.[userId];
+    function isAvailable(memberId: string) {
+        const availData = userAvailabilityListLookup?.[memberId];
         return availData?.isAvailable ?? true;
     }
 
@@ -101,15 +109,15 @@ export default function TeamMemberAutocomplete(
                     props.onChange((v as { id: string }) ?? null);
                 }
             }}
-            options={userOptions}
+            options={memberOptions}
             renderOption={(props, rawOption, state) => {
-                const option = rawOption as (typeof userOptions)[0];
+                const option = rawOption as (typeof memberOptions)[0];
 
-                const userAvailable = option.isAvailable;
-                const Typ = userAvailable
+                const memberAvailable = option.isAvailable;
+                const Typ = memberAvailable
                     ? AvailableTextTypography
                     : UnavailableTextTypography;
-                const availIcon = userAvailable ? (
+                const availIcon = memberAvailable ? (
                     <ListItemIcon key={props.key + '-icon'}>
                         <EventAvailable color="available" />
                     </ListItemIcon>

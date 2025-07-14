@@ -8,6 +8,14 @@ import { authClient } from '@/lib/auth-client';
 import { branding } from '@/config/branding';
 import { useAuthQuery } from '@/queries/users';
 import theme from '@/lib/DefaultTheme';
+import {
+    CalendarToday,
+    EventAvailable,
+    HomeWork,
+    Group,
+    RequestPage,
+    Book,
+} from '@mui/icons-material';
 
 type SmartAppProviderProps = {
     children: React.ReactNode;
@@ -32,19 +40,27 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
             {
                 title: 'Calendar',
                 segment: 'calendar',
+                icon: <CalendarToday />,
             },
             {
                 title: 'Shifts',
                 segment: 'shifts',
+                icon: <HomeWork />,
             },
             {
                 title: 'Availability',
                 segment: 'availability',
+                icon: <EventAvailable />,
             },
             ...(['admin', 'owner'].includes(session?.user?.role ?? 'guest')
                 ? [
-                      { title: 'Shift Requests', segment: 'requests' },
-                      { title: 'My Team', segment: 'team' },
+                      { kind: 'header', title: 'Admin' },
+                      {
+                          title: 'Requests',
+                          segment: 'requests',
+                          icon: <RequestPage />,
+                      },
+                      { title: 'My Team', segment: 'team', icon: <Group /> },
                   ]
                 : []),
         ];

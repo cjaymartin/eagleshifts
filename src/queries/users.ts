@@ -8,6 +8,21 @@ export function useAuthQuery() {
 }
 
 export function useTeamUsersQuery() {
+    const { data: session } = useAuthQuery();
+    const role = session?.user?.role || 'member';
+    const isAdmin = ['admin', 'owner'].includes(role);
+
+    // If user is not an admin, return an empty array without querying the endpoint
+    if (!isAdmin) {
+        return {
+            data: [],
+            isLoading: false,
+            isError: false,
+            error: null,
+            status: 'success',
+        } as const;
+    }
+
     return trpc.users.list.useQuery();
 }
 

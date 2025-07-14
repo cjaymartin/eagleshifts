@@ -72,4 +72,31 @@ export const theme = createTheme({
 console.log('BUILT THEME');
 console.dir({ theme });
 
+declare module '@mui/material/styles' {
+    interface Palette {
+        yellow: Palette['primary'];
+        green: Palette['primary'];
+        red: Palette['primary'];
+        available: Palette['primary'];
+        unavailable: Palette['primary'];
+    }
+    interface PaletteOptions {
+        yellow?: PaletteOptions['primary'];
+        green?: PaletteOptions['primary'];
+        red?: PaletteOptions['primary'];
+        available?: PaletteOptions['primary'];
+        unavailable?: PaletteOptions['primary'];
+    }
+}
+
+declare module '@mui/material/SvgIcon' {
+    interface SvgIconPropsColorOverrides {
+        yellow: true;
+        green: true;
+        red: true;
+        available: true;
+        unavailable: true;
+    }
+}
+
 export default theme;

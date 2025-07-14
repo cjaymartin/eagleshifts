@@ -172,9 +172,15 @@ export default function Requests() {
                     </TableHead>
                     <TableBody>
                         {requests?.map((request) => {
+                            //TODO: This be fugly.  The API route should include the user name info
+                            // and the underlying logic should be DRY'd somewhere
                             const userName =
-                                userLookup[request.member.userId]
-                                    ?.displayName || request.member.userId;
+                                request?.member?.name ||
+                                request?.member?.user?.name ||
+                                request?.member?.user?.email ||
+                                request?.member?.userId;
+
+                            //const userName = request.member.user.name;
 
                             return (
                                 <TableRow key={request.id}>
@@ -213,11 +219,11 @@ export default function Requests() {
                 </Table>
             </TableContainer>
 
-            <Container>
-                <Button onClick={openNewRequestDialog}>
-                    <AddIcon /> New Request
-                </Button>
-            </Container>
+            {/*<Container>*/}
+            {/*    <Button onClick={openNewRequestDialog}>*/}
+            {/*        <AddIcon /> New Request*/}
+            {/*    </Button>*/}
+            {/*</Container>*/}
 
             {isAdmin && (
                 <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>

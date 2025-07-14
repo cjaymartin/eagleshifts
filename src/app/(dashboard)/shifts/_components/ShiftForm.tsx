@@ -68,17 +68,6 @@ export default function ShiftForm(props: ShiftFormProps) {
     // Get team users data to map from memberId to userId
     const { data: teamUsers = [] } = useTeamUsersQuery();
 
-    // Create a mapping from memberId to userId
-    const memberToUserMap = React.useMemo(() => {
-        const map = {};
-        teamUsers.forEach((user) => {
-            user.members?.forEach((member) => {
-                map[member.id] = user.id;
-            });
-        });
-        return map;
-    }, [teamUsers]);
-
     // Transform shiftAssignments to the format expected by the form
     const transformedShift = shift
         ? {
@@ -93,12 +82,8 @@ export default function ShiftForm(props: ShiftFormProps) {
               endTime: shift.endTime ? dayjs.utc(shift.endTime).toDate() : null,
               assignments:
                   shift.shiftAssignments?.map((assignment) => {
-                      // Map memberId to userId using the memberToUserMap
-                      const userId =
-                          memberToUserMap[assignment.memberId] ||
-                          assignment.memberId;
                       return {
-                          userId,
+                          memberId: assignment.memberId,
                           outcome: assignment.outcome,
                           reason: assignment.reason || '',
                       };
@@ -137,6 +122,7 @@ export default function ShiftForm(props: ShiftFormProps) {
 
     const { data: session } = useAuthQuery();
     const user = session?.user;
+    const memberId = user?.memberId;
 
     // Determine if this is a new shift based on props or shiftId
     const isNew = propsIsNew ?? !shiftId;
@@ -259,11 +245,9 @@ export default function ShiftForm(props: ShiftFormProps) {
     const { data: teamMembers = [] } = useTeamUsersQuery();
     const { data: userLookup } = useTeamUsersLookupQuery();
 
-    const userId = user?.id;
-
     // Check if user is assigned to this shift
     const assignments = getValues('assignments') || [];
-    const isAssigned = assignments.some((a) => a.userId === userId);
+    const isAssigned = memberId ? assignments.some((a) => a.memberId === memberId) : false;
 
     const slots = getValues('slots') || 1;
     const hasAvailableSlots =

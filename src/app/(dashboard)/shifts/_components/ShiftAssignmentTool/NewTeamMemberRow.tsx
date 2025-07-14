@@ -5,18 +5,18 @@ import TeamMemberAutocomplete from '@/components/form/TeamMemberAutocomplete';
 
 export type NewTeamMemberRowProps = {
     exclude?: string[];
-    onAdd: (userId: string) => void;
+    onAdd: (memberId: string) => void;
     date?: Date;
 };
 
 export default function NewTeamMemberRow(props: NewTeamMemberRowProps) {
     const { exclude, onAdd, date } = props;
-    const [user, setUser] = React.useState(null as { id: string } | null);
+    const [member, setMember] = React.useState(null as { id: string } | null);
 
     const onSubmit = () => {
-        if (user?.id) {
-            onAdd(user.id);
-            setUser(null);
+        if (member?.id) {
+            onAdd(member.id);
+            setMember(null);
         }
     };
 
@@ -27,9 +27,9 @@ export default function NewTeamMemberRow(props: NewTeamMemberRowProps) {
                     <Grid size={6}>
                         {!!date && (
                             <TeamMemberAutocomplete
-                                value={user}
-                                onChange={(user) => {
-                                    setUser(user ?? null);
+                                value={member}
+                                onChange={(member) => {
+                                    setMember(member ?? null);
                                 }}
                                 // variant="standard"
                                 size="small"
@@ -39,7 +39,7 @@ export default function NewTeamMemberRow(props: NewTeamMemberRowProps) {
                         )}
                     </Grid>
                     <Grid>
-                        {user && (
+                        {member && (
                             <IconButton onClick={() => onSubmit()}>
                                 <AddBox color="primary" />
                             </IconButton>

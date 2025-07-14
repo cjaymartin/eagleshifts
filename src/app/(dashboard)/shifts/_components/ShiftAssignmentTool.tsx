@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import ShiftAssignmentToolRow from './ShiftAssignmentTool/ShiftAssignmentToolRow';
 import NewTeamMemberRow from './ShiftAssignmentTool/NewTeamMemberRow';
-import { useTeamUsersLookupQuery } from '@/queries/users';
+import { useTeamUsersLookupQuery, useAuthQuery } from '@/queries/users';
 import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/api/trpc/[trpc]';
 
@@ -24,7 +24,7 @@ export type ShiftAssignmentToolProps = {
 };
 
 export type ShiftAssignmentToolAssignmentRow = {
-    userId: string;
+    memberId: string;
     outcome: 'assigned' | 'waiting' | 'refused';
     reason?: string;
 };
@@ -37,17 +37,31 @@ export default function ShiftAssignmentTool({
     onChange,
 }: ShiftAssignmentToolProps) {
     const { data: userLookup } = useTeamUsersLookupQuery();
+    const { data: session } = useAuthQuery();
+    const user = session?.user;
+    const currentMemberId = user?.memberId;
+    const role = user?.role || 'member';
+    const isAdmin = ['admin', 'owner'].includes(role);
+
     const assignments = rawAssignments || [];
 
-    // Get list of user IDs to exclude from the new member dropdown
-    const exclude = assignments.map((x) => x.userId);
+    // Get list of member IDs to exclude from the new member dropdown
+    const exclude = assignments.map((x) => x.memberId);
+
+    // Check if the current user is in the assignments list
+    const isCurrentUserAssigned = isAdmin || assignments.some(assignment => assignment.memberId === currentMemberId);
+
+    // If the user is not an admin and not in the assignments list, don't show the tool
+    if (!isAdmin && !isCurrentUserAssigned) {
+        return null;
+    }
 
     // Handler for adding a new team member to the assignments
-    function handleAdd(userId: string) {
+    function handleAdd(memberId: string) {
         if (readOnly) return;
 
         const newAssignmentRow: ShiftAssignmentToolAssignmentRow = {
-            userId: userId,
+            memberId: memberId,
             outcome: 'waiting',
             reason: '',
         };
@@ -75,7 +89,7 @@ export default function ShiftAssignmentTool({
                                     //splice the newly added data into the row dynamically
                                     const newAssignments = assignments.map(
                                         (x) =>
-                                            x.userId === row.userId
+                                            x.memberId === row.memberId
                                                 ? { ...x, ...data }
                                                 : x
                                     );
@@ -83,15 +97,15 @@ export default function ShiftAssignmentTool({
                                 }}
                                 onDelete={() => {
                                     const newAssignments = assignments.filter(
-                                        (x) => x.userId !== row.userId
+                                        (x) => x.memberId !== row.memberId
                                     );
                                     console.log(
-                                        'Delete assignment for user:',
-                                        row.userId
+                                        'Delete assignment for member:',
+                                        row.memberId
                                     );
                                     onChange(newAssignments);
                                 }}
-                                key={row.userId}
+                                key={row.memberId}
                             />
                         ))}
                         <TableRow>

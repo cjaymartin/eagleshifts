@@ -50,7 +50,7 @@ export const requestsRouter = router({
                 where,
                 include: {
                     shift: true,
-                    member: true,
+                    member: { include: { user: true } },
                 },
                 orderBy: { createdAt: 'desc' },
             });
@@ -181,15 +181,17 @@ export const requestsRouter = router({
         .mutation(async ({ ctx, input }) => {
             try {
                 // Check if the request exists
-                const existingRequest = await ctx.prisma.shiftRequest.findFirst({
-                    where: {
-                        id: input.id,
-                    },
-                    include: {
-                        shift: true,
-                        member: true,
-                    },
-                });
+                const existingRequest = await ctx.prisma.shiftRequest.findFirst(
+                    {
+                        where: {
+                            id: input.id,
+                        },
+                        include: {
+                            shift: true,
+                            member: true,
+                        },
+                    }
+                );
 
                 if (!existingRequest) {
                     throw new TRPCError({
@@ -199,10 +201,14 @@ export const requestsRouter = router({
                 }
 
                 // Check if the shift belongs to the current organization
-                if (existingRequest.shift.organizationId !== ctx.user.organizationId) {
+                if (
+                    existingRequest.shift.organizationId !==
+                    ctx.user.organizationId
+                ) {
                     throw new TRPCError({
                         code: 'FORBIDDEN',
-                        message: 'You are not authorized to update this request',
+                        message:
+                            'You are not authorized to update this request',
                     });
                 }
 
@@ -235,7 +241,8 @@ export const requestsRouter = router({
                     if (input.status !== 'pending') {
                         throw new TRPCError({
                             code: 'FORBIDDEN',
-                            message: 'Only admins can approve or reject requests',
+                            message:
+                                'Only admins can approve or reject requests',
                         });
                     }
                 }
@@ -258,12 +265,13 @@ export const requestsRouter = router({
                 // If the request is approved, create a shift assignment
                 if (input.status === 'approved') {
                     // Check if there's already an assignment for this member and shift
-                    const existingAssignment = await ctx.prisma.shiftAssignment.findFirst({
-                        where: {
-                            shiftId: request.shiftId,
-                            memberId: request.memberId,
-                        },
-                    });
+                    const existingAssignment =
+                        await ctx.prisma.shiftAssignment.findFirst({
+                            where: {
+                                shiftId: request.shiftId,
+                                memberId: request.memberId,
+                            },
+                        });
 
                     if (!existingAssignment) {
                         // Create a new assignment
@@ -336,7 +344,8 @@ export const requestsRouter = router({
                     if (member && request.memberId !== member.id) {
                         throw new TRPCError({
                             code: 'FORBIDDEN',
-                            message: 'You are not authorized to delete this request',
+                            message:
+                                'You are not authorized to delete this request',
                         });
                     }
                 }
@@ -348,7 +357,10 @@ export const requestsRouter = router({
                     },
                 });
 
-                return { success: true, message: 'Request deleted successfully' };
+                return {
+                    success: true,
+                    message: 'Request deleted successfully',
+                };
             } catch (error) {
                 throw new Error(`Failed to delete request: ${error.message}`);
             }
@@ -378,15 +390,15 @@ export const requestsRouter = router({
                 await ctx.prisma.shiftRequest.deleteMany({
                     where: {
                         id: {
-                            in: oldRequests.map(r => r.id),
+                            in: oldRequests.map((r) => r.id),
                         },
                     },
                 });
             }
 
-            return { 
-                success: true, 
-                message: `${oldRequests.length} old requests deleted successfully` 
+            return {
+                success: true,
+                message: `${oldRequests.length} old requests deleted successfully`,
             };
         } catch (error) {
             throw new Error(`Failed to delete old requests: ${error.message}`);
@@ -399,8 +411,8 @@ export const requestsRouter = router({
             const existingRequestsCount = await ctx.prisma.shiftRequest.count({
                 where: {
                     shift: {
-                        organizationId: ctx.user.organizationId
-                    }
+                        organizationId: ctx.user.organizationId,
+                    },
                 },
             });
 
@@ -410,8 +422,8 @@ export const requestsRouter = router({
 
             // Get all shifts for the organization
             const shifts = await ctx.prisma.shift.findMany({
-                where: { 
-                    organizationId: ctx.user.organizationId 
+                where: {
+                    organizationId: ctx.user.organizationId,
                 },
                 select: {
                     id: true,
@@ -419,13 +431,15 @@ export const requestsRouter = router({
             });
 
             if (shifts.length === 0) {
-                throw new Error('No shifts found. Please create shifts first before seeding requests.');
+                throw new Error(
+                    'No shifts found. Please create shifts first before seeding requests.'
+                );
             }
 
             // Get all members for the organization
             const members = await ctx.prisma.member.findMany({
-                where: { 
-                    organizationId: ctx.user.organizationId 
+                where: {
+                    organizationId: ctx.user.organizationId,
                 },
                 select: {
                     id: true,
@@ -433,7 +447,9 @@ export const requestsRouter = router({
             });
 
             if (members.length === 0) {
-                throw new Error('No members found. Please add members to your organization first.');
+                throw new Error(
+                    'No members found. Please add members to your organization first.'
+                );
             }
 
             // Create random requests for random shifts
@@ -449,7 +465,7 @@ export const requestsRouter = router({
                 'I have experience with this type of shift',
                 'I prefer this time slot',
                 'I am requesting this shift',
-                'I would appreciate being assigned to this shift'
+                'I would appreciate being assigned to this shift',
             ];
 
             // Create between 10-20 random requests
@@ -457,14 +473,20 @@ export const requestsRouter = router({
 
             for (let i = 0; i < numRequests; i++) {
                 // Pick a random shift and member
-                const randomShift = shifts[Math.floor(Math.random() * shifts.length)];
-                const randomMember = members[Math.floor(Math.random() * members.length)];
-                const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-                const randomReason = reasons[Math.floor(Math.random() * reasons.length)];
+                const randomShift =
+                    shifts[Math.floor(Math.random() * shifts.length)];
+                const randomMember =
+                    members[Math.floor(Math.random() * members.length)];
+                const randomStatus =
+                    statuses[Math.floor(Math.random() * statuses.length)];
+                const randomReason =
+                    reasons[Math.floor(Math.random() * reasons.length)];
 
                 // Check if this combination already exists in our to-create array
                 const alreadyExists = requestsToCreate.some(
-                    req => req.shiftId === randomShift.id && req.memberId === randomMember.id
+                    (req) =>
+                        req.shiftId === randomShift.id &&
+                        req.memberId === randomMember.id
                 );
 
                 // Only add if it doesn't already exist

@@ -30,11 +30,21 @@ export function useShiftGetQuery(id: string) {
 
 // Mutations
 export function useShiftCreateMutation() {
-    return trpc.shifts.create.useMutation();
+    const utils = trpc.useUtils();
+    return trpc.shifts.create.useMutation({
+        onSuccess() {
+            void utils.shifts.invalidate();
+        },
+    });
 }
 
 export function useShiftUpdateMutation() {
-    return trpc.shifts.update.useMutation();
+    const utils = trpc.useUtils();
+    return trpc.shifts.update.useMutation({
+        onSuccess() {
+            void utils.shifts.invalidate();
+        },
+    });
 }
 
 export function useShiftDeleteMutation() {

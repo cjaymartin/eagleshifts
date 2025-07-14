@@ -5,12 +5,25 @@ import React from 'react';
 type OutcomeSelectProps = Omit<SelectProps, 'children' | 'onChange'> & {
     value: 'waiting' | 'assigned' | 'refused';
     onChange?: (value: 'waiting' | 'assigned' | 'refused') => void;
+    readOnly?: boolean;
 };
 
 export default function OutcomeSelect(props: OutcomeSelectProps) {
-    const { value: value, onChange, ...rest } = props;
+    const { value: value, onChange, readOnly, ...rest } = props;
     //const value = _value === '' ? null : _value;
 
+    // If readOnly, just render the icon without the dropdown
+    if (readOnly) {
+        return (
+            <>
+                {value === 'waiting' && <Pending color="yellow" />}
+                {value === 'assigned' && <ThumbUp color="success" />}
+                {value === 'refused' && <ThumbDown color="error" />}
+            </>
+        );
+    }
+
+    // Otherwise, render the full dropdown
     return (
         <FormControl>
             <Select
@@ -35,10 +48,10 @@ export default function OutcomeSelect(props: OutcomeSelectProps) {
                     <Pending color="yellow" />
                 </MenuItem>
                 <MenuItem value="assigned">
-                    <ThumbUp color="green" />
+                    <ThumbUp color="success" />
                 </MenuItem>
                 <MenuItem value="refused">
-                    <ThumbDown color="red" />
+                    <ThumbDown color="error" />
                 </MenuItem>
             </Select>
         </FormControl>

@@ -15,7 +15,7 @@ import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { ShiftAssignmentToolAssignmentRow } from '@/app/(dashboard)/shifts/_components/ShiftAssignmentTool';
-import { useTeamUserByIdQuery } from '@/queries/users';
+import { useMemberByIdQuery, useAuthQuery } from '@/queries/users';
 
 export type ShiftAssignmentToolRowProps = {
     row: ShiftAssignmentToolAssignmentRow;
@@ -30,7 +30,21 @@ export default function ShiftAssignmentToolRow({
     readOnly,
     onDelete,
 }: ShiftAssignmentToolRowProps) {
-    const { data: user, isPending } = useTeamUserByIdQuery(row?.userId);
+    const { data: session } = useAuthQuery();
+    const currentUser = session?.user;
+    const isCurrentUserRow = row?.memberId === currentUser?.memberId;
+    const role = currentUser?.role || 'member';
+    const isAdmin = ['admin', 'owner'].includes(role);
+
+    // If this is the current user's row, use session data instead of fetching
+    const { data: fetchedMember, isPending } = useMemberByIdQuery(
+        isCurrentUserRow ? undefined : row?.memberId
+    );
+
+    // Use session data for current user, or fetched data for other users
+    const member = isCurrentUserRow 
+        ? { id: currentUser.memberId, name: currentUser.name } 
+        : fetchedMember;
 
     const [rawOpen, setOpen] = useState(false);
 
@@ -38,23 +52,27 @@ export default function ShiftAssignmentToolRow({
     const open = rawOpen && shouldShowOpen;
 
     useEffect(() => {
-        if (!user && !isPending) {
+        if (!member && !isPending) {
             onDelete();
         }
-    }, [isPending, user]);
+    }, [isPending, member]);
 
-    if (isPending || !user) return null;
+    // If not admin and not current user's row, don't show the row
+    if (!isAdmin && !isCurrentUserRow) return null;
+
+    // If pending and not current user's row, or no member data, don't show the row
+    if ((isPending && !isCurrentUserRow) || !member) return null;
 
     return (
         <React.Fragment>
             <TableRow
-                key={row.userId}
+                key={row.memberId}
                 sx={{
                     '&:last-child td, &:last-child th': { border: 0 },
                     '& > *': { borderBottom: 'unset' },
                 }}
             >
-                <TableCell>{user.name}</TableCell>
+                <TableCell>{member.name}</TableCell>
                 <TableCell width="small">
                     <OutcomeSelect
                         value={row.outcome || 'waiting'}
@@ -64,8 +82,9 @@ export default function ShiftAssignmentToolRow({
                                 outcome: value,
                             });
                         }}
+                        readOnly={!isAdmin}
                     />
-                    {shouldShowOpen && (
+                    {shouldShowOpen && isAdmin && (
                         <IconButton
                             aria-label="expand row"
                             size="small"
@@ -77,7 +96,7 @@ export default function ShiftAssignmentToolRow({
                 </TableCell>
 
                 {/*<TableCell>{row.reason}</TableCell>*/}
-                {!readOnly && (
+                {!readOnly && isAdmin && (
                     <TableCell align="right" width="small">
                         <IconButton onClick={() => onDelete()}>
                             <Delete />
@@ -106,6 +125,9 @@ export default function ShiftAssignmentToolRow({
                                         ...row,
                                         reason: event.target.value,
                                     });
+                                }}
+                                InputProps={{
+                                    readOnly: !isAdmin
                                 }}
                             />
                         </Box>
