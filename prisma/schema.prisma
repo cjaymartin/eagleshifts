@@ -107,9 +107,25 @@ model Organization {
   members     Member[]
   invitations Invitation[]
   Shift       Shift[]
+  profile     OrganizationProfile?
 
   @@unique([slug])
   @@map("organization")
+}
+
+model OrganizationProfile {
+  id             String       @id
+  organization   Organization @relation(fields: [id], references: [id], onDelete: Cascade)
+  weekStart      String       @default("saturday")
+  timezone       String       @default("America/New_York")
+
+  // Business notification settings
+  digestEmailDate String?
+
+  // Business shift settings
+  uploadNames    String?      // Stored as JSON array
+
+  @@map("organization_profile")
 }
 
 model Member {
@@ -129,14 +145,29 @@ model Member {
   icalSlug             String? @unique
   isAvailableByDefault Boolean @default(true)
   phoneNumber          String?
+  metadata             String?
 
-  availabilities   Availability[]
+  settings       MemberSettings?
+  availabilities Availability[]
   shiftAssignments shiftAssignment[]
-  shiftRequests    ShiftRequest[]
-  logs             LogEntry[]
+  shiftRequests  ShiftRequest[]
+  logs           LogEntry[]
 
   @@unique([organizationId, userId])
   @@map("member")
+}
+
+model MemberSettings {
+  id                    String  @id
+  member                Member  @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  // Notification settings
+  notifyMeBeforeShift   Boolean @default(false)
+  notifyMeBeforeShiftDays String?
+  weeklyDigest          Boolean @default(false)
+  unfilledDigest        Boolean @default(false)
+
+  @@map("member_settings")
 }
 
 model Invitation {

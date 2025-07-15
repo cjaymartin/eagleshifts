@@ -5,21 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d58e61e2-8c55-42b2-878e-5572cbd53eb3" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/copyover/Account/Account.jsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/copyover/Account/forms/IcalLinkControl.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/copyover/Account/forms/MyProfileForm.jsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/copyover/Account/forms/NotificationsForm.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/schema.prisma" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/_components/DashboardToolbarActions.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/_components/DashboardToolbarActions.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/requests/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/requests/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool/NewTeamMemberRow.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool/NewTeamMemberRow.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool/OutcomeSelect.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool/OutcomeSelect.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool/ShiftAssignmentToolRow.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool/ShiftAssignmentToolRow.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftForm.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/form/TeamMemberAutocomplete.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/form/TeamMemberAutocomplete.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/providers/SmartAppProvider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/providers/SmartAppProvider.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/DefaultTheme.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/DefaultTheme.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/queries/shifts.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/queries/shifts.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/queries/users.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/queries/users.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server/api/routers/requestsRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/requestsRouter.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server/api/routers/shiftsRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/shiftsRouter.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server/api/root.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/root.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -159,7 +154,7 @@
       <workItem from="1750772569737" duration="21628000" />
       <workItem from="1750813692159" duration="47798000" />
       <workItem from="1750979785524" duration="65854000" />
-      <workItem from="1752166833190" duration="31061000" />
+      <workItem from="1752166833190" duration="38073000" />
     </task>
     <servers />
   </component>

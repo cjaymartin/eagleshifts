@@ -22,7 +22,8 @@ export default function DashboardToolbarActions() {
 
             <MenuList>
                 <MenuItem
-                    component="button"
+                    component="a"
+                    href="/account"
                     sx={{
                         justifyContent: 'flex-start',
                         width: '100%',
@@ -32,7 +33,8 @@ export default function DashboardToolbarActions() {
                 </MenuItem>
 
                 <MenuItem
-                    component="button"
+                    component="a"
+                    href="/business"
                     sx={{
                         justifyContent: 'flex-start',
                         width: '100%',
