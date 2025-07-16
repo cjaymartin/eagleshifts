@@ -5,16 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d58e61e2-8c55-42b2-878e-5572cbd53eb3" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/copyover/Account/Account.jsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/copyover/Account/forms/IcalLinkControl.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/copyover/Account/forms/MyProfileForm.jsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/copyover/Account/forms/NotificationsForm.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nixpacks.toml" beforeDir="false" afterPath="$PROJECT_DIR$/nixpacks.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/schema.prisma" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/_components/DashboardToolbarActions.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/_components/DashboardToolbarActions.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server/api/root.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/root.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -154,7 +148,7 @@
       <workItem from="1750772569737" duration="21628000" />
       <workItem from="1750813692159" duration="47798000" />
       <workItem from="1750979785524" duration="65854000" />
-      <workItem from="1752166833190" duration="38073000" />
+      <workItem from="1752166833190" duration="41592000" />
     </task>
     <servers />
   </component>
