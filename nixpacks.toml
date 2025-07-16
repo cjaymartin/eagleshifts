@@ -15,6 +15,8 @@ NODE_ENV = "production"
 NODE_OPTIONS = "--max_old_space_size=2048"
 
 # Enable swap to help with memory-intensive operations
-phases.setup.aptPkgs = ["procps"]
+#[phases.setup.aptPkgs]
+#keep = ["procps"]
 
-cmds = ["fallocate -l 2G /swapfile", "chmod 600 /swapfile", "mkswap /swapfile", "swapon /swapfile"]
+#[phases.setup.cmds]
+#cmds = ["fallocate -l 2G /swapfile", "chmod 600 /swapfile", "mkswap /swapfile", "swapon /swapfile"]
