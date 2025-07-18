@@ -21,6 +21,14 @@ import { createAuthMiddleware, APIError } from 'better-auth/api';
 import { cookies, headers } from 'next/headers';
 import crypto from 'crypto';
 
+console.log({
+    google: {
+        prompt: 'select_account',
+        clientId: process.env.GOOGLE_CLIENT_ID as string,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    },
+});
+
 export const auth = betterAuth({
     //basePath: path.join(process.env.NEXT_PUBLIC_APP_URL ?? "", "/auth/api"),
     database: prismaAdapter(prisma, {
