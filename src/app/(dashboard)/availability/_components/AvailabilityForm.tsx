@@ -82,12 +82,26 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
         reset,
         setError,
     } = useForm({
-        defaultValues: transformedAvailability,
+        defaultValues: availability
+            ? {
+                  id: transformedAvailability.id,
+                  startDate: transformedAvailability.startDate,
+                  endDate: transformedAvailability.endDate,
+                  isAvailable: transformedAvailability.isAvailable,
+                  desc: transformedAvailability.desc,
+                  memberId: transformedAvailability.memberId,
+              }
+            : defaultValues,
     });
 
     // Helper for setting form errors
-    const setErrors = (errorList) => {
-        errorList.forEach((err) => {
+    type FormError = {
+        field: string;
+        message: string;
+    };
+
+    const setErrors = (errorList: FormError[]) => {
+        errorList.forEach((err: FormError) => {
             setError(err.field, {
                 type: 'manual',
                 message: err.message,
@@ -108,8 +122,18 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
     const updateMutation = useAvailabilityUpdateMutation();
     const deleteMutation = useAvailabilityDeleteMutation();
 
+    // Define form data type
+    type AvailabilityFormData = {
+        id?: string;
+        startDate: Date | null;
+        endDate: Date | null;
+        isAvailable: boolean;
+        desc: string;
+        memberId?: string;
+    };
+
     // Form submission handlers
-    async function onNewFormSubmit(formData) {
+    async function onNewFormSubmit(formData: AvailabilityFormData) {
         try {
             // Validate form data
             if (!formData.startDate) {
@@ -157,7 +181,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
         }
     }
 
-    async function onUpdateFormSubmit(formData) {
+    async function onUpdateFormSubmit(formData: AvailabilityFormData) {
         try {
             if (!availabilityId) {
                 notifications.show('Availability ID is required for updates', {

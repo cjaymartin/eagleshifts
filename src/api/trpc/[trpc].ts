@@ -6,5 +6,6 @@ export const appRouter = myAppRouter;
 export type AppRouter = typeof appRouter;
 export default trpcNext.createNextApiHandler({
     router: appRouter,
+    // @ts-expect-error this whole null thing doesn't work
     createContext: () => null,
 });

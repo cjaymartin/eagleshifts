@@ -32,7 +32,7 @@ export default function BusinessPage() {
     return (
       <Container maxWidth="lg">
         <Typography variant="h4" sx={{ mt: 4 }}>
-          You don't have permission to access this page.
+          You don&apos;t have permission to access this page.
         </Typography>
       </Container>
     );
@@ -57,9 +57,9 @@ export default function BusinessPage() {
           <ArrowBackIcon fontSize="small" />
           Back
         </Link>
-        
+
         <Typography variant="h3" sx={{ mb: 3 }}>Business Settings</Typography>
-        
+
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
           <TabList onChange={handleTabChange} aria-label="Business settings tabs">
             <Tab label="Profile" value="profile" />

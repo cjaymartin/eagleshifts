@@ -158,8 +158,16 @@ function TeamContent() {
         }
     };
 
+    // Define user type
+    type TeamUser = {
+        id: string;
+        email: string;
+        role?: string;
+        members?: { id: string }[];
+    };
+
     // Handle user editing
-    const handleEdit = (user: any) => {
+    const handleEdit = (user: TeamUser) => {
         console.log('HEH ', user);
         dialogs.open(TeamDialog, { user });
     };

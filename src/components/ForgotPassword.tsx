@@ -67,7 +67,7 @@ export default function ForgotPassword({ open, handleClose }: ForgotPasswordProp
           </React.Fragment>
         ) : (
           <DialogContentText>
-            If an account exists with this email, we've sent you instructions on how to reset your password.
+            If an account exists with this email, we&apos;ve sent you instructions on how to reset your password.
           </DialogContentText>
         )}
       </DialogContent>

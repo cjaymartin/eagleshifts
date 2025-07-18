@@ -60,6 +60,7 @@
     "@types/nodemailer": "^6.4.17",
     "@types/path-browserify": "^1.0.3",
     "@types/react": "^19",
+    "@types/react-big-calendar": "^1.16.2",
     "@types/react-dom": "^19",
     "cross-env": "^7.0.3",
     "eslint": "^9",

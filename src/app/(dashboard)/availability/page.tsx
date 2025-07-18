@@ -64,7 +64,8 @@ export default function Availability() {
     );
 
     // Get team users for admin selection (only for admins)
-    const { data: teamUsers = [] } = isAdmin ? useTeamUsersQuery() : { data: [] };
+    const { data: teamUsers = [] } = useTeamUsersQuery();
+    // If not admin, we'll just ignore the data
 
     // For non-admin users, set selectedMemberId to their own memberId
     useEffect(() => {

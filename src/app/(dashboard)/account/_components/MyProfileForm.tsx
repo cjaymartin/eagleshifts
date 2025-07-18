@@ -71,7 +71,7 @@ export default function MyProfileForm() {
     <Container>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Grid container direction="column" spacing={2} sx={{ m: 1 }}>
-          <Grid item>
+          <Grid>
             <Controller
               name="displayName"
               control={control}
@@ -87,7 +87,7 @@ export default function MyProfileForm() {
               )}
             />
           </Grid>
-          <Grid item>
+          <Grid>
             <Controller
               name="email"
               control={control}
@@ -104,7 +104,7 @@ export default function MyProfileForm() {
               )}
             />
           </Grid>
-          <Grid item>
+          <Grid>
             <Controller
               name="phoneNumber"
               control={control}
@@ -123,12 +123,12 @@ export default function MyProfileForm() {
           </Grid>
         </Grid>
         <Grid container spacing={3} sx={{ m: 1 }}>
-          <Grid item>
+          <Grid>
             <Button variant="contained" color="primary" type="submit">
               Save
             </Button>
           </Grid>
-          <Grid item>
+          <Grid>
             <Button
               variant="contained"
               color="secondary"
