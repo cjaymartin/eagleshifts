@@ -147,6 +147,13 @@ export const auth = betterAuth({
         }),
         nextCookies(),
     ],
+    trustedOrigins: [
+        'http://qc800coow8gkk488wockw44g.135.181.153.72.sslip.io',
+        'https://app.eagleshifts.com',
+        'https://www.eagleshifts.com',
+        'https://eagleshifts.com',
+        'http://localhost:3000',
+    ],
     // trustedOrigins: [
     //   "*.ngrok-free.app",
     //   "*.localhost:3000",
