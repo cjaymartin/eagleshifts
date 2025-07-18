@@ -34,6 +34,35 @@ import {
     useShiftRequestSeedQuery,
 } from '@/queries/requests';
 
+// Define interfaces for the ShiftRequest and related objects
+interface User {
+    name?: string;
+    email?: string;
+}
+
+interface Member {
+    name?: string;
+    userId: string;
+    user?: User;
+}
+
+interface Shift {
+    title: string;
+    location?: string;
+    date: string | Date;
+    startTime: string | Date;
+    endTime: string | Date;
+}
+
+interface ShiftRequest {
+    id: string;
+    createdAt: string | Date;
+    status: 'pending' | 'approved' | 'rejected';
+    reason?: string;
+    shift: Shift;
+    member: Member;
+}
+
 export default function Requests() {
     const dialogs = useDialogs();
     const notifications = useNotifications();
@@ -51,8 +80,8 @@ export default function Requests() {
     const seedQuery = useShiftRequestSeedQuery();
 
     // Function to open the request dialog for a specific request
-    const openRequestDialog = (request) => {
-        dialogs.open(RequestDialog, request);
+    const openRequestDialog = (request: ShiftRequest) => {
+        dialogs.open(RequestDialog, request as any);
     };
 
     // Function to open the request dialog for a new request
@@ -65,7 +94,7 @@ export default function Requests() {
         const fileName = 'shift-requests-' + dayjs.utc().format('YYYY-MM-DD');
 
         const csvData =
-            requests?.map((request) => {
+            requests?.map((request: any /*ShiftRequest*/) => {
                 const { createdAt, status, reason } = request;
                 const shift = request.shift;
                 const member = request.member;
@@ -102,7 +131,7 @@ export default function Requests() {
             notifications.show('Old requests deleted successfully', {
                 severity: 'success',
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error deleting old requests:', error);
             notifications.show(`Error: ${error.message}`, {
                 severity: 'error',
@@ -119,7 +148,7 @@ export default function Requests() {
                     severity: 'success',
                 });
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error seeding requests:', error);
             notifications.show(`Error: ${error.message}`, {
                 severity: 'error',
@@ -159,7 +188,7 @@ export default function Requests() {
                 </IconButton>
             </Box>
             <TableContainer component={Paper}>
-                <Table spacing={4} size="small">
+                <Table size="small">
                     <TableHead>
                         <TableRow>
                             <TableCell>Request Date</TableCell>
@@ -171,7 +200,7 @@ export default function Requests() {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {requests?.map((request) => {
+                        {requests?.map((request: any /*ShiftRequest*/) => {
                             //TODO: This be fugly.  The API route should include the user name info
                             // and the underlying logic should be DRY'd somewhere
                             const userName =
@@ -201,7 +230,14 @@ export default function Requests() {
                                     </TableCell>
                                     <TableCell>{userName}</TableCell>
                                     <TableCell>
-                                        {statusLookup[request.status]}
+                                        {
+                                            statusLookup[
+                                                request.status as
+                                                    | 'pending'
+                                                    | 'approved'
+                                                    | 'rejected'
+                                            ]
+                                        }
                                     </TableCell>
                                     <TableCell>
                                         <IconButton

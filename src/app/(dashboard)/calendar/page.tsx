@@ -33,7 +33,7 @@ const ColoredDateCellWrapper: React.FC<{ children: React.ReactElement }> = ({
         style: {
             backgroundColor: 'lightblue',
         },
-    });
+    } as any);
 
 export default function Calendar() {
     // Get user session and role
@@ -48,7 +48,7 @@ export default function Calendar() {
     const [filters, setFilters] = useState<ShiftFilterSchema>();
 
     // Fetch shifts data using the same query as the shifts page
-    const { data: shifts } = trpc.shifts.list.useQuery(filters);
+    const { data: shifts } = trpc.shifts.list.useQuery(filters as any);
 
     // Create a lookup object for shifts by ID
     const shiftLookup = React.useMemo(() => {
@@ -65,7 +65,7 @@ export default function Calendar() {
         (calEvent: { id: string }) => {
             const shift = shiftLookup[calEvent.id];
             if (shift) {
-                dialogs.open(ShiftDialog, shift);
+                dialogs.open(ShiftDialog, shift as any);
             }
         },
         [dialogs, shiftLookup]
@@ -162,12 +162,12 @@ export default function Calendar() {
     return (
         <Box>
             {/* Use the same ShiftFilters component as the shifts page */}
-            <ShiftFilters filters={filters} setFilters={setFilters} />
+            <ShiftFilters filters={filters as any} setFilters={setFilters} />
 
             <Grid container direction="row" maxWidth="xl">
-                <Grid item sx={{ width: '60vw', height: 700 }}>
+                <Grid sx={{ width: '60vw', height: 700 }}>
                     <BigCalendar
-                        components={components}
+                        components={components as any}
                         localizer={localizer}
                         events={calendarEvents}
                         startAccessor="start"

@@ -95,7 +95,8 @@ export const shiftsRouter = router({
         )
         .query(async ({ ctx, input }) => {
             // Check if user is admin or member
-            const isAdmin = ctx.user.role === 'admin' || ctx.user.role === 'owner';
+            const isAdmin =
+                ctx.user.role === 'admin' || ctx.user.role === 'owner';
 
             // Build filter conditions
             const where: Prisma.ShiftWhereInput = {
@@ -188,33 +189,45 @@ export const shiftsRouter = router({
 
             // For non-admin users, apply access rules filtering
             if (!isAdmin && ctx.user.memberId) {
-                console.log(`Applying member access rules for user with memberId: ${ctx.user.memberId}`);
+                console.log(
+                    `Applying member access rules for user with memberId: ${ctx.user.memberId}`
+                );
                 const userMemberId = ctx.user.memberId;
 
                 const originalCount = filteredShifts.length;
-                filteredShifts = filteredShifts.filter(shift => {
+                filteredShifts = filteredShifts.filter((shift) => {
                     // Rule 1: User has an assigned or pending shiftAssignment for this shift
                     const userHasAssignment = shift.shiftAssignments.some(
-                        assignment => assignment.memberId === userMemberId && 
-                        (assignment.outcome === 'assigned' || assignment.outcome === 'waiting')
+                        (assignment) =>
+                            assignment.memberId === userMemberId &&
+                            (assignment.outcome === 'assigned' ||
+                                assignment.outcome === 'waiting')
                     );
 
                     if (userHasAssignment) {
-                        console.log(`Shift ${shift.id} accessible: User has an assignment`);
+                        console.log(
+                            `Shift ${shift.id} accessible: User has an assignment`
+                        );
                         return true;
                     }
 
                     // Rule 2: Count of pending/assigned shiftAssignments is less than the number of open slots
                     const assignedCount = shift.shiftAssignments.filter(
-                        assignment => assignment.outcome === 'assigned' || assignment.outcome === 'waiting'
+                        (assignment) =>
+                            assignment.outcome === 'assigned' ||
+                            assignment.outcome === 'waiting'
                     ).length;
 
                     const hasAvailableSlots = assignedCount < shift.slots;
-                    console.log(`Shift ${shift.id} ${hasAvailableSlots ? 'accessible' : 'not accessible'}: ${assignedCount}/${shift.slots} slots filled`);
+                    console.log(
+                        `Shift ${shift.id} ${hasAvailableSlots ? 'accessible' : 'not accessible'}: ${assignedCount}/${shift.slots} slots filled`
+                    );
 
                     return hasAvailableSlots;
                 });
-                console.log(`Member access rules filtered shifts from ${originalCount} to ${filteredShifts.length}`);
+                console.log(
+                    `Member access rules filtered shifts from ${originalCount} to ${filteredShifts.length}`
+                );
             }
 
             // Apply additional filtering for "filled" and "unfilled" that can't be done in Prisma
@@ -269,39 +282,54 @@ export const shiftsRouter = router({
             }
 
             // Check if user is admin or member
-            const isAdmin = ctx.user.role === 'admin' || ctx.user.role === 'owner';
+            const isAdmin =
+                ctx.user.role === 'admin' || ctx.user.role === 'owner';
 
             // For non-admin users, check if they should have access to this shift
             if (!isAdmin && ctx.user.memberId) {
-                console.log(`Checking member access for shift ${shift.id} for user with memberId: ${ctx.user.memberId}`);
+                console.log(
+                    `Checking member access for shift ${shift.id} for user with memberId: ${ctx.user.memberId}`
+                );
                 const userMemberId = ctx.user.memberId;
 
                 // Rule 1: User has an assigned or pending shiftAssignment for this shift
                 const userHasAssignment = shift.shiftAssignments.some(
-                    assignment => assignment.memberId === userMemberId && 
-                    (assignment.outcome === 'assigned' || assignment.outcome === 'waiting')
+                    (assignment) =>
+                        assignment.memberId === userMemberId &&
+                        (assignment.outcome === 'assigned' ||
+                            assignment.outcome === 'waiting')
                 );
 
                 if (userHasAssignment) {
-                    console.log(`Access granted: User has an assignment for shift ${shift.id}`);
+                    console.log(
+                        `Access granted: User has an assignment for shift ${shift.id}`
+                    );
                     // User has an assignment, allow access
                 } else {
                     // Rule 2: Count of pending/assigned shiftAssignments is less than the number of open slots
                     const assignedCount = shift.shiftAssignments.filter(
-                        assignment => assignment.outcome === 'assigned' || assignment.outcome === 'waiting'
+                        (assignment) =>
+                            assignment.outcome === 'assigned' ||
+                            assignment.outcome === 'waiting'
                     ).length;
 
-                    console.log(`Shift ${shift.id} has ${assignedCount}/${shift.slots} slots filled`);
+                    console.log(
+                        `Shift ${shift.id} has ${assignedCount}/${shift.slots} slots filled`
+                    );
 
                     if (assignedCount >= shift.slots) {
-                        console.log(`Access denied: Shift ${shift.id} is full and user doesn't have an assignment`);
+                        console.log(
+                            `Access denied: Shift ${shift.id} is full and user doesn't have an assignment`
+                        );
                         // Shift is full and user doesn't have an assignment, deny access
                         throw new TRPCError({
                             code: 'FORBIDDEN',
                             message: 'You do not have access to this shift',
                         });
                     } else {
-                        console.log(`Access granted: Shift ${shift.id} has available slots`);
+                        console.log(
+                            `Access granted: Shift ${shift.id} has available slots`
+                        );
                     }
                 }
             }
@@ -342,37 +370,50 @@ export const shiftsRouter = router({
             console.log('Shift create input:', JSON.stringify(input, null, 2));
 
             // Check for the problematic member ID
-            if (input.assignments && input.assignments.some(a => a.memberId === "GMFdgYXfRFixlN9V9PRW4g")) {
-                console.log("Found problematic user ID: GMFdgYXfRFixlN9V9PRW4g");
+            if (
+                input.assignments &&
+                input.assignments.some(
+                    (a) => a.memberId === 'GMFdgYXfRFixlN9V9PRW4g'
+                )
+            ) {
+                console.log(
+                    'Found problematic user ID: GMFdgYXfRFixlN9V9PRW4g'
+                );
                 try {
                     // Try to find the user directly
                     const problematicUser = await ctx.prisma.user.findUnique({
-                        where: { id: "GMFdgYXfRFixlN9V9PRW4g" }
+                        where: { id: 'GMFdgYXfRFixlN9V9PRW4g' },
                     });
-                    console.log("Problematic user lookup result:", problematicUser);
+                    console.log(
+                        'Problematic user lookup result:',
+                        problematicUser
+                    );
 
                     // Try raw query
                     const rawResult = await ctx.prisma.$queryRaw`
-                        SELECT id, name, email FROM "user" WHERE id = ${"GMFdgYXfRFixlN9V9PRW4g"}
+                        SELECT id, name, email FROM "user" WHERE id = ${'GMFdgYXfRFixlN9V9PRW4g'}
                     `;
-                    console.log("Raw query result for problematic user:", rawResult);
+                    console.log(
+                        'Raw query result for problematic user:',
+                        rawResult
+                    );
 
                     // Check if there are any users with similar IDs
                     const similarUsers = await ctx.prisma.user.findMany({
                         where: {
                             id: {
-                                contains: "GMFdgYXf"
-                            }
+                                contains: 'GMFdgYXf',
+                            },
                         },
                         select: {
                             id: true,
                             name: true,
-                            email: true
-                        }
+                            email: true,
+                        },
                     });
-                    console.log("Users with similar IDs:", similarUsers);
-                } catch (error) {
-                    console.error("Error checking problematic user:", error);
+                    console.log('Users with similar IDs:', similarUsers);
+                } catch (error: any) {
+                    console.error('Error checking problematic user:', error);
                 }
             }
             const shift = await ctx.prisma.shift.create({
@@ -402,16 +443,20 @@ export const shiftsRouter = router({
                 // Log organization info
                 console.log(`Organization ID: ${ctx.user.organizationId}`);
                 try {
-                    const organization = await ctx.prisma.organization.findUnique({
-                        where: { id: ctx.user.organizationId },
-                    });
+                    const organization =
+                        await ctx.prisma.organization.findUnique({
+                            where: { id: ctx.user.organizationId },
+                        });
                     console.log(`Organization details:`, organization);
                 } catch (orgError) {
                     console.error(`Error fetching organization:`, orgError);
                 }
 
                 // Use the member IDs directly from the input
-                console.log(`Using member IDs:`, input.assignments.map((a) => a.memberId));
+                console.log(
+                    `Using member IDs:`,
+                    input.assignments.map((a) => a.memberId)
+                );
 
                 // Verify that the member IDs exist in the current organization
                 const members = await ctx.prisma.member.findMany({
@@ -430,7 +475,9 @@ export const shiftsRouter = router({
                 console.log('Found members:', members);
 
                 // Create a set of valid member IDs
-                const validMemberIds = new Set(members.map(member => member.id));
+                const validMemberIds = new Set(
+                    members.map((member) => member.id)
+                );
                 console.log('Valid member IDs:', Array.from(validMemberIds));
 
                 // Check if we have any assignments with missing member IDs
@@ -438,14 +485,19 @@ export const shiftsRouter = router({
                     (assignment) => !validMemberIds.has(assignment.memberId)
                 );
                 if (missingMembers.length > 0) {
-                    console.log('Missing member IDs:', missingMembers.map(a => a.memberId));
-                    console.log('These member IDs will be skipped as they do not exist in the organization.');
+                    console.log(
+                        'Missing member IDs:',
+                        missingMembers.map((a) => a.memberId)
+                    );
+                    console.log(
+                        'These member IDs will be skipped as they do not exist in the organization.'
+                    );
                 }
 
                 // Prepare assignment data
                 const assignmentData = input.assignments
-                    .filter(
-                        (assignment) => validMemberIds.has(assignment.memberId)
+                    .filter((assignment) =>
+                        validMemberIds.has(assignment.memberId)
                     ) // Only include valid member IDs
                     .map((assignment) => ({
                         shiftId: shift.id,
@@ -457,36 +509,58 @@ export const shiftsRouter = router({
 
                 // Create assignments using the correct member IDs
                 if (assignmentData.length > 0) {
-                    console.log(`Attempting to create ${assignmentData.length} assignments`);
+                    console.log(
+                        `Attempting to create ${assignmentData.length} assignments`
+                    );
                     try {
-                        const createdAssignments = await ctx.prisma.shiftAssignment.createMany({
-                            data: assignmentData,
-                        });
+                        const createdAssignments =
+                            await ctx.prisma.shiftAssignment.createMany({
+                                data: assignmentData,
+                            });
                         console.log('Created assignments:', createdAssignments);
-                    } catch (error) {
+                    } catch (error: any) {
                         console.error('Error creating assignments:', error);
 
                         // Try creating assignments one by one to identify which one is causing the issue
-                        console.log('Attempting to create assignments one by one...');
+                        console.log(
+                            'Attempting to create assignments one by one...'
+                        );
                         for (const assignment of assignmentData) {
                             try {
-                                console.log(`Creating assignment for memberId: ${assignment.memberId}, outcome: ${assignment.outcome}`);
-                                const createdAssignment = await ctx.prisma.shiftAssignment.create({
-                                    data: assignment,
-                                });
-                                console.log('Created assignment:', createdAssignment);
+                                console.log(
+                                    `Creating assignment for memberId: ${assignment.memberId}, outcome: ${assignment.outcome}`
+                                );
+                                const createdAssignment =
+                                    await ctx.prisma.shiftAssignment.create({
+                                        data: assignment,
+                                    });
+                                console.log(
+                                    'Created assignment:',
+                                    createdAssignment
+                                );
                             } catch (err) {
-                                console.error('Error creating assignment:', assignment, err);
+                                console.error(
+                                    'Error creating assignment:',
+                                    assignment,
+                                    err
+                                );
 
                                 // Try to get more information about the member
                                 try {
-                                    const memberCheck = await ctx.prisma.member.findUnique({
-                                        where: { id: assignment.memberId },
-                                        include: { user: true }
-                                    });
-                                    console.log(`Member check result:`, memberCheck);
+                                    const memberCheck =
+                                        await ctx.prisma.member.findUnique({
+                                            where: { id: assignment.memberId },
+                                            include: { user: true },
+                                        });
+                                    console.log(
+                                        `Member check result:`,
+                                        memberCheck
+                                    );
                                 } catch (memberError) {
-                                    console.error(`Error checking member:`, memberError);
+                                    console.error(
+                                        `Error checking member:`,
+                                        memberError
+                                    );
                                 }
                             }
                         }
@@ -501,7 +575,10 @@ export const shiftsRouter = router({
                     include: { shiftAssignments: true },
                 });
 
-                console.log('Updated shift with assignments:', JSON.stringify(updatedShift, null, 2));
+                console.log(
+                    'Updated shift with assignments:',
+                    JSON.stringify(updatedShift, null, 2)
+                );
                 return updatedShift;
             }
 
@@ -542,37 +619,50 @@ export const shiftsRouter = router({
             console.log('Shift update input:', JSON.stringify(input, null, 2));
 
             // Check for the problematic member ID
-            if (input.assignments && input.assignments.some(a => a.memberId === "GMFdgYXfRFixlN9V9PRW4g")) {
-                console.log("Found problematic user ID: GMFdgYXfRFixlN9V9PRW4g");
+            if (
+                input.assignments &&
+                input.assignments.some(
+                    (a) => a.memberId === 'GMFdgYXfRFixlN9V9PRW4g'
+                )
+            ) {
+                console.log(
+                    'Found problematic user ID: GMFdgYXfRFixlN9V9PRW4g'
+                );
                 try {
                     // Try to find the user directly
                     const problematicUser = await ctx.prisma.user.findUnique({
-                        where: { id: "GMFdgYXfRFixlN9V9PRW4g" }
+                        where: { id: 'GMFdgYXfRFixlN9V9PRW4g' },
                     });
-                    console.log("Problematic user lookup result:", problematicUser);
+                    console.log(
+                        'Problematic user lookup result:',
+                        problematicUser
+                    );
 
                     // Try raw query
                     const rawResult = await ctx.prisma.$queryRaw`
-                        SELECT id, name, email FROM "user" WHERE id = ${"GMFdgYXfRFixlN9V9PRW4g"}
+                        SELECT id, name, email FROM "user" WHERE id = ${'GMFdgYXfRFixlN9V9PRW4g'}
                     `;
-                    console.log("Raw query result for problematic user:", rawResult);
+                    console.log(
+                        'Raw query result for problematic user:',
+                        rawResult
+                    );
 
                     // Check if there are any users with similar IDs
                     const similarUsers = await ctx.prisma.user.findMany({
                         where: {
                             id: {
-                                contains: "GMFdgYXf"
-                            }
+                                contains: 'GMFdgYXf',
+                            },
                         },
                         select: {
                             id: true,
                             name: true,
-                            email: true
-                        }
+                            email: true,
+                        },
                     });
-                    console.log("Users with similar IDs:", similarUsers);
-                } catch (error) {
-                    console.error("Error checking problematic user:", error);
+                    console.log('Users with similar IDs:', similarUsers);
+                } catch (error: any) {
+                    console.error('Error checking problematic user:', error);
                 }
             }
 
@@ -605,19 +695,21 @@ export const shiftsRouter = router({
                     console.log('Updating assignments:', data.assignments);
 
                     // First delete all existing assignments
-                    const deletedAssignments = await ctx.prisma.shiftAssignment.deleteMany({
-                        where: {
-                            shiftId: id,
-                        },
-                    });
+                    const deletedAssignments =
+                        await ctx.prisma.shiftAssignment.deleteMany({
+                            where: {
+                                shiftId: id,
+                            },
+                        });
                     console.log('Deleted assignments:', deletedAssignments);
 
                     // Log organization info
                     console.log(`Organization ID: ${ctx.user.organizationId}`);
                     try {
-                        const organization = await ctx.prisma.organization.findUnique({
-                            where: { id: ctx.user.organizationId },
-                        });
+                        const organization =
+                            await ctx.prisma.organization.findUnique({
+                                where: { id: ctx.user.organizationId },
+                            });
                         console.log(`Organization details:`, organization);
                     } catch (orgError) {
                         console.error(`Error fetching organization:`, orgError);
@@ -625,7 +717,10 @@ export const shiftsRouter = router({
 
                     // Then create new assignments
                     // Use the member IDs directly from the input
-                    console.log(`Using member IDs:`, data.assignments.map((a) => a.memberId));
+                    console.log(
+                        `Using member IDs:`,
+                        data.assignments.map((a) => a.memberId)
+                    );
 
                     // Verify that the member IDs exist in the current organization
                     const members = await ctx.prisma.member.findMany({
@@ -644,23 +739,32 @@ export const shiftsRouter = router({
                     console.log('Found members:', members);
 
                     // Create a set of valid member IDs
-                    const validMemberIds = new Set(members.map(member => member.id));
-                    console.log('Valid member IDs:', Array.from(validMemberIds));
+                    const validMemberIds = new Set(
+                        members.map((member) => member.id)
+                    );
+                    console.log(
+                        'Valid member IDs:',
+                        Array.from(validMemberIds)
+                    );
 
                     // Check if we have any assignments with missing member IDs
                     const missingMembers = data.assignments.filter(
                         (assignment) => !validMemberIds.has(assignment.memberId)
                     );
                     if (missingMembers.length > 0) {
-                        console.log('Missing member IDs:', missingMembers.map(a => a.memberId));
-                        console.log('These member IDs will be skipped as they do not exist in the organization.');
+                        console.log(
+                            'Missing member IDs:',
+                            missingMembers.map((a) => a.memberId)
+                        );
+                        console.log(
+                            'These member IDs will be skipped as they do not exist in the organization.'
+                        );
                     }
 
                     // Prepare assignment data
                     const assignmentData = data.assignments
-                        .filter(
-                            (assignment) =>
-                                validMemberIds.has(assignment.memberId)
+                        .filter((assignment) =>
+                            validMemberIds.has(assignment.memberId)
                         ) // Only include valid member IDs
                         .map((assignment) => ({
                             shiftId: id,
@@ -672,36 +776,65 @@ export const shiftsRouter = router({
 
                     // Create assignments using the correct member IDs
                     if (assignmentData.length > 0) {
-                        console.log(`Attempting to create ${assignmentData.length} assignments`);
+                        console.log(
+                            `Attempting to create ${assignmentData.length} assignments`
+                        );
                         try {
-                            const createdAssignments = await ctx.prisma.shiftAssignment.createMany({
-                                data: assignmentData,
-                            });
-                            console.log('Created assignments:', createdAssignments);
-                        } catch (error) {
+                            const createdAssignments =
+                                await ctx.prisma.shiftAssignment.createMany({
+                                    data: assignmentData,
+                                });
+                            console.log(
+                                'Created assignments:',
+                                createdAssignments
+                            );
+                        } catch (error: any) {
                             console.error('Error creating assignments:', error);
 
                             // Try creating assignments one by one to identify which one is causing the issue
-                            console.log('Attempting to create assignments one by one...');
+                            console.log(
+                                'Attempting to create assignments one by one...'
+                            );
                             for (const assignment of assignmentData) {
                                 try {
-                                    console.log(`Creating assignment for memberId: ${assignment.memberId}, outcome: ${assignment.outcome}`);
-                                    const createdAssignment = await ctx.prisma.shiftAssignment.create({
-                                        data: assignment,
-                                    });
-                                    console.log('Created assignment:', createdAssignment);
+                                    console.log(
+                                        `Creating assignment for memberId: ${assignment.memberId}, outcome: ${assignment.outcome}`
+                                    );
+                                    const createdAssignment =
+                                        await ctx.prisma.shiftAssignment.create(
+                                            {
+                                                data: assignment,
+                                            }
+                                        );
+                                    console.log(
+                                        'Created assignment:',
+                                        createdAssignment
+                                    );
                                 } catch (err) {
-                                    console.error('Error creating assignment:', assignment, err);
+                                    console.error(
+                                        'Error creating assignment:',
+                                        assignment,
+                                        err
+                                    );
 
                                     // Try to get more information about the member
                                     try {
-                                        const memberCheck = await ctx.prisma.member.findUnique({
-                                            where: { id: assignment.memberId },
-                                            include: { user: true }
-                                        });
-                                        console.log(`Member check result:`, memberCheck);
+                                        const memberCheck =
+                                            await ctx.prisma.member.findUnique({
+                                                where: {
+                                                    id: assignment.memberId,
+                                                },
+                                                include: { user: true },
+                                            });
+                                        console.log(
+                                            `Member check result:`,
+                                            memberCheck
+                                        );
                                     } catch (memberError) {
-                                        console.error(`Error checking member:`, memberError);
+                                        console.error(
+                                            `Error checking member:`,
+                                            memberError
+                                        );
                                     }
                                 }
                             }
@@ -725,21 +858,29 @@ export const shiftsRouter = router({
                         include: { shiftAssignments: true },
                     });
 
-                    console.log('Updated shift with assignments:', JSON.stringify(updatedShift, null, 2));
+                    console.log(
+                        'Updated shift with assignments:',
+                        JSON.stringify(updatedShift, null, 2)
+                    );
 
                     // Format dates as YYYY-MM-DD strings for the response
                     const formattedShift = {
                         ...updatedShift,
-                        date: formatDateString(updatedShift.date.toISOString()),
+                        date: formatDateString(
+                            updatedShift!.date.toISOString()
+                        ),
                         startTime: formatDateString(
-                            updatedShift.startTime.toISOString()
+                            updatedShift!.startTime.toISOString()
                         ),
                         endTime: formatDateString(
-                            updatedShift.endTime.toISOString()
+                            updatedShift!.endTime.toISOString()
                         ),
                     };
 
-                    console.log('Formatted shift to return:', JSON.stringify(formattedShift, null, 2));
+                    console.log(
+                        'Formatted shift to return:',
+                        JSON.stringify(formattedShift, null, 2)
+                    );
                     return formattedShift;
                 }
 
@@ -750,7 +891,7 @@ export const shiftsRouter = router({
                     startTime: formatDateString(shift.startTime.toISOString()),
                     endTime: formatDateString(shift.endTime.toISOString()),
                 };
-            } catch (error) {
+            } catch (error: any) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: `Failed to update shift: ${error.message}`,
@@ -777,7 +918,7 @@ export const shiftsRouter = router({
                 }
 
                 return { success: true, message: 'Shift deleted successfully' };
-            } catch (error) {
+            } catch (error: any) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: `Failed to delete shift: ${error.message}`,

@@ -38,12 +38,12 @@ export default function ShiftAssignmentToolRow({
 
     // If this is the current user's row, use session data instead of fetching
     const { data: fetchedMember, isPending } = useMemberByIdQuery(
-        isCurrentUserRow ? undefined : row?.memberId
+        (isCurrentUserRow ? undefined : row?.memberId) as any
     );
 
     // Use session data for current user, or fetched data for other users
-    const member = isCurrentUserRow 
-        ? { id: currentUser.memberId, name: currentUser.name } 
+    const member = isCurrentUserRow
+        ? { id: currentUser.memberId, name: currentUser.name }
         : fetchedMember;
 
     const [rawOpen, setOpen] = useState(false);
@@ -127,7 +127,7 @@ export default function ShiftAssignmentToolRow({
                                     });
                                 }}
                                 InputProps={{
-                                    readOnly: !isAdmin
+                                    readOnly: !isAdmin,
                                 }}
                             />
                         </Box>

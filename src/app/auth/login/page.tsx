@@ -24,5 +24,9 @@ export default async function LoginPage() {
     const anyOrganization = await prisma.organization.findFirst({});
     //const organizations = prisma.organization.
 
-    return <LoginDialog activeOrganization={organization || anyOrganization} />;
+    return (
+        <LoginDialog
+            activeOrganization={organization || (anyOrganization as any)}
+        />
+    );
 }

@@ -33,7 +33,7 @@ export default async function acceptInvitation(invitationId: string) {
     }
 
     // Check if invitation is expired
-    if (false && invitation.expiresAt && invitation.expiresAt < new Date()) {
+    if (invitation?.expiresAt && invitation?.expiresAt < new Date()) {
         throw new Error('Invitation has expired');
     }
 
@@ -74,7 +74,7 @@ export default async function acceptInvitation(invitationId: string) {
                 userId: user.id,
                 organizationId: invitation.organizationId,
                 role: invitation.role || 'member', // Use role from invitation or default to 'member'
-                name: invitation.name,
+                name: invitation.email, //name,
                 createdAt: new Date(),
             },
         });

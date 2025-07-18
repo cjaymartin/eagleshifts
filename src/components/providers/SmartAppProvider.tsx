@@ -90,7 +90,7 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
             ? SUPERADMIN_NAVIGATION
             : REGULAR_NAVIGATION;
 
-        setNavigation(selectedNavigation);
+        setNavigation(selectedNavigation as any);
     }, [pathname, session]);
 
     const authentication = {

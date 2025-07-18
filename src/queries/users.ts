@@ -110,7 +110,7 @@ export function useCreateMemberInvitationMutation() {
         },
         onSuccess: () => {
             // Invalidate the invitations list to show the new invitation
-            queryClient.invalidateQueries(['invitations']);
+            queryClient.invalidateQueries({ queryKey: ['invitations'] });
         },
     });
 }
@@ -160,12 +160,14 @@ export function useImitateUserMutation() {
 
 export function useRejectInvitationMutation() {
     const queryClient = useQueryClient();
+    const { mutateAsync: deleteInvitation } =
+        trpc.users.deleteInvitation.useMutation();
 
     return useMutation({
         mutationFn: async (invitationId: string) => {
             console.log('let us reject this invitation', invitationId);
-            const result = await trpc.users.deleteInvitation.useMutation({
-                id: invitationId,
+            const result = await deleteInvitation({
+                invitationId,
             });
             console.log(result);
             return { success: true };

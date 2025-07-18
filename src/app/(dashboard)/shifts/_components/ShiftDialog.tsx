@@ -58,7 +58,7 @@ export default function ShiftDialog({
                         isNew={!!isNew}
                         shiftId={payload?.id}
                         shift={payload}
-                        handleClose={handleClose}
+                        //handleClose={handleClose as any}
                     />
                 </Container>
             </DialogContent>

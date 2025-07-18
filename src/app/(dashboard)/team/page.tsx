@@ -47,7 +47,7 @@ function TeamPageSkeleton() {
             <Box mt={3}>
                 <Skeleton variant="text" width="150px" height={30} />
                 <TableContainer component={Paper}>
-                    <Table spacing={4} size="small">
+                    <Table size="small">
                         <TableHead>
                             <TableRow>
                                 <TableCell>
@@ -128,7 +128,7 @@ function TeamContent() {
 
         return sortBy(teamUsers, (user) => {
             const userRole = user.role || 'member';
-            return `${ranks[userRole] || 0}::${user.email}`;
+            return `${(ranks[userRole as 'owner' | 'admin' | 'member' | 'suspended'] as any) || 0}::${user.email}`;
         }).reverse(); // Reverse to get highest rank first
     }, [teamUsers]);
 
@@ -150,7 +150,7 @@ function TeamContent() {
                 notifications.show('User deleted successfully', {
                     severity: 'success',
                 });
-            } catch (error) {
+            } catch (error: any) {
                 notifications.show(`Error deleting user: ${error.message}`, {
                     severity: 'error',
                 });
@@ -169,11 +169,11 @@ function TeamContent() {
     // Handle user editing
     const handleEdit = (user: TeamUser) => {
         console.log('HEH ', user);
-        dialogs.open(TeamDialog, { user });
+        dialogs.open(TeamDialog, { user } as any);
     };
 
     const handleInvite = () => {
-        return dialogs.open(TeamDialog, { isNew: true });
+        return dialogs.open(TeamDialog, { isNew: true } as any);
     };
 
     // Handle user imitation
@@ -200,7 +200,7 @@ function TeamContent() {
             }
 
             // Redirect is handled in the mutation hook
-        } catch (error) {
+        } catch (error: any) {
             notifications.show(`Error imitating user: ${error.message}`, {
                 severity: 'error',
             });
@@ -217,7 +217,7 @@ function TeamContent() {
                 notifications.show('Invitation deleted successfully', {
                     severity: 'success',
                 });
-            } catch (error) {
+            } catch (error: any) {
                 notifications.show(
                     `Error deleting invitation: ${error.message}`,
                     {
@@ -253,7 +253,7 @@ function TeamContent() {
                     <Box>
                         <Typography variant="h6">Team Members</Typography>
                         <TableContainer component={Paper}>
-                            <Table spacing={4} size="small">
+                            <Table size="small">
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Name</TableCell>
@@ -266,12 +266,7 @@ function TeamContent() {
                                 </TableHead>
                                 <TableBody>
                                     {sortedUsers.map((user) => (
-                                        <TableRow
-                                            key={user.id}
-                                            xs={12}
-                                            sm={6}
-                                            md={4}
-                                        >
+                                        <TableRow key={user.id}>
                                             <TableCell>{user.name}</TableCell>
                                             <TableCell>{user.email}</TableCell>
                                             <TableCell>{user.role}</TableCell>
@@ -331,7 +326,7 @@ function TeamContent() {
                                     Pending Invitations
                                 </Typography>
                                 <TableContainer component={Paper}>
-                                    <Table spacing={4}>
+                                    <Table>
                                         <TableHead>
                                             <TableRow>
                                                 <TableCell>Email</TableCell>

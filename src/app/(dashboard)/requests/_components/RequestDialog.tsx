@@ -22,11 +22,10 @@ export default function RequestDialog({
     inferRouterOutputs<AppRouter>['requests']['byId'] | undefined | null
 >) {
     const isNew = !payload;
-    
+
     // If we have a request, get the associated shift
-    const { data: shift } = useShiftGetQuery(payload?.shiftId || '', {
-        enabled: !!payload?.shiftId,
-    });
+    //TODO: HUH? Enabled?
+    const { data: shift } = useShiftGetQuery(payload?.shiftId || '');
 
     function handleClose() {
         onClose();
@@ -43,7 +42,9 @@ export default function RequestDialog({
         >
             <DialogTitle>
                 <Box display="flex">
-                    <Box flexGrow={1}>{isNew ? 'Submit' : 'View'} Shift Request</Box>
+                    <Box flexGrow={1}>
+                        {isNew ? 'Submit' : 'View'} Shift Request
+                    </Box>
                     <Box>
                         <IconButton onClick={handleClose}>
                             <CloseIcon />
@@ -57,7 +58,7 @@ export default function RequestDialog({
                         isNew={isNew}
                         requestId={payload?.id}
                         request={payload}
-                        shift={shift || payload?.shift}
+                        shift={shift || (payload?.shift as any)}
                         onClose={handleClose}
                     />
                 </Container>

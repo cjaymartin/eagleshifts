@@ -24,23 +24,23 @@ const tenantDataSource: DataSource<Organization> = {
     },
 
     // Fetch a single organization by ID
-    getOne: async (id: string) => {
-        return getOneOrganization(id);
+    getOne: async (id: any) => {
+        return getOneOrganization(id) as any;
     },
 
     // Create a new organization
     createOne: async (data: Partial<Organization>) => {
-        await createOrganization(data);
+        return createOrganization(data) as any;
     },
 
     // Update an organization by ID
-    updateOne: async (id: string, data: Partial<Organization>) => {
-        return updateOrganization(id, data);
+    updateOne: async (id: any, data: Partial<Organization>) => {
+        return updateOrganization(id, data) as any;
     },
 
     // Delete an organization by ID
-    deleteOne: async (id: string) => {
-        return deleteOrganization(id);
+    deleteOne: async (id: any) => {
+        return deleteOrganization(id) as any;
     },
 
     // Validate data before creation or update

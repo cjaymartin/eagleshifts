@@ -14,7 +14,7 @@ const handler = async (req: Request) => {
                 console.error(`tRPC Error on '${path}':`, error);
             },
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('tRPC request handler error:', error);
         return new Response(
             `tRPC request handler error: ${error instanceof Error ? error.message : 'Unknown error'}`,

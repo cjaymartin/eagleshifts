@@ -298,7 +298,7 @@ export const requestsRouter = router({
                 }
 
                 return request;
-            } catch (error) {
+            } catch (error: any) {
                 throw new Error(`Failed to update request: ${error.message}`);
             }
         }),
@@ -361,7 +361,7 @@ export const requestsRouter = router({
                     success: true,
                     message: 'Request deleted successfully',
                 };
-            } catch (error) {
+            } catch (error: any) {
                 throw new Error(`Failed to delete request: ${error.message}`);
             }
         }),
@@ -400,7 +400,7 @@ export const requestsRouter = router({
                 success: true,
                 message: `${oldRequests.length} old requests deleted successfully`,
             };
-        } catch (error) {
+        } catch (error: any) {
             throw new Error(`Failed to delete old requests: ${error.message}`);
         }
     }),
@@ -453,7 +453,7 @@ export const requestsRouter = router({
             }
 
             // Create random requests for random shifts
-            const requestsToCreate = [];
+            const requestsToCreate: any[] = [];
             const statuses = ['pending', 'approved', 'rejected'];
             const reasons = [
                 'I would like to work this shift',
@@ -510,7 +510,7 @@ export const requestsRouter = router({
                 message: `${createdRequests.count} requests have been added for this organization.`,
                 count: createdRequests.count,
             };
-        } catch (error) {
+        } catch (error: any) {
             throw new Error(`Failed to seed requests: ${error.message}`);
         }
     }),

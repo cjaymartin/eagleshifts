@@ -100,7 +100,7 @@ export default function ShiftForm(props: ShiftFormProps) {
         reset,
         setError,
     } = useForm({
-        defaultValues: transformedShift,
+        defaultValues: transformedShift as any,
     });
 
     console.log('FORMING');
@@ -111,8 +111,8 @@ export default function ShiftForm(props: ShiftFormProps) {
     console.log('End Time:', ed);
 
     // Helper for setting form errors
-    const setErrors = (errorList) => {
-        errorList.forEach((err) => {
+    const setErrors = (errorList: any) => {
+        errorList.forEach((err: any) => {
             setError(err.field, {
                 type: 'manual',
                 message: err.message,
@@ -134,7 +134,7 @@ export default function ShiftForm(props: ShiftFormProps) {
     const updateMutation = useShiftUpdateMutation();
 
     // Form submission handlers
-    async function onNewFormSubmit(formData) {
+    async function onNewFormSubmit(formData: any) {
         try {
             // Validate form data
             if (!formData.title) {
@@ -186,13 +186,13 @@ export default function ShiftForm(props: ShiftFormProps) {
             } else {
                 handleClose();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating shift:', error);
             notifications.show('Failed to create shift', { severity: 'error' });
         }
     }
 
-    async function onUpdateFormSubmit(formData) {
+    async function onUpdateFormSubmit(formData: any) {
         try {
             if (!shiftId) {
                 notifications.show('Shift ID is required for updates', {
@@ -234,7 +234,7 @@ export default function ShiftForm(props: ShiftFormProps) {
             } else {
                 handleClose();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error updating shift:', error);
             notifications.show('Failed to update shift', { severity: 'error' });
         }
@@ -247,7 +247,9 @@ export default function ShiftForm(props: ShiftFormProps) {
 
     // Check if user is assigned to this shift
     const assignments = getValues('assignments') || [];
-    const isAssigned = memberId ? assignments.some((a) => a.memberId === memberId) : false;
+    const isAssigned = memberId
+        ? assignments.some((a: any) => a.memberId === memberId)
+        : false;
 
     const slots = getValues('slots') || 1;
     const hasAvailableSlots =
@@ -303,7 +305,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 label="Title"
                                 variant="outlined"
                                 error={!!errors.title}
-                                helperText={errors.title?.message}
+                                helperText={errors.title?.message as any}
                             />
                         )}
                     />
@@ -317,7 +319,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 label="Location"
                                 variant="outlined"
                                 error={!!errors.location}
-                                helperText={errors.location?.message}
+                                helperText={errors.location?.message as any}
                             />
                         )}
                     />
@@ -337,7 +339,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 slotProps={{
                                     textField: {
                                         error: !!errors.date,
-                                        helperText: errors.date?.message,
+                                        helperText: errors.date?.message as any,
                                     },
                                 }}
                             />
@@ -359,7 +361,8 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 slotProps={{
                                     textField: {
                                         error: !!errors.startTime,
-                                        helperText: errors.startTime?.message,
+                                        helperText: errors.startTime
+                                            ?.message as any,
                                     },
                                 }}
                             />
@@ -381,22 +384,23 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 slotProps={{
                                     textField: {
                                         error: !!errors.endTime,
-                                        helperText: errors.endTime?.message,
+                                        helperText: errors.endTime
+                                            ?.message as any,
                                     },
                                 }}
                             />
                         )}
                     />
                     <Grid container spacing={2} alignItems="center">
-                        <Grid item>
+                        <Grid>
                             <Typography variant="h6">
                                 {assignments?.length || 0}
                             </Typography>
                         </Grid>
-                        <Grid item>
+                        <Grid>
                             <Typography variant="body1">of</Typography>
                         </Grid>
-                        <Grid item>
+                        <Grid>
                             <Controller
                                 name="slots"
                                 control={control}
@@ -408,7 +412,9 @@ export default function ShiftForm(props: ShiftFormProps) {
                                         variant="outlined"
                                         type="number"
                                         error={!!errors.slots}
-                                        helperText={errors.slots?.message}
+                                        helperText={
+                                            errors.slots?.message as any
+                                        }
                                         inputProps={{ min: 1 }}
                                     />
                                 )}
@@ -425,7 +431,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                         render={({ field }) => (
                             <ShiftAssignmentTool
                                 {...field}
-                                shift={shift}
+                                shift={shift as any}
                                 date={date}
                                 readOnly={!isAdmin}
                             />
@@ -444,7 +450,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 label="Notes"
                                 variant="outlined"
                                 error={!!errors.notes}
-                                helperText={errors.notes?.message}
+                                helperText={errors.notes?.message as any}
                             />
                         )}
                     />
@@ -460,7 +466,9 @@ export default function ShiftForm(props: ShiftFormProps) {
                                     label="Admin Notes"
                                     variant="outlined"
                                     error={!!errors.adminNotes}
-                                    helperText={errors.adminNotes?.message}
+                                    helperText={
+                                        errors.adminNotes?.message as any
+                                    }
                                 />
                             )}
                         />

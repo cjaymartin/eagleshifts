@@ -212,7 +212,7 @@ export default function SignIn({ activeOrganization }: SignInProps) {
                             fullWidth
                             variant="contained"
                             value={email}
-                            onChange={(e) => {
+                            onChange={(e: any) => {
                                 setEmail(e.target.value);
                                 // if (e.target.value && !/\S+@\S+\.\S+/.test(e.target.value)) {
                                 //   setEmailError(true);

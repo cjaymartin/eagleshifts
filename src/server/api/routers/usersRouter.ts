@@ -401,10 +401,12 @@ export const usersRouter = router({
                     impersonatedBy: ctx.user.id, // Mark as impersonated
                     activeOrganizationId: ctx.user.organizationId,
                     ipAddress:
-                        (ctx.req?.headers['x-forwarded-for'] as string) ||
-                        'unknown',
+                        ((ctx as any).req?.headers[
+                            'x-forwarded-for'
+                        ] as string) || 'unknown',
                     userAgent:
-                        (ctx.req?.headers['user-agent'] as string) || 'unknown',
+                        ((ctx as any).req?.headers['user-agent'] as string) ||
+                        'unknown',
                 },
             });
 
@@ -412,7 +414,7 @@ export const usersRouter = router({
 
             const cookievalue = await signCookie(
                 session.token,
-                process.env.BETTER_AUTH_SECRET
+                process.env.BETTER_AUTH_SECRET!
             );
 
             const cookieData = await cookies();

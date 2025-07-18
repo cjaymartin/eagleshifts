@@ -64,7 +64,7 @@ async function main() {
                 newMember
             );
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error:', error);
         process.exit(1);
     }

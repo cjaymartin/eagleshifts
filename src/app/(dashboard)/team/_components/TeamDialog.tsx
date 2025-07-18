@@ -21,7 +21,7 @@ export default function TeamDialog({
     inferRouterOutputs<AppRouter>['users']['getMemberById'] | undefined | null
 >) {
     //const isNew = !payload;
-    const { isNew, user } = payload || {};
+    const { isNew, user } = (payload as any) || {};
 
     function handleClose() {
         onClose();

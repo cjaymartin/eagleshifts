@@ -118,7 +118,7 @@ export default function TeamForm(props: TeamFormProps) {
                 severity: 'success',
             });
             handleClose();
-        } catch (error) {
+        } catch (error: any) {
             notifications.show(`Error updating member: ${error.message}`, {
                 severity: 'error',
             });

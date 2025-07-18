@@ -100,14 +100,14 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
         message: string;
     };
 
-    const setErrors = (errorList: FormError[]) => {
-        errorList.forEach((err: FormError) => {
-            setError(err.field, {
-                type: 'manual',
-                message: err.message,
-            });
-        });
-    };
+    // const setErrors = (errorList: FormError[]) => {
+    //     errorList.forEach((err: any /*FormError*/) => {
+    //         setError(err.field, {
+    //             type: 'manual',
+    //             message: err.message,
+    //         });
+    //     });
+    // };
 
     const { data: session } = useAuthQuery();
     const user = session?.user;
@@ -163,7 +163,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             }
 
             // Create availability
-            await createMutation.mutateAsync(availabilityData);
+            await createMutation.mutateAsync(availabilityData as any);
             notifications.show('Availability created successfully', {
                 severity: 'success',
                 autoHideDuration: 3000,
@@ -173,7 +173,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             if (onClose) {
                 onClose();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating availability:', error);
             notifications.show('Failed to create availability', {
                 severity: 'error',
@@ -210,7 +210,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             if (onClose) {
                 onClose();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error updating availability:', error);
             notifications.show('Failed to update availability', {
                 severity: 'error',
@@ -238,7 +238,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             if (onClose) {
                 onClose();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error deleting availability:', error);
             notifications.show('Failed to delete availability', {
                 severity: 'error',

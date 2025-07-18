@@ -6,21 +6,37 @@
   <component name="ChangeListManager">
     <list default="true" id="d58e61e2-8c55-42b2-878e-5572cbd53eb3" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/eslint.config.mjs" beforeDir="false" afterPath="$PROJECT_DIR$/eslint.config.mjs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/next.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/nixpacks.toml" beforeDir="false" afterPath="$PROJECT_DIR$/nixpacks.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/api/trpc/[trpc].ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/api/trpc/[trpc].ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/account/_components/IcalLinkControl.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/account/_components/IcalLinkControl.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/account/_components/MyProfileForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/account/_components/MyProfileForm.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/account/_components/NotificationsForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/account/_components/NotificationsForm.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/availability/_components/AvailabilityForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/availability/_components/AvailabilityForm.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/availability/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/availability/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/business/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/business/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/business/_components/BusinessNotificationsForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/business/_components/BusinessNotificationsForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/business/_components/BusinessProfileForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/business/_components/BusinessProfileForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/business/_components/BusinessShiftSettingsForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/business/_components/BusinessShiftSettingsForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/calendar/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/requests/_components/RequestDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/requests/_components/RequestDialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/requests/_components/RequestForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/requests/_components/RequestForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/requests/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/requests/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool/ShiftAssignmentToolRow.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool/ShiftAssignmentToolRow.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftDialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftForm.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/superadmin/tenants/tenant-datasource.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/superadmin/tenants/tenant-datasource.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/team/_components/TeamDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/team/_components/TeamDialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/team/_components/TeamForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/team/_components/TeamForm.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/team/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/team/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/auth/loginfoo/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/ForgotPassword.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ForgotPassword.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/hooks/useAuth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/hooks/useAuth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/trpc/[trpc]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/trpc/[trpc]/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/auth/accept-invitation/actions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/auth/accept-invitation/actions.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/auth/login/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/auth/login/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/LoginDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/LoginDialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/providers/SmartAppProvider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/providers/SmartAppProvider.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/hooks/useAuth.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/queries/users.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/queries/users.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scripts/mkadmin.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/scripts/mkadmin.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server/api/routers/requestsRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/requestsRouter.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server/api/routers/shiftsRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/shiftsRouter.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server/api/routers/usersRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/usersRouter.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -167,6 +183,17 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
@@ -180,6 +207,12 @@
           <line>2</line>
           <properties lambdaOrdinal="-1" />
           <option name="timeStamp" value="10" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/src/app/(dashboard)/availability/page.tsx</url>
+          <line>46</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="11" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

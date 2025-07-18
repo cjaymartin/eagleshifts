@@ -65,7 +65,7 @@ export default function NotificationsForm() {
                 severity: 'success',
                 autoHideDuration: 3000,
             });
-        } catch (error) {
+        } catch (error: any) {
             notifications.show('Failed to update notification settings', {
                 severity: 'error',
                 autoHideDuration: 3000,

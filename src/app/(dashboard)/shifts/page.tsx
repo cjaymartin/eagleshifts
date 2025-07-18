@@ -38,7 +38,7 @@ export default function Shifts() {
     const { data: userLookupData } = useTeamUsersLookupQuery();
     const userLookup = userLookupData || {};
 
-    const { data: shifts } = trpc.shifts.list.useQuery(filters);
+    const { data: shifts } = trpc.shifts.list.useQuery(filters as any);
 
     console.log({ shifts });
 
@@ -54,7 +54,7 @@ export default function Shifts() {
             const assignments = x.shiftAssignments
                 .map((assignment) => userLookup[assignment.memberId])
                 .filter(Boolean) // Filter out undefined values
-                .map((user) => user.displayName || user.email)
+                .map((user) => user.name || user.email)
                 .join(', ');
             return {
                 Shift: title,
@@ -67,7 +67,7 @@ export default function Shifts() {
             };
         });
 
-        const ws = XLSX.utils.json_to_sheet(csvData);
+        const ws = XLSX.utils.json_to_sheet(csvData as any);
         const wb = { Sheets: { data: ws }, SheetNames: ['data'] };
         const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
         const data = new Blob([excelBuffer], { type: fileType });
@@ -77,7 +77,10 @@ export default function Shifts() {
     return (
         <Box>
             <Box>
-                <ShiftFilters filters={filters} setFilters={setFilters} />
+                <ShiftFilters
+                    filters={filters as any}
+                    setFilters={setFilters}
+                />
                 <Box>
                     <IconButton onClick={exportToXLSX}>
                         <Download /> Download XLSX
@@ -101,11 +104,8 @@ export default function Shifts() {
                             {shifts
                                 ? shifts.map((shift) => {
                                       return (
-                                          <TableRow
-                                              key={shift.id}
-                                              size={{ xs: 12, sm: 6, md: 4 }}
-                                          >
-                                              <ShiftRow shift={shift} />
+                                          <TableRow key={shift.id}>
+                                              <ShiftRow shift={shift as any} />
                                           </TableRow>
                                       );
                                   })

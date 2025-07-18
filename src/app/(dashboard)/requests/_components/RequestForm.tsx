@@ -21,7 +21,10 @@ import utc from 'dayjs/plugin/utc';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 
 // Import the mutations we'll create later
-import { useShiftRequestCreateMutation, useShiftRequestUpdateMutation } from '@/queries/requests';
+import {
+    useShiftRequestCreateMutation,
+    useShiftRequestUpdateMutation,
+} from '@/queries/requests';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
@@ -68,8 +71,8 @@ export default function RequestForm(props: RequestFormProps) {
     });
 
     // Helper for setting form errors
-    const setErrors = (errorList) => {
-        errorList.forEach((err) => {
+    const setErrors = (errorList: any) => {
+        errorList.forEach((err: any) => {
             setError(err.field, {
                 type: 'manual',
                 message: err.message,
@@ -90,7 +93,7 @@ export default function RequestForm(props: RequestFormProps) {
     const updateMutation = useShiftRequestUpdateMutation();
 
     // Form submission handlers
-    async function onNewFormSubmit(formData) {
+    async function onNewFormSubmit(formData: any) {
         try {
             // Validate form data
             if (!formData.shiftId) {
@@ -115,13 +118,15 @@ export default function RequestForm(props: RequestFormProps) {
             if (onClose) {
                 onClose();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating request:', error);
-            notifications.show('Failed to submit request', { severity: 'error' });
+            notifications.show('Failed to submit request', {
+                severity: 'error',
+            });
         }
     }
 
-    async function onUpdateFormSubmit(formData) {
+    async function onUpdateFormSubmit(formData: any) {
         try {
             if (!requestId) {
                 notifications.show('Request ID is required for updates', {
@@ -148,9 +153,11 @@ export default function RequestForm(props: RequestFormProps) {
             if (onClose) {
                 onClose();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error updating request:', error);
-            notifications.show('Failed to update request', { severity: 'error' });
+            notifications.show('Failed to update request', {
+                severity: 'error',
+            });
         }
     }
 
@@ -164,13 +171,15 @@ export default function RequestForm(props: RequestFormProps) {
                         <div>
                             <Typography variant="h6">{shift.title}</Typography>
                             {shift.location && (
-                                <Typography variant="body1">{shift.location}</Typography>
+                                <Typography variant="body1">
+                                    {shift.location}
+                                </Typography>
                             )}
                             <Typography variant="body2">
                                 {dayjs.utc(shift.date).format('MMMM D, YYYY')}
                             </Typography>
                             <Typography variant="body2">
-                                {dayjs.utc(shift.startTime).format('h:mm A')} - 
+                                {dayjs.utc(shift.startTime).format('h:mm A')} -
                                 {dayjs.utc(shift.endTime).format('h:mm A')}
                             </Typography>
                         </div>
@@ -182,7 +191,9 @@ export default function RequestForm(props: RequestFormProps) {
                             control={control}
                             render={({ field }) => (
                                 <FormControl component="fieldset">
-                                    <FormLabel component="legend">Status</FormLabel>
+                                    <FormLabel component="legend">
+                                        Status
+                                    </FormLabel>
                                     <RadioGroup {...field} row>
                                         <FormControlLabel
                                             value="pending"
@@ -214,7 +225,11 @@ export default function RequestForm(props: RequestFormProps) {
                                 multiline
                                 rows={3}
                                 disabled={!isNew && !isAdmin}
-                                label={isAdmin ? "Admin Notes" : "Reason for Request"}
+                                label={
+                                    isAdmin
+                                        ? 'Admin Notes'
+                                        : 'Reason for Request'
+                                }
                                 variant="outlined"
                                 error={!!errors.reason}
                                 helperText={errors.reason?.message}
@@ -232,8 +247,8 @@ export default function RequestForm(props: RequestFormProps) {
                                 {isSubmitting
                                     ? 'Saving...'
                                     : isNew
-                                    ? 'Submit Request'
-                                    : 'Update Request'}
+                                      ? 'Submit Request'
+                                      : 'Update Request'}
                             </Button>
                         )}
                         <Button
