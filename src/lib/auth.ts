@@ -75,7 +75,7 @@ export const auth = betterAuth({
                 return true;
             },
             async sendInvitationEmail(data) {
-                const inviteLink = `http://localhost:3000/auth/accept-invitation?id=${data.id}`;
+                const inviteLink = `${process.env.BETTER_AUTH_URL}/auth/accept-invitation?id=${data.id}`;
 
                 const transporter = nodemailer.createTransport({
                     host: process.env.EMAIL_SERVER,
