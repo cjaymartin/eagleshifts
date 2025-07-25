@@ -203,7 +203,7 @@ model Shift {
   updatedAt  DateTime @updatedAt
 
   // Relationships
-  organization     Organization      @relation(fields: [organizationId], references: [id])
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   //assignments   Member[]       @relation("ShiftAssignments")
   shiftAssignments shiftAssignment[]
   shiftRequests    ShiftRequest[]
@@ -223,7 +223,7 @@ model Availability {
 
   // Relationships
   memberId String
-  member   Member @relation(fields: [memberId], references: [id])
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@map("availability")
 }
@@ -237,9 +237,9 @@ model shiftAssignment {
 
   // Relationships
   shiftId  String
-  shift    Shift  @relation(fields: [shiftId], references: [id])
+  shift    Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   memberId String
-  member   Member @relation(fields: [memberId], references: [id])
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@map("shift_assignment")
 }
@@ -253,9 +253,9 @@ model ShiftRequest {
 
   // Relationships
   shiftId  String
-  shift    Shift  @relation(fields: [shiftId], references: [id])
+  shift    Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   memberId String
-  member   Member @relation(fields: [memberId], references: [id])
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@map("shift_request")
 }
@@ -268,7 +268,7 @@ model LogEntry {
 
   // Relationships
   memberId String?
-  member   Member? @relation(fields: [memberId], references: [id])
+  member   Member? @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@map("log")
 }
