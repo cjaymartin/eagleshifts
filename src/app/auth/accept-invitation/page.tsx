@@ -45,7 +45,7 @@ export default function AcceptInvitationPage() {
                 cookieStore.set('better-auth.session_token', result.cookie, {
                     //httpOnly: true,
                     //secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'lax',
+                    sameSite: 'strict',
                     //path: '/',
                     expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
                 });
