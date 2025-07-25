@@ -115,9 +115,9 @@ export default async function acceptInvitation(invitationId: string) {
     // });
 
     // Delete the invitation after it's been used
-    // await prisma.invitation.delete({
-    //     where: { id: invitationId },
-    // });
+    await prisma.invitation.delete({
+        where: { id: invitationId },
+    });
 
     // Return the user and organization info
     return {
