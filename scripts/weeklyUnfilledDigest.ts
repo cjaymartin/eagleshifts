@@ -1,14 +1,18 @@
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { prisma } from '@/lib/prisma';
 import { sendUnfilledShiftDigestEmail } from '@/lib/email';
+
+// Extend dayjs with plugins
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Main function
 async function weeklyUnfilledDigest() {
   try {
     console.log('Starting weekly unfilled digest...');
 
-    // Get the current day of the week (0 = Sunday, 1 = Monday, etc.)
-    const dowNum = dayjs().day();
     const dowLookup: Record<string, number> = {
       sunday: 0,
       monday: 1,
@@ -23,15 +27,8 @@ async function weeklyUnfilledDigest() {
       revDowLookup[value] = key;
     });
 
-    const dowName = revDowLookup[dowNum];
-
-    // Get all organizations that have digest email set to today
+    // Get all organizations
     const organizations = await prisma.organization.findMany({
-      where: {
-        profile: {
-          digestEmailDate: dowName,
-        },
-      },
       include: {
         profile: true,
       },
@@ -42,13 +39,26 @@ async function weeklyUnfilledDigest() {
     for (const organization of organizations) {
       const organizationId = organization.id;
 
+      // Get the organization's timezone (default to UTC)
+      const orgTimezone = organization.profile?.timezone || 'UTC';
+
+      // Get the current day of the week in the organization's timezone
+      const dowNum = dayjs().tz(orgTimezone).day();
+      const dowName = revDowLookup[dowNum];
+
+      // Skip organizations that don't have digest email set to today in their timezone
+      if (organization.profile?.digestEmailDate !== dowName) {
+        console.log(`Skipping organization ${organizationId} - digest day is ${organization.profile?.digestEmailDate}, but today is ${dowName} in ${orgTimezone}`);
+        continue;
+      }
+
       // Get the organization's week start day (default to Sunday)
       const weekStart = organization.profile?.weekStart || 'sunday';
       const weekStartNum = dowLookup[weekStart];
 
-      // Calculate the start and end dates for the week
-      const weekStartDate = dayjs().startOf('week').add(weekStartNum, 'days');
-      const weekEndDate = dayjs(weekStartDate).add(1, 'week');
+      // Calculate the start and end dates for the week in the organization's timezone
+      const weekStartDate = dayjs().tz(orgTimezone).startOf('week').add(weekStartNum, 'days');
+      const weekEndDate = dayjs(weekStartDate).tz(orgTimezone).add(1, 'week');
 
       console.log(`Processing organization ${organizationId}`);
       console.log(`Week start: ${weekStart} (${weekStartNum})`);

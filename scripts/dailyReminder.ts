@@ -1,21 +1,34 @@
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { prisma } from '@/lib/prisma';
 import { sendShiftReminderEmail } from '@/lib/email';
+
+// Extend dayjs with plugins
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Main function
 async function dailyReminder() {
   try {
     console.log('Starting daily shift reminders...');
 
-    // Get all organizations
-    const organizations = await prisma.organization.findMany();
+    // Get all organizations with their profiles
+    const organizations = await prisma.organization.findMany({
+      include: {
+        profile: true,
+      },
+    });
 
     console.log(`Found ${organizations.length} organizations to process`);
 
     for (const organization of organizations) {
       const organizationId = organization.id;
 
-      console.log(`Processing organization ${organizationId}`);
+      // Get the organization's timezone (default to UTC)
+      const orgTimezone = organization.profile?.timezone || 'UTC';
+
+      console.log(`Processing organization ${organizationId} with timezone ${orgTimezone}`);
 
       // Get all members who want shift reminders
       const members = await prisma.member.findMany({
@@ -42,9 +55,9 @@ async function dailyReminder() {
         // Default to 1 day if not specified
         const daysBeforeShift = member.settings?.notifyMeBeforeShiftDays ? parseInt(member.settings.notifyMeBeforeShiftDays) : 1;
 
-        // Calculate the target date
-        const targetDateStart = dayjs().add(daysBeforeShift, 'days').startOf('day');
-        const targetDateEnd = dayjs().add(daysBeforeShift, 'days').endOf('day');
+        // Calculate the target date in the organization's timezone
+        const targetDateStart = dayjs().tz(orgTimezone).add(daysBeforeShift, 'days').startOf('day');
+        const targetDateEnd = dayjs().tz(orgTimezone).add(daysBeforeShift, 'days').endOf('day');
 
         console.log(`Processing member ${member.id} (${email}), reminder days: ${daysBeforeShift}`);
         console.log(`Target date: ${targetDateStart.format('YYYY-MM-DD')} to ${targetDateEnd.format('YYYY-MM-DD')}`);
