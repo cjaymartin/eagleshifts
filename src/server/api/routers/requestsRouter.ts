@@ -4,7 +4,10 @@ import { Prisma } from '@/generated/prisma';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { TRPCError } from '@trpc/server';
-import { sendShiftRequestNotificationToAdmin, sendShiftRequestResolutionToUser } from '@/lib/email';
+import {
+    sendShiftRequestNotificationToAdmin,
+    sendShiftRequestResolutionToUser,
+} from '@/lib/email';
 
 // Extend dayjs with UTC plugin
 dayjs.extend(utc);
@@ -173,14 +176,15 @@ export const requestsRouter = router({
                 where: {
                     organizationId: ctx.user.organizationId,
                     role: { in: ['admin', 'owner'] },
-                    notificationSettings: {
-                        path: ['notifyOnShiftRequest'],
-                        equals: true
-                    }
+                    // notificationSettings: {
+                    //     path: ['notifyOnShiftRequest'],
+                    //     equals: true
+                    // }
                 },
                 include: {
-                    user: true
-                }
+                    user: true,
+                    settings: true,
+                },
             });
 
             // Send email notification to admins
@@ -188,15 +192,23 @@ export const requestsRouter = router({
                 try {
                     await sendShiftRequestNotificationToAdmin({
                         tenantId: ctx.user.organizationId,
-                        userName: request.member.user.name || request.member.user.email || 'Unknown User',
+                        userName:
+                            request.member.user.name ||
+                            request.member.user.email ||
+                            'Unknown User',
                         userEmail: request.member.user.email || 'Unknown Email',
                         shiftTitle: request.shift.title || 'Untitled Shift',
                         shiftLocation: request.shift.location || 'No Location',
                         shiftDate: request.shift.date,
-                        adminEmails: adminMembers.map(admin => admin.user.email).filter(Boolean) as string[]
+                        adminEmails: adminMembers
+                            .map((admin) => admin.user.email)
+                            .filter(Boolean) as string[],
                     });
                 } catch (error) {
-                    console.error('Failed to send admin notification email:', error);
+                    console.error(
+                        'Failed to send admin notification email:',
+                        error
+                    );
                     // Don't throw error, continue with the request creation
                 }
             }
@@ -297,18 +309,25 @@ export const requestsRouter = router({
                 });
 
                 // Send email notification to the user if status changed to approved or rejected
-                if (input.status === 'approved' || input.status === 'rejected') {
+                if (
+                    input.status === 'approved' ||
+                    input.status === 'rejected'
+                ) {
                     try {
                         await sendShiftRequestResolutionToUser({
                             userEmail: request.member.user.email || '',
                             shiftTitle: request.shift.title || 'Untitled Shift',
-                            shiftLocation: request.shift.location || 'No Location',
+                            shiftLocation:
+                                request.shift.location || 'No Location',
                             shiftDate: request.shift.date,
                             status: input.status as 'approved' | 'rejected',
-                            reason: input.reason
+                            reason: input.reason,
                         });
                     } catch (error) {
-                        console.error('Failed to send user notification email:', error);
+                        console.error(
+                            'Failed to send user notification email:',
+                            error
+                        );
                         // Don't throw error, continue with the request update
                     }
                 }
