@@ -4,10 +4,11 @@ import { appRouter } from '@/server/api/root';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { tenantId: string; icalSlug: string } }
+    { params }: { params: Promise<{ tenantId: string; icalSlug: string }> }
 ) {
     try {
-        await params;
+        const paramsData = await params;
+        //await params;
 
         // Create a context and caller
         const ctx = await createTRPCContext();
@@ -15,8 +16,8 @@ export async function GET(
 
         // Call the getIcalHtml procedure
         const htmlData = await caller.ical.getIcalHtml({
-            tenantId: params.tenantId,
-            icalSlug: params.icalSlug,
+            tenantId: paramsData.tenantId,
+            icalSlug: paramsData.icalSlug,
         });
 
         // Return the HTML data with the appropriate content type
