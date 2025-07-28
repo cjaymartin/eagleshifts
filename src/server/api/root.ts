@@ -6,6 +6,7 @@ import { usersRouter } from './routers/usersRouter';
 import { availabilityRouter } from '@/server/api/routers/availabilityRouter';
 import { requestsRouter } from '@/server/api/routers/requestsRouter';
 import { teamRouter } from '@/server/api/routers/teamRouter';
+import { icalRouter } from '@/server/api/routers/icalRouter';
 
 export const appRouter = router({
     shifts: shiftsRouter,
@@ -13,6 +14,7 @@ export const appRouter = router({
     availability: availabilityRouter,
     requests: requestsRouter,
     team: teamRouter,
+    ical: icalRouter,
 
     session: router({
         get: router({

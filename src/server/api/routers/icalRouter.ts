@@ -1,0 +1,319 @@
+import { z } from 'zod';
+import { router, publicProcedure } from '@/server/trpc';
+import { TRPCError } from '@trpc/server';
+import ical, { ICalCalendarMethod } from 'ical-generator';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+// Extend dayjs with plugins
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+export const icalRouter = router({
+  getIcal: publicProcedure
+    .input(
+      z.object({
+        tenantId: z.string(),
+        icalSlug: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { tenantId, icalSlug } = input;
+
+      if (!tenantId || !icalSlug) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'tenantId and icalSlug are required',
+        });
+      }
+
+      try {
+        // Find the member by icalSlug
+        const member = await ctx.prisma.member.findFirst({
+          where: {
+            organizationId: tenantId,
+            icalSlug: icalSlug,
+          },
+          include: {
+            user: true,
+          },
+        });
+
+        if (!member) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No user found matching the provided icalSlug',
+          });
+        }
+
+        // Get assigned shifts
+        const assignedShifts = await ctx.prisma.shift.findMany({
+          where: {
+            organizationId: tenantId,
+            shiftAssignments: {
+              some: {
+                memberId: member.id,
+                outcome: 'assigned',
+              },
+            },
+          },
+          include: {
+            shiftAssignments: {
+              where: {
+                memberId: member.id,
+              },
+            },
+          },
+        });
+
+        // Get offered shifts (pending requests)
+        const offeredShifts = await ctx.prisma.shift.findMany({
+          where: {
+            organizationId: tenantId,
+            shiftRequests: {
+              some: {
+                memberId: member.id,
+                status: 'pending',
+              },
+            },
+          },
+          include: {
+            shiftRequests: {
+              where: {
+                memberId: member.id,
+              },
+            },
+          },
+        });
+
+        // Combine shifts and add status
+        const assignedShiftsWithStatus = assignedShifts.map(shift => ({
+          ...shift,
+          status: 'assigned',
+        }));
+
+        const offeredShiftsWithStatus = offeredShifts.map(shift => ({
+          ...shift,
+          status: 'offered',
+        }));
+
+        // Create a map to deduplicate shifts
+        const shiftMap = new Map();
+        
+        // Prioritize assigned shifts over offered shifts
+        offeredShiftsWithStatus.forEach(shift => {
+          shiftMap.set(shift.id, shift);
+        });
+        
+        assignedShiftsWithStatus.forEach(shift => {
+          shiftMap.set(shift.id, shift);
+        });
+        
+        const shifts = Array.from(shiftMap.values());
+
+        // Create iCal calendar
+        const calendar = ical({ name: `${member.name || member.user.name || member.user.email} - Shifts` });
+        calendar.method(ICalCalendarMethod.REQUEST);
+
+        // Add events to calendar
+        for (const shift of shifts) {
+          calendar.createEvent({
+            id: shift.id,
+            start: shift.startTime,
+            end: shift.endTime,
+            summary: `${shift.title} - ${shift.status}`,
+            description: shift.notes || '',
+            location: shift.location || '',
+            status: shift.status === 'assigned' ? 'CONFIRMED' : 'TENTATIVE',
+            organizer: {
+              name: member.name || member.user.name || member.user.email,
+              email: member.user.email,
+            },
+          });
+        }
+
+        // Return the iCal data
+        return calendar.toString();
+      } catch (err) {
+        console.error('Error fetching user:', err);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Internal server error',
+          cause: err,
+        });
+      }
+    }),
+
+  getIcalHtml: publicProcedure
+    .input(
+      z.object({
+        tenantId: z.string(),
+        icalSlug: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { tenantId, icalSlug } = input;
+
+      if (!tenantId || !icalSlug) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'tenantId and icalSlug are required',
+        });
+      }
+
+      try {
+        // Find the member by icalSlug
+        const member = await ctx.prisma.member.findFirst({
+          where: {
+            organizationId: tenantId,
+            icalSlug: icalSlug,
+          },
+          include: {
+            user: true,
+          },
+        });
+
+        if (!member) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No user found matching the provided icalSlug',
+          });
+        }
+
+        // Get assigned shifts
+        const assignedShifts = await ctx.prisma.shift.findMany({
+          where: {
+            organizationId: tenantId,
+            shiftAssignments: {
+              some: {
+                memberId: member.id,
+                outcome: 'assigned',
+              },
+            },
+          },
+          include: {
+            shiftAssignments: {
+              where: {
+                memberId: member.id,
+              },
+            },
+          },
+        });
+
+        // Get offered shifts (pending requests)
+        const offeredShifts = await ctx.prisma.shift.findMany({
+          where: {
+            organizationId: tenantId,
+            shiftRequests: {
+              some: {
+                memberId: member.id,
+                status: 'pending',
+              },
+            },
+          },
+          include: {
+            shiftRequests: {
+              where: {
+                memberId: member.id,
+              },
+            },
+          },
+        });
+
+        // Combine shifts and add status
+        const assignedShiftsWithStatus = assignedShifts.map(shift => ({
+          ...shift,
+          status: 'assigned',
+        }));
+
+        const offeredShiftsWithStatus = offeredShifts.map(shift => ({
+          ...shift,
+          status: 'offered',
+        }));
+
+        // Create a map to deduplicate shifts
+        const shiftMap = new Map();
+        
+        // Prioritize assigned shifts over offered shifts
+        offeredShiftsWithStatus.forEach(shift => {
+          shiftMap.set(shift.id, shift);
+        });
+        
+        assignedShiftsWithStatus.forEach(shift => {
+          shiftMap.set(shift.id, shift);
+        });
+        
+        const shifts = Array.from(shiftMap.values());
+
+        // Sort shifts by date and time
+        shifts.sort((a, b) => {
+          if (a.date.getTime() !== b.date.getTime()) {
+            return a.date.getTime() - b.date.getTime();
+          }
+          return a.startTime.getTime() - b.startTime.getTime();
+        });
+
+        // Generate HTML
+        const userName = member.name || member.user.name || member.user.email;
+        let html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${userName} - Shifts</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { color: #333; }
+            .shift { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+            .shift-title { font-weight: bold; font-size: 18px; }
+            .shift-date { color: #666; }
+            .shift-time { color: #666; }
+            .shift-location { color: #666; }
+            .shift-status { font-weight: bold; }
+            .assigned { color: green; }
+            .offered { color: orange; }
+            .shift-notes { margin-top: 10px; font-style: italic; }
+          </style>
+        </head>
+        <body>
+          <h1>${userName} - Shifts</h1>
+        `;
+
+        if (shifts.length === 0) {
+          html += '<p>No shifts found.</p>';
+        } else {
+          shifts.forEach(shift => {
+            const date = dayjs(shift.date).format('MMMM D, YYYY');
+            const startTime = dayjs(shift.startTime).format('h:mm A');
+            const endTime = dayjs(shift.endTime).format('h:mm A');
+            const statusClass = shift.status === 'assigned' ? 'assigned' : 'offered';
+            
+            html += `
+            <div class="shift">
+              <div class="shift-title">${shift.title}</div>
+              <div class="shift-date">${date}</div>
+              <div class="shift-time">${startTime} - ${endTime}</div>
+              ${shift.location ? `<div class="shift-location">Location: ${shift.location}</div>` : ''}
+              <div class="shift-status">Status: <span class="${statusClass}">${shift.status}</span></div>
+              ${shift.notes ? `<div class="shift-notes">Notes: ${shift.notes}</div>` : ''}
+            </div>
+            `;
+          });
+        }
+
+        html += `
+        </body>
+        </html>
+        `;
+
+        return html;
+      } catch (err) {
+        console.error('Error fetching user:', err);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Internal server error',
+          cause: err,
+        });
+      }
+    }),
+});

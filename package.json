@@ -2,6 +2,9 @@
   "name": "eagleshifts",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "devhttps": "next dev --experimental-https",
     "dev": "cross-env NODE_OPTIONS='--inspect' next dev",
@@ -35,6 +38,7 @@
     "dayjs": "^1.11.13",
     "file-saver": "^2.0.5",
     "file-type": "^21.0.0",
+    "ical-generator": "^6.0.1",
     "lodash": "^4.17.21",
     "luxon": "^3.7.1",
     "mui-phone-number": "^3.0.3",
