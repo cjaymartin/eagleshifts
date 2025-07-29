@@ -21,13 +21,20 @@ function convertToTimezone(
     timezone: string = 'America/New_York'
 ): Date {
     // Check if the ISO string already includes timezone information
-    const hasTimezoneInfo = /[+-]\d{2}:?\d{2}$/.test(isoString) || isoString.endsWith('Z');
+    const hasTimezoneInfo =
+        /[+-]\d{2}:?\d{2}$/.test(isoString) || isoString.endsWith('Z');
 
     let adjustedUtcDateTime;
 
     if (hasTimezoneInfo) {
         // If the string already has timezone info, parse it directly and convert to UTC
         adjustedUtcDateTime = dayjs(isoString).utc();
+        console.log('CONVERT TO TIMEZONE');
+        console.dir({
+            isoString,
+            timezone,
+            adjustedUtcDateTime,
+        });
     } else {
         // Parse the ISO string as UTC
         const utcDateTime = dayjs.utc(isoString);
@@ -42,6 +49,16 @@ function convertToTimezone(
 
         // Convert back to UTC for storage
         adjustedUtcDateTime = localDateTime.utc();
+
+        console.log('CONVERT TO TIMEZONE 2');
+        console.dir({
+            isoString,
+            localDateTime,
+            dateStr,
+            timeStr,
+            timezone,
+            adjustedUtcDateTime,
+        });
     }
 
     console.log({
@@ -192,9 +209,11 @@ export const shiftsRouter = router({
                             .startOf('day')
                             .utc()
                             .toDate();
-                        where.startTime = where.startTime && typeof where.startTime === 'object'
-                            ? { ...where.startTime, gte: startOfDay }
-                            : { gte: startOfDay };
+                        where.startTime =
+                            where.startTime &&
+                            typeof where.startTime === 'object'
+                                ? { ...where.startTime, gte: startOfDay }
+                                : { gte: startOfDay };
                     }
                     if (input.endDate) {
                         // End of the day in the specified timezone
@@ -203,9 +222,10 @@ export const shiftsRouter = router({
                             .endOf('day')
                             .utc()
                             .toDate();
-                        where.endTime = where.endTime && typeof where.endTime === 'object'
-                            ? { ...where.endTime, lte: endOfDay }
-                            : { lte: endOfDay };
+                        where.endTime =
+                            where.endTime && typeof where.endTime === 'object'
+                                ? { ...where.endTime, lte: endOfDay }
+                                : { lte: endOfDay };
                     }
                 }
 
@@ -709,54 +729,6 @@ export const shiftsRouter = router({
         )
         .mutation(async ({ ctx, input }) => {
             console.log('Shift update input:', JSON.stringify(input, null, 2));
-
-            // Check for the problematic member ID
-            if (
-                input.assignments &&
-                input.assignments.some(
-                    (a) => a.memberId === 'GMFdgYXfRFixlN9V9PRW4g'
-                )
-            ) {
-                console.log(
-                    'Found problematic user ID: GMFdgYXfRFixlN9V9PRW4g'
-                );
-                try {
-                    // Try to find the user directly
-                    const problematicUser = await ctx.prisma.user.findUnique({
-                        where: { id: 'GMFdgYXfRFixlN9V9PRW4g' },
-                    });
-                    console.log(
-                        'Problematic user lookup result:',
-                        problematicUser
-                    );
-
-                    // Try raw query
-                    const rawResult = await ctx.prisma.$queryRaw`
-                        SELECT id, name, email FROM "user" WHERE id = ${'GMFdgYXfRFixlN9V9PRW4g'}
-                    `;
-                    console.log(
-                        'Raw query result for problematic user:',
-                        rawResult
-                    );
-
-                    // Check if there are any users with similar IDs
-                    const similarUsers = await ctx.prisma.user.findMany({
-                        where: {
-                            id: {
-                                contains: 'GMFdgYXf',
-                            },
-                        },
-                        select: {
-                            id: true,
-                            name: true,
-                            email: true,
-                        },
-                    });
-                    console.log('Users with similar IDs:', similarUsers);
-                } catch (error: any) {
-                    console.error('Error checking problematic user:', error);
-                }
-            }
 
             try {
                 const { id, ...data } = input;
