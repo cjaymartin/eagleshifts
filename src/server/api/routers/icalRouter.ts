@@ -16,7 +16,7 @@ function convertUtcToTimezone(
     timezone: string = 'America/New_York'
 ): Date {
     // Convert the UTC date to the specified timezone
-    return dayjs.utc(utcDate).tz(timezone).toDate();
+    return dayjs(utcDate).tz(timezone).toDate();
 }
 
 export const icalRouter = router({
