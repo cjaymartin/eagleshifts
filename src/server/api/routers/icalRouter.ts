@@ -10,6 +10,12 @@ import timezone from 'dayjs/plugin/timezone';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
+// Helper function to convert a UTC date to the specified timezone
+function convertUtcToTimezone(utcDate: Date, timezone: string = 'America/New_York'): Date {
+    // Convert the UTC date to the specified timezone
+    return dayjs.utc(utcDate).tz(timezone).toDate();
+}
+
 export const icalRouter = router({
     getIcal: publicProcedure
         .input(
@@ -122,10 +128,14 @@ export const icalRouter = router({
 
                 // Add events to calendar
                 for (const shift of shifts) {
+                    // Convert startTime and endTime from UTC to the shift's timezone
+                    const startTime = convertUtcToTimezone(shift.startTime, shift.timezone);
+                    const endTime = convertUtcToTimezone(shift.endTime, shift.timezone);
+
                     calendar.createEvent({
                         id: shift.id,
-                        start: shift.startTime,
-                        end: shift.endTime,
+                        start: startTime,
+                        end: endTime,
                         summary: `${shift.title} - ${shift.status}`,
                         description: shift.notes || '',
                         location: shift.location || '',
@@ -296,11 +306,15 @@ export const icalRouter = router({
                     html += '<p>No shifts found.</p>';
                 } else {
                     shifts.forEach((shift) => {
+                        // Convert startTime and endTime from UTC to the shift's timezone
+                        const localStartTime = convertUtcToTimezone(shift.startTime, shift.timezone);
+                        const localEndTime = convertUtcToTimezone(shift.endTime, shift.timezone);
+
                         const date = dayjs(shift.date).format('MMMM D, YYYY');
-                        const startTime = dayjs(shift.startTime).format(
+                        const startTime = dayjs(localStartTime).format(
                             'h:mm A'
                         );
-                        const endTime = dayjs(shift.endTime).format('h:mm A');
+                        const endTime = dayjs(localEndTime).format('h:mm A');
                         const statusClass =
                             shift.status === 'assigned'
                                 ? 'assigned'

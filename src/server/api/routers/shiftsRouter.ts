@@ -3,10 +3,12 @@ import { router, adminProcedure, memberProcedure } from '@/server/trpc';
 import { Prisma } from '@/generated/prisma';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { TRPCError } from '@trpc/server';
 
-// Extend dayjs with UTC plugin
+// Extend dayjs with UTC and timezone plugins
 dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Helper function to convert date strings to YYYY-MM-DD format
 function formatDateString(dateString: string): string {
@@ -20,25 +22,36 @@ function parseDateString(dateString: string): Date {
     return dayjs.utc(`${formatDateString(dateString)}T12:00:00Z`).toDate();
 }
 
-// Helper function to adjust a time to match the date of a given date
-function adjustTimeToDate(timeString: string, dateString: string): Date {
+// Helper function to adjust a time to match the date of a given date and convert to UTC
+function adjustTimeToDate(timeString: string, dateString: string, timezone: string = 'America/New_York'): Date {
     // Extract the date part from the shift date
-    const dateOnly = dayjs.utc(dateString).format('YYYY-MM-DD');
+    const dateOnly = dayjs(dateString).format('YYYY-MM-DD');
     // Extract the time part from the time
-    const timeOnly = dayjs.utc(timeString).format('HH:mm:ss');
-    // Combine them and create a new Date
+    const timeOnly = dayjs(timeString).format('HH:mm:ss');
+    // Combine them and create a date in the specified timezone
+    const localDateTime = dayjs.tz(`${dateOnly}T${timeOnly}`, timezone);
+    // Convert to UTC for storage
+    const utcDateTime = localDateTime.utc();
 
     console.log({
         cmd: 'adjusttime',
         timeString,
         dateString,
+        timezone,
         dateOnly,
         timeOnly,
-        prev: `${dateOnly}T${timeOnly}Z`,
-        rval: dayjs.utc(`${dateOnly}T${timeOnly}Z`).toDate(),
+        localDateTime: localDateTime.format(),
+        utcDateTime: utcDateTime.format(),
+        rval: utcDateTime.toDate(),
     });
 
-    return dayjs.utc(`${dateOnly}T${timeOnly}Z`).toDate();
+    return utcDateTime.toDate();
+}
+
+// Helper function to convert a UTC date to the specified timezone
+function convertUtcToTimezone(utcDate: Date, timezone: string = 'America/New_York'): Date {
+    // Convert the UTC date to the specified timezone
+    return dayjs.utc(utcDate).tz(timezone).toDate();
 }
 
 export const shiftsRouter = router({
@@ -58,8 +71,8 @@ export const shiftsRouter = router({
             title: `Shift ${index + 1}`,
             location: `Location ${index + 1}`,
             date: new Date(new Date().setDate(new Date().getDate() + index)), // Shift dates in the future
-            startTime: new Date(new Date().setHours(9, 0, 0, 0)), // 9:00 AM
-            endTime: new Date(new Date().setHours(17, 0, 0, 0)), // 5:00 PM
+            startTime: adjustTimeToDate('09:00:00', new Date().toISOString(), 'America/New_York'), // 9:00 AM
+            endTime: adjustTimeToDate('17:00:00', new Date().toISOString(), 'America/New_York'), // 5:00 PM
             slots: Math.floor(Math.random() * 10) + 1, // Random number of slots between 1 and 10
             notes: `Notes for shift ${index + 1}`,
             adminNotes: `Admin notes for shift ${index + 1}`,
@@ -252,11 +265,12 @@ export const shiftsRouter = router({
             }
 
             // Format dates as YYYY-MM-DD strings for the response
+            // Convert startTime and endTime from UTC to the shift's timezone
             return filteredShifts.map((shift) => ({
                 ...shift,
                 date: formatDateString(shift.date.toISOString()),
-                startTime: shift.startTime,
-                endTime: shift.endTime,
+                startTime: convertUtcToTimezone(shift.startTime, shift.timezone),
+                endTime: convertUtcToTimezone(shift.endTime, shift.timezone),
             }));
         }),
 
@@ -335,11 +349,12 @@ export const shiftsRouter = router({
             }
 
             // Format dates as YYYY-MM-DD strings for the response
+            // Convert startTime and endTime from UTC to the shift's timezone
             return {
                 ...shift,
                 date: formatDateString(shift.date.toISOString()),
-                startTime: formatDateString(shift.startTime.toISOString()),
-                endTime: formatDateString(shift.endTime.toISOString()),
+                startTime: convertUtcToTimezone(shift.startTime, shift.timezone),
+                endTime: convertUtcToTimezone(shift.endTime, shift.timezone),
             };
         }),
 
@@ -422,8 +437,8 @@ export const shiftsRouter = router({
                     title: input.title,
                     location: input.location,
                     date: parseDateString(input.date),
-                    startTime: adjustTimeToDate(input.startTime, input.date),
-                    endTime: adjustTimeToDate(input.endTime, input.date),
+                    startTime: adjustTimeToDate(input.startTime, input.date, input.timezone),
+                    endTime: adjustTimeToDate(input.endTime, input.date, input.timezone),
                     slots: input.slots,
                     notes: input.notes,
                     adminNotes: input.adminNotes,
@@ -583,11 +598,12 @@ export const shiftsRouter = router({
             }
 
             // Format dates as YYYY-MM-DD strings for the response
+            // Convert startTime and endTime from UTC to the shift's timezone
             return {
                 ...shift,
                 date: formatDateString(shift.date.toISOString()),
-                startTime: formatDateString(shift.startTime.toISOString()),
-                endTime: formatDateString(shift.endTime.toISOString()),
+                startTime: convertUtcToTimezone(shift.startTime, shift.timezone),
+                endTime: convertUtcToTimezone(shift.endTime, shift.timezone),
             };
         }),
 
@@ -678,8 +694,8 @@ export const shiftsRouter = router({
                         title: data.title,
                         location: data.location,
                         date: parseDateString(data.date),
-                        startTime: adjustTimeToDate(data.startTime, data.date),
-                        endTime: adjustTimeToDate(data.endTime, data.date),
+                        startTime: adjustTimeToDate(data.startTime, data.date, data.timezone),
+                        endTime: adjustTimeToDate(data.endTime, data.date, data.timezone),
                         slots: data.slots,
                         notes: data.notes,
                         adminNotes: data.adminNotes,
