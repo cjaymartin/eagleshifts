@@ -91,7 +91,7 @@ async function weeklyDigest() {
         const shifts = await prisma.shift.findMany({
           where: {
             organizationId,
-            date: {
+            startTime: {
               gte: weekStartDate.toDate(),
               lt: weekEndDate.toDate(),
             },
@@ -103,7 +103,7 @@ async function weeklyDigest() {
             },
           },
           orderBy: {
-            date: 'asc',
+            startTime: 'asc',
           },
         });
 

@@ -199,7 +199,7 @@ export const requestsRouter = router({
                         userEmail: request.member.user.email || 'Unknown Email',
                         shiftTitle: request.shift.title || 'Untitled Shift',
                         shiftLocation: request.shift.location || 'No Location',
-                        shiftDate: request.shift.date,
+                        shiftDate: request.shift.startTime,
                         adminEmails: adminMembers
                             .map((admin) => admin.user.email)
                             .filter(Boolean) as string[],
@@ -319,7 +319,7 @@ export const requestsRouter = router({
                             shiftTitle: request.shift.title || 'Untitled Shift',
                             shiftLocation:
                                 request.shift.location || 'No Location',
-                            shiftDate: request.shift.date,
+                            shiftDate: request.shift.startTime,
                             status: input.status as 'approved' | 'rejected',
                             reason: input.reason,
                         });
@@ -444,7 +444,7 @@ export const requestsRouter = router({
             const oldRequests = await ctx.prisma.shiftRequest.findMany({
                 where: {
                     shift: {
-                        date: {
+                        startTime: {
                             lt: fourWeeksAgo,
                         },
                         organizationId: ctx.user.organizationId,

@@ -66,7 +66,7 @@ async function dailyReminder() {
         const shifts = await prisma.shift.findMany({
           where: {
             organizationId,
-            date: {
+            startTime: {
               gte: targetDateStart.toDate(),
               lte: targetDateEnd.toDate(),
             },

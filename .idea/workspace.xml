@@ -6,14 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="d58e61e2-8c55-42b2-878e-5572cbd53eb3" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/schema.prisma" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/calendar/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/calendar/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/dailyReminder.ts" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/dailyReminder.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/weeklyDigest.ts" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/weeklyDigest.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/weeklyUnfilledDigest.ts" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/weeklyUnfilledDigest.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/requests/_components/RequestForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/requests/_components/RequestForm.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/requests/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/requests/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftForm.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftRow.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftRow.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server/api/routers/icalRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/icalRouter.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server/api/routers/requestsRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/requestsRouter.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/server/api/routers/shiftsRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/shiftsRouter.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

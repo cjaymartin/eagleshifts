@@ -185,7 +185,7 @@ export default function RequestForm(props: RequestFormProps) {
                                 </Typography>
                             )}
                             <Typography variant="body2">
-                                {dayjs(shift.date).format('MMMM D, YYYY')}
+                                {dayjs(shift.startTime).format('MMMM D, YYYY')}
                             </Typography>
                             <Typography variant="body2">
                                 {dayjs(shift.startTime).tz(timezone).format('h:mm A')} -

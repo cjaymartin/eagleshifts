@@ -192,10 +192,9 @@ export const shiftsRouter = router({
                             .startOf('day')
                             .utc()
                             .toDate();
-                        where.startTime = {
-                            ...where.startTime,
-                            gte: startOfDay,
-                        };
+                        where.startTime = where.startTime && typeof where.startTime === 'object'
+                            ? { ...where.startTime, gte: startOfDay }
+                            : { gte: startOfDay };
                     }
                     if (input.endDate) {
                         // End of the day in the specified timezone
@@ -204,10 +203,9 @@ export const shiftsRouter = router({
                             .endOf('day')
                             .utc()
                             .toDate();
-                        where.endTime = {
-                            ...where.endTime,
-                            lte: endOfDay,
-                        };
+                        where.endTime = where.endTime && typeof where.endTime === 'object'
+                            ? { ...where.endTime, lte: endOfDay }
+                            : { lte: endOfDay };
                     }
                 }
 

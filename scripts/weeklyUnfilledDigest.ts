@@ -85,7 +85,7 @@ async function weeklyUnfilledDigest() {
       const shifts = await prisma.shift.findMany({
         where: {
           organizationId,
-          date: {
+          startTime: {
             gte: weekStartDate.toDate(),
             lt: weekEndDate.toDate(),
           },
@@ -94,7 +94,7 @@ async function weeklyUnfilledDigest() {
           shiftAssignments: true,
         },
         orderBy: {
-          date: 'asc',
+          startTime: 'asc',
         },
       });
 
