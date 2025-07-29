@@ -331,14 +331,26 @@ export const icalRouter = router({
                 } else {
                     shifts.forEach((shift) => {
                         // Convert startTime and endTime from UTC to the shift's timezone
+                        console.dir('LOLOLO');
+
                         const localStartTime = convertUtcToTimezone(
                             shift.startTime,
                             shift.timezone
                         );
+                        console.dir({
+                            localStartTime,
+                            st: shift.startTime,
+                            tz: shift.timezone,
+                        });
                         const localEndTime = convertUtcToTimezone(
                             shift.endTime,
                             shift.timezone
                         );
+                        console.dir({
+                            localEndTime,
+                            et: shift.endTime,
+                            tz: shift.timezone,
+                        });
 
                         // Use shift.date if available, otherwise use startTime for the date
                         const date = shift.date

@@ -29,12 +29,6 @@ function convertToTimezone(
     if (hasTimezoneInfo) {
         // If the string already has timezone info, parse it directly and convert to UTC
         adjustedUtcDateTime = dayjs(isoString).utc();
-        console.log('CONVERT TO TIMEZONE');
-        console.dir({
-            isoString,
-            timezone,
-            adjustedUtcDateTime,
-        });
     } else {
         // Parse the ISO string as UTC
         const utcDateTime = dayjs.utc(isoString);
@@ -49,16 +43,6 @@ function convertToTimezone(
 
         // Convert back to UTC for storage
         adjustedUtcDateTime = localDateTime.utc();
-
-        console.log('CONVERT TO TIMEZONE 2');
-        console.dir({
-            isoString,
-            localDateTime,
-            dateStr,
-            timeStr,
-            timezone,
-            adjustedUtcDateTime,
-        });
     }
 
     console.log({
