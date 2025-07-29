@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { router, publicProcedure } from '@/server/trpc';
+import { publicProcedure, router } from '@/server/trpc';
 import { TRPCError } from '@trpc/server';
-import ical, { ICalCalendarMethod } from 'ical-generator';
+import ical, { ICalCalendarMethod, ICalEventStatus } from 'ical-generator';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -11,252 +11,265 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 export const icalRouter = router({
-  getIcal: publicProcedure
-    .input(
-      z.object({
-        tenantId: z.string(),
-        icalSlug: z.string(),
-      })
-    )
-    .query(async ({ ctx, input }) => {
-      const { tenantId, icalSlug } = input;
+    getIcal: publicProcedure
+        .input(
+            z.object({
+                tenantId: z.string(),
+                icalSlug: z.string(),
+            })
+        )
+        .query(async ({ ctx, input }) => {
+            const { tenantId, icalSlug } = input;
 
-      if (!tenantId || !icalSlug) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'tenantId and icalSlug are required',
-        });
-      }
+            if (!tenantId || !icalSlug) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'tenantId and icalSlug are required',
+                });
+            }
 
-      try {
-        // Find the member by icalSlug
-        const member = await ctx.prisma.member.findFirst({
-          where: {
-            organizationId: tenantId,
-            icalSlug: icalSlug,
-          },
-          include: {
-            user: true,
-          },
-        });
+            try {
+                // Find the member by icalSlug
+                const member = await ctx.prisma.member.findFirst({
+                    where: {
+                        organizationId: tenantId,
+                        icalSlug: icalSlug,
+                    },
+                    include: {
+                        user: true,
+                    },
+                });
 
-        if (!member) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'No user found matching the provided icalSlug',
-          });
-        }
+                if (!member) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'No user found matching the provided icalSlug',
+                    });
+                }
 
-        // Get assigned shifts
-        const assignedShifts = await ctx.prisma.shift.findMany({
-          where: {
-            organizationId: tenantId,
-            shiftAssignments: {
-              some: {
-                memberId: member.id,
-                outcome: 'assigned',
-              },
-            },
-          },
-          include: {
-            shiftAssignments: {
-              where: {
-                memberId: member.id,
-              },
-            },
-          },
-        });
+                // Get assigned shifts
+                const assignedShifts = await ctx.prisma.shift.findMany({
+                    where: {
+                        organizationId: tenantId,
+                        shiftAssignments: {
+                            some: {
+                                memberId: member.id,
+                                outcome: 'assigned',
+                            },
+                        },
+                    },
+                    include: {
+                        shiftAssignments: {
+                            where: {
+                                memberId: member.id,
+                            },
+                        },
+                    },
+                });
 
-        // Get offered shifts (pending requests)
-        const offeredShifts = await ctx.prisma.shift.findMany({
-          where: {
-            organizationId: tenantId,
-            shiftRequests: {
-              some: {
-                memberId: member.id,
-                status: 'pending',
-              },
-            },
-          },
-          include: {
-            shiftRequests: {
-              where: {
-                memberId: member.id,
-              },
-            },
-          },
-        });
+                // Get offered shifts (pending requests)
+                const offeredShifts = await ctx.prisma.shift.findMany({
+                    where: {
+                        organizationId: tenantId,
+                        shiftRequests: {
+                            some: {
+                                memberId: member.id,
+                                status: 'pending',
+                            },
+                        },
+                    },
+                    include: {
+                        shiftRequests: {
+                            where: {
+                                memberId: member.id,
+                            },
+                        },
+                    },
+                });
 
-        // Combine shifts and add status
-        const assignedShiftsWithStatus = assignedShifts.map(shift => ({
-          ...shift,
-          status: 'assigned',
-        }));
+                // Combine shifts and add status
+                const assignedShiftsWithStatus = assignedShifts.map(
+                    (shift) => ({
+                        ...shift,
+                        status: 'assigned',
+                    })
+                );
 
-        const offeredShiftsWithStatus = offeredShifts.map(shift => ({
-          ...shift,
-          status: 'offered',
-        }));
+                const offeredShiftsWithStatus = offeredShifts.map((shift) => ({
+                    ...shift,
+                    status: 'offered',
+                }));
 
-        // Create a map to deduplicate shifts
-        const shiftMap = new Map();
-        
-        // Prioritize assigned shifts over offered shifts
-        offeredShiftsWithStatus.forEach(shift => {
-          shiftMap.set(shift.id, shift);
-        });
-        
-        assignedShiftsWithStatus.forEach(shift => {
-          shiftMap.set(shift.id, shift);
-        });
-        
-        const shifts = Array.from(shiftMap.values());
+                // Create a map to deduplicate shifts
+                const shiftMap = new Map();
 
-        // Create iCal calendar
-        const calendar = ical({ name: `${member.name || member.user.name || member.user.email} - Shifts` });
-        calendar.method(ICalCalendarMethod.REQUEST);
+                // Prioritize assigned shifts over offered shifts
+                offeredShiftsWithStatus.forEach((shift) => {
+                    shiftMap.set(shift.id, shift);
+                });
 
-        // Add events to calendar
-        for (const shift of shifts) {
-          calendar.createEvent({
-            id: shift.id,
-            start: shift.startTime,
-            end: shift.endTime,
-            summary: `${shift.title} - ${shift.status}`,
-            description: shift.notes || '',
-            location: shift.location || '',
-            status: shift.status === 'assigned' ? 'CONFIRMED' : 'TENTATIVE',
-            organizer: {
-              name: member.name || member.user.name || member.user.email,
-              email: member.user.email,
-            },
-          });
-        }
+                assignedShiftsWithStatus.forEach((shift) => {
+                    shiftMap.set(shift.id, shift);
+                });
 
-        // Return the iCal data
-        return calendar.toString();
-      } catch (err) {
-        console.error('Error fetching user:', err);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Internal server error',
-          cause: err,
-        });
-      }
-    }),
+                const shifts = Array.from(shiftMap.values());
 
-  getIcalHtml: publicProcedure
-    .input(
-      z.object({
-        tenantId: z.string(),
-        icalSlug: z.string(),
-      })
-    )
-    .query(async ({ ctx, input }) => {
-      const { tenantId, icalSlug } = input;
+                // Create iCal calendar
+                const calendar = ical({
+                    name: `${member.name || member.user.name || member.user.email} - Shifts`,
+                });
+                calendar.method(ICalCalendarMethod.REQUEST);
 
-      if (!tenantId || !icalSlug) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'tenantId and icalSlug are required',
-        });
-      }
+                // Add events to calendar
+                for (const shift of shifts) {
+                    calendar.createEvent({
+                        id: shift.id,
+                        start: shift.startTime,
+                        end: shift.endTime,
+                        summary: `${shift.title} - ${shift.status}`,
+                        description: shift.notes || '',
+                        location: shift.location || '',
+                        status:
+                            shift.status === 'assigned'
+                                ? ICalEventStatus.CONFIRMED
+                                : ICalEventStatus.TENTATIVE,
+                        organizer: {
+                            name:
+                                member.name ||
+                                member.user.name ||
+                                member.user.email,
+                            email: member.user.email,
+                        },
+                    });
+                }
 
-      try {
-        // Find the member by icalSlug
-        const member = await ctx.prisma.member.findFirst({
-          where: {
-            organizationId: tenantId,
-            icalSlug: icalSlug,
-          },
-          include: {
-            user: true,
-          },
-        });
+                // Return the iCal data
+                return calendar.toString();
+            } catch (err) {
+                console.error('Error fetching user:', err);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Internal server error',
+                    cause: err,
+                });
+            }
+        }),
 
-        if (!member) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'No user found matching the provided icalSlug',
-          });
-        }
+    getIcalHtml: publicProcedure
+        .input(
+            z.object({
+                tenantId: z.string(),
+                icalSlug: z.string(),
+            })
+        )
+        .query(async ({ ctx, input }) => {
+            const { tenantId, icalSlug } = input;
 
-        // Get assigned shifts
-        const assignedShifts = await ctx.prisma.shift.findMany({
-          where: {
-            organizationId: tenantId,
-            shiftAssignments: {
-              some: {
-                memberId: member.id,
-                outcome: 'assigned',
-              },
-            },
-          },
-          include: {
-            shiftAssignments: {
-              where: {
-                memberId: member.id,
-              },
-            },
-          },
-        });
+            if (!tenantId || !icalSlug) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'tenantId and icalSlug are required',
+                });
+            }
 
-        // Get offered shifts (pending requests)
-        const offeredShifts = await ctx.prisma.shift.findMany({
-          where: {
-            organizationId: tenantId,
-            shiftRequests: {
-              some: {
-                memberId: member.id,
-                status: 'pending',
-              },
-            },
-          },
-          include: {
-            shiftRequests: {
-              where: {
-                memberId: member.id,
-              },
-            },
-          },
-        });
+            try {
+                // Find the member by icalSlug
+                const member = await ctx.prisma.member.findFirst({
+                    where: {
+                        organizationId: tenantId,
+                        icalSlug: icalSlug,
+                    },
+                    include: {
+                        user: true,
+                    },
+                });
 
-        // Combine shifts and add status
-        const assignedShiftsWithStatus = assignedShifts.map(shift => ({
-          ...shift,
-          status: 'assigned',
-        }));
+                if (!member) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'No user found matching the provided icalSlug',
+                    });
+                }
 
-        const offeredShiftsWithStatus = offeredShifts.map(shift => ({
-          ...shift,
-          status: 'offered',
-        }));
+                // Get assigned shifts
+                const assignedShifts = await ctx.prisma.shift.findMany({
+                    where: {
+                        organizationId: tenantId,
+                        shiftAssignments: {
+                            some: {
+                                memberId: member.id,
+                                outcome: 'assigned',
+                            },
+                        },
+                    },
+                    include: {
+                        shiftAssignments: {
+                            where: {
+                                memberId: member.id,
+                            },
+                        },
+                    },
+                });
 
-        // Create a map to deduplicate shifts
-        const shiftMap = new Map();
-        
-        // Prioritize assigned shifts over offered shifts
-        offeredShiftsWithStatus.forEach(shift => {
-          shiftMap.set(shift.id, shift);
-        });
-        
-        assignedShiftsWithStatus.forEach(shift => {
-          shiftMap.set(shift.id, shift);
-        });
-        
-        const shifts = Array.from(shiftMap.values());
+                // Get offered shifts (pending requests)
+                const offeredShifts = await ctx.prisma.shift.findMany({
+                    where: {
+                        organizationId: tenantId,
+                        shiftRequests: {
+                            some: {
+                                memberId: member.id,
+                                status: 'pending',
+                            },
+                        },
+                    },
+                    include: {
+                        shiftRequests: {
+                            where: {
+                                memberId: member.id,
+                            },
+                        },
+                    },
+                });
 
-        // Sort shifts by date and time
-        shifts.sort((a, b) => {
-          if (a.date.getTime() !== b.date.getTime()) {
-            return a.date.getTime() - b.date.getTime();
-          }
-          return a.startTime.getTime() - b.startTime.getTime();
-        });
+                // Combine shifts and add status
+                const assignedShiftsWithStatus = assignedShifts.map(
+                    (shift) => ({
+                        ...shift,
+                        status: 'assigned',
+                    })
+                );
 
-        // Generate HTML
-        const userName = member.name || member.user.name || member.user.email;
-        let html = `
+                const offeredShiftsWithStatus = offeredShifts.map((shift) => ({
+                    ...shift,
+                    status: 'offered',
+                }));
+
+                // Create a map to deduplicate shifts
+                const shiftMap = new Map();
+
+                // Prioritize assigned shifts over offered shifts
+                offeredShiftsWithStatus.forEach((shift) => {
+                    shiftMap.set(shift.id, shift);
+                });
+
+                assignedShiftsWithStatus.forEach((shift) => {
+                    shiftMap.set(shift.id, shift);
+                });
+
+                const shifts = Array.from(shiftMap.values());
+
+                // Sort shifts by date and time
+                shifts.sort((a, b) => {
+                    if (a.date.getTime() !== b.date.getTime()) {
+                        return a.date.getTime() - b.date.getTime();
+                    }
+                    return a.startTime.getTime() - b.startTime.getTime();
+                });
+
+                // Generate HTML
+                const userName =
+                    member.name || member.user.name || member.user.email;
+                let html = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -279,16 +292,21 @@ export const icalRouter = router({
           <h1>${userName} - Shifts</h1>
         `;
 
-        if (shifts.length === 0) {
-          html += '<p>No shifts found.</p>';
-        } else {
-          shifts.forEach(shift => {
-            const date = dayjs(shift.date).format('MMMM D, YYYY');
-            const startTime = dayjs(shift.startTime).format('h:mm A');
-            const endTime = dayjs(shift.endTime).format('h:mm A');
-            const statusClass = shift.status === 'assigned' ? 'assigned' : 'offered';
-            
-            html += `
+                if (shifts.length === 0) {
+                    html += '<p>No shifts found.</p>';
+                } else {
+                    shifts.forEach((shift) => {
+                        const date = dayjs(shift.date).format('MMMM D, YYYY');
+                        const startTime = dayjs(shift.startTime).format(
+                            'h:mm A'
+                        );
+                        const endTime = dayjs(shift.endTime).format('h:mm A');
+                        const statusClass =
+                            shift.status === 'assigned'
+                                ? 'assigned'
+                                : 'offered';
+
+                        html += `
             <div class="shift">
               <div class="shift-title">${shift.title}</div>
               <div class="shift-date">${date}</div>
@@ -298,22 +316,22 @@ export const icalRouter = router({
               ${shift.notes ? `<div class="shift-notes">Notes: ${shift.notes}</div>` : ''}
             </div>
             `;
-          });
-        }
+                    });
+                }
 
-        html += `
+                html += `
         </body>
         </html>
         `;
 
-        return html;
-      } catch (err) {
-        console.error('Error fetching user:', err);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Internal server error',
-          cause: err,
-        });
-      }
-    }),
+                return html;
+            } catch (err) {
+                console.error('Error fetching user:', err);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Internal server error',
+                    cause: err,
+                });
+            }
+        }),
 });

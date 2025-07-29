@@ -5,7 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d58e61e2-8c55-42b2-878e-5572cbd53eb3" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/src/app/api/t/[tenantId]/u/[icalSlug]/ical/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/t/[tenantId]/u/[icalSlug]/ical/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server/api/routers/icalRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/icalRouter.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
