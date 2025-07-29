@@ -10,6 +10,7 @@ import {
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useForm, Controller } from 'react-hook-form';
 import { useNotifications } from '@toolpad/core';
@@ -20,6 +21,7 @@ import {
     useTeamUsersLookupQuery,
     useTeamUsersQuery,
 } from '@/queries/users';
+import { useBusinessProfileQuery } from '@/queries/team';
 import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/api/trpc/[trpc]';
 import ShiftAssignmentTool from '@/app/(dashboard)/shifts/_components/ShiftAssignmentTool';
@@ -30,6 +32,7 @@ import {
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Helper function to close the dialog
 const useShiftDialogHelpers = () => ({
@@ -68,18 +71,36 @@ export default function ShiftForm(props: ShiftFormProps) {
     // Get team users data to map from memberId to userId
     const { data: teamUsers = [] } = useTeamUsersQuery();
 
+    // Get organization profile data
+    const { data: businessProfile } = useBusinessProfileQuery();
+
     // Transform shiftAssignments to the format expected by the form
     const transformedShift = shift
         ? {
               ...shift,
-              // Parse dates using the YYYY-MM-DD format
-              date: shift.date
-                  ? dayjs.utc(shift.date, 'YYYY-MM-DD').toDate()
+              // Parse dates from ISO format
+              date: shift.startTime
+                  ? dayjs(shift.startTime)
+                        .tz(
+                            shift.timezone || businessProfile?.timezone || 'UTC'
+                        )
+                        .startOf('day')
+                        .toDate()
                   : null,
               startTime: shift.startTime
-                  ? dayjs.utc(shift.startTime).toDate()
+                  ? dayjs(shift.startTime)
+                        .tz(
+                            shift.timezone || businessProfile?.timezone || 'UTC'
+                        )
+                        .toDate()
                   : null,
-              endTime: shift.endTime ? dayjs.utc(shift.endTime).toDate() : null,
+              endTime: shift.endTime
+                  ? dayjs(shift.endTime)
+                        .tz(
+                            shift.timezone || businessProfile?.timezone || 'UTC'
+                        )
+                        .toDate()
+                  : null,
               assignments:
                   shift.shiftAssignments?.map((assignment) => {
                       return {
@@ -154,19 +175,39 @@ export default function ShiftForm(props: ShiftFormProps) {
                 return;
             }
 
-            // Format data for API
-            // Note: server will ensure startTime and endTime have the same date as the shift date
+            // Use the shift's timezone, or organization's timezone, or default to UTC
+            const timezone =
+                shift?.timezone || businessProfile?.timezone || 'UTC';
+
+            // Create datetime strings by combining the date with the time
+            // We need to work with the local time directly to avoid double timezone conversion
+            const startLocalTime = dayjs(formData.date)
+                .hour(dayjs(formData.startTime).hour())
+                .minute(dayjs(formData.startTime).minute())
+                .second(dayjs(formData.startTime).second())
+                .tz(timezone, true); // true keeps the local time and just changes the timezone
+
+            const endLocalTime = dayjs(formData.date)
+                .hour(dayjs(formData.endTime).hour())
+                .minute(dayjs(formData.endTime).minute())
+                .second(dayjs(formData.endTime).second())
+                .tz(timezone, true); // true keeps the local time and just changes the timezone
+
+            // Create ISO strings with timezone information instead of UTC
+            const startTimeLocalISO = startLocalTime.format();
+            const endTimeLocalISO = endLocalTime.format();
+
+            // These iso times should be in UTC
+            const startTimeISO = endLocalTime.toISOString();
+            const endTimeISO = endLocalTime.toISOString();
+
+            // Format data for API - note that we're not including the date field
             const shiftData = {
                 title: formData.title,
-                date: dayjs.utc(formData.date).format('YYYY-MM-DD'),
-                startTime: dayjs
-                    .utc(formData.startTime)
-                    .format('YYYY-MM-DD HH:mm:ss'),
-                endTime: dayjs
-                    .utc(formData.endTime)
-                    .format('YYYY-MM-DD HH:mm:ss'),
+                startTime: startTimeISO,
+                endTime: endTimeISO,
                 slots: Number(formData.slots),
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                timezone: timezone,
                 location: formData.location,
                 notes: formData.notes,
                 adminNotes: formData.adminNotes,
@@ -201,25 +242,66 @@ export default function ShiftForm(props: ShiftFormProps) {
                 return;
             }
 
-            // Format data for API
-            // Note: server will ensure startTime and endTime have the same date as the shift date
+            // Validate required fields
+            if (!formData.date) {
+                setError('date', { message: 'Date is required' });
+                return;
+            }
+            if (!formData.startTime) {
+                setError('startTime', { message: 'Start time is required' });
+                return;
+            }
+            if (!formData.endTime) {
+                setError('endTime', { message: 'End time is required' });
+                return;
+            }
+
+            // Use the shift's timezone, or organization's timezone, or default to UTC
+            const timezone =
+                shift?.timezone || businessProfile?.timezone || 'UTC';
+
+            // Create datetime strings by combining the date with the time
+            // We need to work with the local time directly to avoid double timezone conversion
+            console.log('DATE', formData.date);
+            console.log('FROM', formData.startTime);
+            const startLocalTime = dayjs(formData.date)
+                .hour(dayjs(formData.startTime).hour())
+                .minute(dayjs(formData.startTime).minute())
+                .second(dayjs(formData.startTime).second())
+                .tz(timezone, true); // true keeps the local time and just changes the timezone
+
+            console.log('TO', startLocalTime.format());
+
+            console.log('EFROM', formData.startTime);
+            const endLocalTime = dayjs(formData.date)
+                .hour(dayjs(formData.endTime).hour())
+                .minute(dayjs(formData.endTime).minute())
+                .second(dayjs(formData.endTime).second())
+                .tz(timezone, true); // true keeps the local time and just changes the timezone
+
+            console.log('ETO', startLocalTime.format());
+            // Create ISO strings with timezone information instead of UTC
+            const startTimeISO = startLocalTime.format();
+            const endTimeISO = endLocalTime.format();
+
+            console.log('STARTISO', startTimeISO);
+            console.log('ENDISO', endTimeISO);
+
+            // Format data for API - note that we're not including the date field
             const shiftData = {
                 id: shiftId,
                 title: formData.title,
-                date: dayjs.utc(formData.date).format('YYYY-MM-DD'),
-                startTime: dayjs
-                    .utc(formData.startTime)
-                    .format('YYYY-MM-DD HH:mm:ss'),
-                endTime: dayjs
-                    .utc(formData.endTime)
-                    .format('YYYY-MM-DD HH:mm:ss'),
+                startTime: startTimeISO,
+                endTime: endTimeISO,
                 slots: Number(formData.slots),
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                timezone: timezone,
                 location: formData.location,
                 notes: formData.notes,
                 adminNotes: formData.adminNotes,
                 assignments: formData.assignments || [],
             };
+
+            console.log({ shiftData });
 
             // Update shift
             await updateMutation.mutateAsync(shiftData);
@@ -331,7 +413,13 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 disabled={!isAdmin}
                                 label="Date"
                                 value={
-                                    field.value ? dayjs.utc(field.value) : null
+                                    field.value
+                                        ? dayjs(field.value).tz(
+                                              shift?.timezone ||
+                                                  businessProfile?.timezone ||
+                                                  'UTC'
+                                          )
+                                        : null
                                 }
                                 onChange={(date) =>
                                     field.onChange(date ? date.toDate() : null)
@@ -353,7 +441,13 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 disabled={!isAdmin}
                                 label="Start Time"
                                 value={
-                                    field.value ? dayjs.utc(field.value) : null
+                                    field.value
+                                        ? dayjs(field.value).tz(
+                                              shift?.timezone ||
+                                                  businessProfile?.timezone ||
+                                                  'UTC'
+                                          )
+                                        : null
                                 }
                                 onChange={(date) =>
                                     field.onChange(date ? date.toDate() : null)
@@ -376,7 +470,13 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 disabled={!isAdmin}
                                 label="End Time"
                                 value={
-                                    field.value ? dayjs.utc(field.value) : null
+                                    field.value
+                                        ? dayjs(field.value).tz(
+                                              shift?.timezone ||
+                                                  businessProfile?.timezone ||
+                                                  'UTC'
+                                          )
+                                        : null
                                 }
                                 onChange={(date) =>
                                     field.onChange(date ? date.toDate() : null)

@@ -15,9 +15,15 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
 import Download from '@mui/icons-material/Download';
+import { useBusinessProfileQuery } from '@/queries/team';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 import { ShiftRow } from './_components/ShiftRow';
 import { useAuthQuery, useTeamUsersLookupQuery } from '@/queries/users';
 import { ShiftFilters, ShiftFilterSchema } from './_components/ShiftFilters';
@@ -38,6 +44,9 @@ export default function Shifts() {
     const { data: userLookupData } = useTeamUsersLookupQuery();
     const userLookup = userLookupData || {};
 
+    // Get organization profile data for timezone
+    const { data: businessProfile } = useBusinessProfileQuery();
+
     const { data: shifts } = trpc.shifts.list.useQuery(filters as any);
 
     console.log({ shifts });
@@ -50,7 +59,16 @@ export default function Shifts() {
         const fileName = 'shifts-' + dayjs.utc().format('YYYY-MM-DD');
 
         const csvData = shifts?.map((x) => {
-            const { title, location, date, startTime, endTime, slots } = x;
+            const { title, location, startTime, endTime, slots } = x;
+
+            // Use the shift's timezone, or organization's timezone, or default to UTC
+            const shiftTimezone = x.timezone || businessProfile?.timezone || 'UTC';
+
+            // Format times using the appropriate timezone
+            const formattedDate = dayjs(startTime).tz(shiftTimezone).format('YYYY-MM-DD');
+            const formattedStartTime = dayjs(startTime).tz(shiftTimezone).format('hh:mm a');
+            const formattedEndTime = dayjs(endTime).tz(shiftTimezone).format('hh:mm a');
+
             const assignments = x.shiftAssignments
                 .map((assignment) => userLookup[assignment.memberId])
                 .filter(Boolean) // Filter out undefined values
@@ -59,9 +77,9 @@ export default function Shifts() {
             return {
                 Shift: title,
                 Location: location,
-                Date: date,
-                'Start Time': startTime,
-                'End Time': endTime,
+                Date: formattedDate,
+                'Start Time': formattedStartTime,
+                'End Time': formattedEndTime,
                 Slots: slots,
                 Assignments: assignments,
             };

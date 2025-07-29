@@ -12,17 +12,20 @@ import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/api/trpc/[trpc]';
 import { useShiftDeleteMutation } from '@/queries/shifts';
 import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import { useBusinessProfileQuery } from '@/queries/team';
 
 dayjs.extend(utc);
+dayjs.extend(timezone);
 
-// Helper function to format time from ISO to AM/PM format
-const formatTime = (time: string) => {
+// Helper function to format time from ISO to AM/PM format using the appropriate timezone
+const formatTime = (time: string, timezone: string) => {
     if (!time) return '';
 
     // Handle ISO format strings
     if (time.includes('T')) {
-        // Parse the ISO string and convert to AM/PM format
-        return dayjs.utc(time).format('hh:mm a');
+        // Parse the ISO string, convert to the appropriate timezone, and format to AM/PM
+        return dayjs(time).tz(timezone).format('hh:mm a');
     }
 
     // Return as is if it's the old format
@@ -39,6 +42,12 @@ export function ShiftRow(props: ShiftRowProps) {
     const shift = props?.shift || {};
     const { data: session } = useAuthQuery();
     const role = session?.user?.role ?? 'guest';
+
+    // Get organization profile data for timezone
+    const { data: businessProfile } = useBusinessProfileQuery();
+
+    // Use the shift's timezone, or organization's timezone, or default to UTC
+    const timezone = shift.timezone || businessProfile?.timezone || 'UTC';
 
     const isAdmin = ['admin', 'owner'].includes(role);
 
@@ -61,11 +70,11 @@ export function ShiftRow(props: ShiftRowProps) {
             <TableCell>{shift.location}</TableCell>
 
             <TableCell>
-                {shift.date && dayjs.utc(shift.date).format('YYYY-MM-DD')}
+                {shift.startTime && dayjs(shift.startTime).tz(timezone).format('YYYY-MM-DD')}
             </TableCell>
             <TableCell>
-                {formatTime(shift.startTime.toString())} -{' '}
-                {formatTime(shift.endTime.toString())}
+                {formatTime(shift.startTime.toString(), timezone)} -{' '}
+                {formatTime(shift.endTime.toString(), timezone)}
             </TableCell>
             <TableCell>
                 {filledSlots} / {shift.slots}

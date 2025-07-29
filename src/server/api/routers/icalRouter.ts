@@ -11,7 +11,10 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 // Helper function to convert a UTC date to the specified timezone
-function convertUtcToTimezone(utcDate: Date, timezone: string = 'America/New_York'): Date {
+function convertUtcToTimezone(
+    utcDate: Date,
+    timezone: string = 'America/New_York'
+): Date {
     // Convert the UTC date to the specified timezone
     return dayjs.utc(utcDate).tz(timezone).toDate();
 }
@@ -129,8 +132,14 @@ export const icalRouter = router({
                 // Add events to calendar
                 for (const shift of shifts) {
                     // Convert startTime and endTime from UTC to the shift's timezone
-                    const startTime = convertUtcToTimezone(shift.startTime, shift.timezone);
-                    const endTime = convertUtcToTimezone(shift.endTime, shift.timezone);
+                    const startTime = convertUtcToTimezone(
+                        shift.startTime,
+                        shift.timezone
+                    );
+                    const endTime = convertUtcToTimezone(
+                        shift.endTime,
+                        shift.timezone
+                    );
 
                     calendar.createEvent({
                         id: shift.id,
@@ -270,15 +279,27 @@ export const icalRouter = router({
 
                 // Sort shifts by date and time
                 shifts.sort((a, b) => {
-                    if (a.date.getTime() !== b.date.getTime()) {
-                        return a.date.getTime() - b.date.getTime();
+                    // Check if both dates exist
+                    if (a.date && b.date) {
+                        if (a.date.getTime() !== b.date.getTime()) {
+                            return a.date.getTime() - b.date.getTime();
+                        }
+                    } else if (a.date) {
+                        // If only a.date exists, prioritize it
+                        return -1;
+                    } else if (b.date) {
+                        // If only b.date exists, prioritize it
+                        return 1;
                     }
+                    // If no dates or dates are equal, sort by startTime
                     return a.startTime.getTime() - b.startTime.getTime();
                 });
 
                 // Generate HTML
                 const userName =
                     member.name || member.user.name || member.user.email;
+                // Get the default timezone for the page
+                const defaultTimezone = 'America/New_York'; // Default timezone used in convertUtcToTimezone
                 let html = `
         <!DOCTYPE html>
         <html>
@@ -287,10 +308,12 @@ export const icalRouter = router({
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             h1 { color: #333; }
+            .timezone-info { color: #666; margin-bottom: 20px; font-style: italic; }
             .shift { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
             .shift-title { font-weight: bold; font-size: 18px; }
             .shift-date { color: #666; }
             .shift-time { color: #666; }
+            .shift-timezone { color: #666; }
             .shift-location { color: #666; }
             .shift-status { font-weight: bold; }
             .assigned { color: green; }
@@ -300,6 +323,7 @@ export const icalRouter = router({
         </head>
         <body>
           <h1>${userName} - Shifts</h1>
+          <div class="timezone-info">Default Timezone: ${defaultTimezone}</div>
         `;
 
                 if (shifts.length === 0) {
@@ -307,13 +331,21 @@ export const icalRouter = router({
                 } else {
                     shifts.forEach((shift) => {
                         // Convert startTime and endTime from UTC to the shift's timezone
-                        const localStartTime = convertUtcToTimezone(shift.startTime, shift.timezone);
-                        const localEndTime = convertUtcToTimezone(shift.endTime, shift.timezone);
-
-                        const date = dayjs(shift.date).format('MMMM D, YYYY');
-                        const startTime = dayjs(localStartTime).format(
-                            'h:mm A'
+                        const localStartTime = convertUtcToTimezone(
+                            shift.startTime,
+                            shift.timezone
                         );
+                        const localEndTime = convertUtcToTimezone(
+                            shift.endTime,
+                            shift.timezone
+                        );
+
+                        // Use shift.date if available, otherwise use startTime for the date
+                        const date = shift.date
+                            ? dayjs(shift.date).format('MMMM D, YYYY')
+                            : dayjs(localStartTime).format('MMMM D, YYYY');
+                        const startTime =
+                            dayjs(localStartTime).format('h:mm A');
                         const endTime = dayjs(localEndTime).format('h:mm A');
                         const statusClass =
                             shift.status === 'assigned'
@@ -325,6 +357,7 @@ export const icalRouter = router({
               <div class="shift-title">${shift.title}</div>
               <div class="shift-date">${date}</div>
               <div class="shift-time">${startTime} - ${endTime}</div>
+              <div class="shift-timezone">Timezone: ${shift.timezone || defaultTimezone}</div>
               ${shift.location ? `<div class="shift-location">Location: ${shift.location}</div>` : ''}
               <div class="shift-status">Status: <span class="${statusClass}">${shift.status}</span></div>
               ${shift.notes ? `<div class="shift-notes">Notes: ${shift.notes}</div>` : ''}

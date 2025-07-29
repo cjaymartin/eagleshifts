@@ -3,6 +3,12 @@
 import React, { useCallback, useState } from 'react';
 import { Box, Container, Grid, IconButton } from '@mui/material';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import { useBusinessProfileQuery } from '@/queries/team';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 import {
     Calendar as BigCalendar,
@@ -40,6 +46,9 @@ export default function Calendar() {
     const { data: session } = useAuthQuery();
     const role = session?.user?.role ?? 'guest';
     const isAdmin = ['admin', 'owner'].includes(role);
+
+    // Get organization profile data for timezone
+    const { data: businessProfile } = useBusinessProfileQuery();
 
     // Dialog handling
     const dialogs = useDialogs();
@@ -143,12 +152,15 @@ export default function Calendar() {
         end: Date;
     }> =
         shifts?.map((shift) => {
+            // Use the shift's timezone, or organization's timezone, or default to UTC
+            const shiftTimezone = shift.timezone || businessProfile?.timezone || 'UTC';
+
             return {
                 id: shift.id,
                 title: shift.title,
                 allDay: false,
-                start: dayjs.utc(shift.startTime).toDate(),
-                end: dayjs.utc(shift.endTime).toDate(),
+                start: dayjs(shift.startTime).tz(shiftTimezone).toDate(),
+                end: dayjs(shift.endTime).tz(shiftTimezone).toDate(),
             };
         }) || [];
 

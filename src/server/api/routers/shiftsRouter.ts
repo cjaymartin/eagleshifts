@@ -10,20 +10,58 @@ import { TRPCError } from '@trpc/server';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// Helper function to convert date strings to YYYY-MM-DD format
-function formatDateString(dateString: string): string {
-    return dayjs.utc(dateString).format('YYYY-MM-DD');
+// Helper function to parse ISO8601 date strings to UTC Date objects
+function parseISOString(isoString: string): Date {
+    return dayjs.utc(isoString).toDate();
 }
 
-// Helper function to parse date strings without timezone issues
-function parseDateString(dateString: string): Date {
-    // Parse the date string as YYYY-MM-DD and set the time to noon UTC
-    // This ensures that the date will be the same regardless of timezone
-    return dayjs.utc(`${formatDateString(dateString)}T12:00:00Z`).toDate();
+// Helper function to convert a date to the specified timezone
+function convertToTimezone(
+    isoString: string,
+    timezone: string = 'America/New_York'
+): Date {
+    // Check if the ISO string already includes timezone information
+    const hasTimezoneInfo = /[+-]\d{2}:?\d{2}$/.test(isoString) || isoString.endsWith('Z');
+
+    let adjustedUtcDateTime;
+
+    if (hasTimezoneInfo) {
+        // If the string already has timezone info, parse it directly and convert to UTC
+        adjustedUtcDateTime = dayjs(isoString).utc();
+    } else {
+        // Parse the ISO string as UTC
+        const utcDateTime = dayjs.utc(isoString);
+
+        // Extract date and time components
+        const dateStr = utcDateTime.format('YYYY-MM-DD');
+        const timeStr = utcDateTime.format('HH:mm:ss');
+
+        // Create a datetime in the specified timezone
+        // This ensures that if the user enters 9:00 AM EST, it's stored as 9:00 AM EST (or 2:00 PM UTC)
+        const localDateTime = dayjs.tz(`${dateStr}T${timeStr}`, timezone);
+
+        // Convert back to UTC for storage
+        adjustedUtcDateTime = localDateTime.utc();
+    }
+
+    console.log({
+        cmd: 'convertToTimezone',
+        isoString,
+        timezone,
+        hasTimezoneInfo,
+        adjustedUtcDateTime: adjustedUtcDateTime.format(),
+        rval: adjustedUtcDateTime.toDate(),
+    });
+
+    return adjustedUtcDateTime.toDate();
 }
 
 // Helper function to adjust a time to match the date of a given date and convert to UTC
-function adjustTimeToDate(timeString: string, dateString: string, timezone: string = 'America/New_York'): Date {
+function adjustTimeToDate(
+    timeString: string,
+    dateString: string,
+    timezone: string = 'America/New_York'
+): Date {
     // Extract the date part from the shift date
     const dateOnly = dayjs(dateString).format('YYYY-MM-DD');
     // Extract the time part from the time
@@ -49,7 +87,10 @@ function adjustTimeToDate(timeString: string, dateString: string, timezone: stri
 }
 
 // Helper function to convert a UTC date to the specified timezone
-function convertUtcToTimezone(utcDate: Date, timezone: string = 'America/New_York'): Date {
+function convertUtcToTimezone(
+    utcDate: Date,
+    timezone: string = 'America/New_York'
+): Date {
     // Convert the UTC date to the specified timezone
     return dayjs.utc(utcDate).tz(timezone).toDate();
 }
@@ -66,18 +107,32 @@ export const shiftsRouter = router({
         }
 
         // Generate a dozen random shifts
-        const shifts = Array.from({ length: 12 }).map((_, index) => ({
-            organizationId: ctx.user.organizationId,
-            title: `Shift ${index + 1}`,
-            location: `Location ${index + 1}`,
-            date: new Date(new Date().setDate(new Date().getDate() + index)), // Shift dates in the future
-            startTime: adjustTimeToDate('09:00:00', new Date().toISOString(), 'America/New_York'), // 9:00 AM
-            endTime: adjustTimeToDate('17:00:00', new Date().toISOString(), 'America/New_York'), // 5:00 PM
-            slots: Math.floor(Math.random() * 10) + 1, // Random number of slots between 1 and 10
-            notes: `Notes for shift ${index + 1}`,
-            adminNotes: `Admin notes for shift ${index + 1}`,
-            timezone: 'America/New_York',
-        }));
+        const shifts = Array.from({ length: 12 }).map((_, index) => {
+            // Create base date for the shift (today + index days)
+            const baseDate = dayjs().add(index, 'day');
+
+            // Create start and end times for the shift
+            const startTime = baseDate.hour(9).minute(0).second(0); // 9:00 AM
+            const endTime = baseDate.hour(17).minute(0).second(0); // 5:00 PM
+
+            return {
+                organizationId: ctx.user.organizationId,
+                title: `Shift ${index + 1}`,
+                location: `Location ${index + 1}`,
+                startTime: convertToTimezone(
+                    startTime.toISOString(),
+                    'America/New_York'
+                ),
+                endTime: convertToTimezone(
+                    endTime.toISOString(),
+                    'America/New_York'
+                ),
+                slots: Math.floor(Math.random() * 10) + 1, // Random number of slots between 1 and 10
+                notes: `Notes for shift ${index + 1}`,
+                adminNotes: `Admin notes for shift ${index + 1}`,
+                timezone: 'America/New_York',
+            };
+        });
 
         // Insert shifts into the database
         const createdShifts = await ctx.prisma.shift.createMany({
@@ -129,11 +184,31 @@ export const shiftsRouter = router({
                     };
 
                 if (input.startDate || input.endDate) {
-                    where.date = {};
-                    if (input.startDate)
-                        where.date.gte = parseDateString(input.startDate);
-                    if (input.endDate)
-                        where.date.lte = parseDateString(input.endDate);
+                    // Filter based on startTime instead of date
+                    if (input.startDate) {
+                        // Start of the day in the specified timezone
+                        const startOfDay = dayjs
+                            .tz(input.startDate, 'America/New_York')
+                            .startOf('day')
+                            .utc()
+                            .toDate();
+                        where.startTime = {
+                            ...where.startTime,
+                            gte: startOfDay,
+                        };
+                    }
+                    if (input.endDate) {
+                        // End of the day in the specified timezone
+                        const endOfDay = dayjs
+                            .tz(input.endDate, 'America/New_York')
+                            .endOf('day')
+                            .utc()
+                            .toDate();
+                        where.endTime = {
+                            ...where.endTime,
+                            lte: endOfDay,
+                        };
+                    }
                 }
 
                 // Handle assigned filter
@@ -194,7 +269,7 @@ export const shiftsRouter = router({
                     shiftAssignments: true,
                     shiftRequests: true,
                 },
-                orderBy: { date: 'asc' },
+                orderBy: { startTime: 'asc' },
             });
 
             // Apply filtering based on user role and query parameters
@@ -264,12 +339,13 @@ export const shiftsRouter = router({
                 });
             }
 
-            // Format dates as YYYY-MM-DD strings for the response
             // Convert startTime and endTime from UTC to the shift's timezone
             return filteredShifts.map((shift) => ({
                 ...shift,
-                date: formatDateString(shift.date.toISOString()),
-                startTime: convertUtcToTimezone(shift.startTime, shift.timezone),
+                startTime: convertUtcToTimezone(
+                    shift.startTime,
+                    shift.timezone
+                ),
                 endTime: convertUtcToTimezone(shift.endTime, shift.timezone),
             }));
         }),
@@ -348,12 +424,13 @@ export const shiftsRouter = router({
                 }
             }
 
-            // Format dates as YYYY-MM-DD strings for the response
             // Convert startTime and endTime from UTC to the shift's timezone
             return {
                 ...shift,
-                date: formatDateString(shift.date.toISOString()),
-                startTime: convertUtcToTimezone(shift.startTime, shift.timezone),
+                startTime: convertUtcToTimezone(
+                    shift.startTime,
+                    shift.timezone
+                ),
                 endTime: convertUtcToTimezone(shift.endTime, shift.timezone),
             };
         }),
@@ -363,9 +440,8 @@ export const shiftsRouter = router({
             z.object({
                 title: z.string(),
                 location: z.string().optional(),
-                date: z.string(),
-                startTime: z.string(),
-                endTime: z.string(),
+                startTime: z.string(), // ISO8601 date string
+                endTime: z.string(), // ISO8601 date string
                 slots: z.number(),
                 notes: z.string().optional(),
                 adminNotes: z.string().optional(),
@@ -436,9 +512,11 @@ export const shiftsRouter = router({
                     organizationId: ctx.user.organizationId,
                     title: input.title,
                     location: input.location,
-                    date: parseDateString(input.date),
-                    startTime: adjustTimeToDate(input.startTime, input.date, input.timezone),
-                    endTime: adjustTimeToDate(input.endTime, input.date, input.timezone),
+                    startTime: convertToTimezone(
+                        input.startTime,
+                        input.timezone
+                    ),
+                    endTime: convertToTimezone(input.endTime, input.timezone),
                     slots: input.slots,
                     notes: input.notes,
                     adminNotes: input.adminNotes,
@@ -597,12 +675,13 @@ export const shiftsRouter = router({
                 return updatedShift;
             }
 
-            // Format dates as YYYY-MM-DD strings for the response
             // Convert startTime and endTime from UTC to the shift's timezone
             return {
                 ...shift,
-                date: formatDateString(shift.date.toISOString()),
-                startTime: convertUtcToTimezone(shift.startTime, shift.timezone),
+                startTime: convertUtcToTimezone(
+                    shift.startTime,
+                    shift.timezone
+                ),
                 endTime: convertUtcToTimezone(shift.endTime, shift.timezone),
             };
         }),
@@ -613,9 +692,8 @@ export const shiftsRouter = router({
                 id: z.string(),
                 title: z.string(),
                 location: z.string().optional(),
-                date: z.string(),
-                startTime: z.string(),
-                endTime: z.string(),
+                startTime: z.string(), // ISO8601 date string
+                endTime: z.string(), // ISO8601 date string
                 slots: z.number(),
                 notes: z.string().optional(),
                 adminNotes: z.string().optional(),
@@ -693,9 +771,11 @@ export const shiftsRouter = router({
                     data: {
                         title: data.title,
                         location: data.location,
-                        date: parseDateString(data.date),
-                        startTime: adjustTimeToDate(data.startTime, data.date, data.timezone),
-                        endTime: adjustTimeToDate(data.endTime, data.date, data.timezone),
+                        startTime: convertToTimezone(
+                            data.startTime,
+                            data.timezone
+                        ),
+                        endTime: convertToTimezone(data.endTime, data.timezone),
                         slots: data.slots,
                         notes: data.notes,
                         adminNotes: data.adminNotes,
@@ -879,17 +959,16 @@ export const shiftsRouter = router({
                         JSON.stringify(updatedShift, null, 2)
                     );
 
-                    // Format dates as YYYY-MM-DD strings for the response
+                    // Format dates for the response
                     const formattedShift = {
                         ...updatedShift,
-                        date: formatDateString(
-                            updatedShift!.date.toISOString()
+                        startTime: convertUtcToTimezone(
+                            updatedShift!.startTime,
+                            updatedShift!.timezone
                         ),
-                        startTime: formatDateString(
-                            updatedShift!.startTime.toISOString()
-                        ),
-                        endTime: formatDateString(
-                            updatedShift!.endTime.toISOString()
+                        endTime: convertUtcToTimezone(
+                            updatedShift!.endTime,
+                            updatedShift!.timezone
                         ),
                     };
 
@@ -900,12 +979,17 @@ export const shiftsRouter = router({
                     return formattedShift;
                 }
 
-                // Format dates as YYYY-MM-DD strings for the response
+                // Convert startTime and endTime from UTC to the shift's timezone
                 return {
                     ...shift,
-                    date: formatDateString(shift.date.toISOString()),
-                    startTime: formatDateString(shift.startTime.toISOString()),
-                    endTime: formatDateString(shift.endTime.toISOString()),
+                    startTime: convertUtcToTimezone(
+                        shift.startTime,
+                        shift.timezone
+                    ),
+                    endTime: convertUtcToTimezone(
+                        shift.endTime,
+                        shift.timezone
+                    ),
                 };
             } catch (error: any) {
                 throw new TRPCError({

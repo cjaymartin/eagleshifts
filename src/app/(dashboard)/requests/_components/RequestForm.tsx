@@ -18,6 +18,7 @@ import { AppRouter } from '@/api/trpc/[trpc]';
 import { useAuthQuery } from '@/queries/users';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 
 // Import the mutations we'll create later
@@ -25,9 +26,11 @@ import {
     useShiftRequestCreateMutation,
     useShiftRequestUpdateMutation,
 } from '@/queries/requests';
+import { useBusinessProfileQuery } from '@/queries/team';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Type for RequestForm props
 type RequestFormProps = {
@@ -82,6 +85,12 @@ export default function RequestForm(props: RequestFormProps) {
 
     const { data: session } = useAuthQuery();
     const user = session?.user;
+
+    // Get organization profile data for timezone
+    const { data: businessProfile } = useBusinessProfileQuery();
+
+    // Use the shift's timezone, or organization's timezone, or default to UTC
+    const timezone = shift?.timezone || businessProfile?.timezone || 'UTC';
 
     // Determine if this is a new request based on props or requestId
     const isNew = propsIsNew ?? !requestId;
@@ -176,11 +185,11 @@ export default function RequestForm(props: RequestFormProps) {
                                 </Typography>
                             )}
                             <Typography variant="body2">
-                                {dayjs.utc(shift.date).format('MMMM D, YYYY')}
+                                {dayjs(shift.date).format('MMMM D, YYYY')}
                             </Typography>
                             <Typography variant="body2">
-                                {dayjs.utc(shift.startTime).format('h:mm A')} -
-                                {dayjs.utc(shift.endTime).format('h:mm A')}
+                                {dayjs(shift.startTime).tz(timezone).format('h:mm A')} -
+                                {dayjs(shift.endTime).tz(timezone).format('h:mm A')}
                             </Typography>
                         </div>
                     )}

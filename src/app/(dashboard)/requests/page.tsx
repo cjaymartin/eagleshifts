@@ -21,9 +21,15 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
 import Download from '@mui/icons-material/Download';
+import { useBusinessProfileQuery } from '@/queries/team';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 import { useAuthQuery, useTeamUsersLookupQuery } from '@/queries/users';
 import { trpc } from '@/lib/trpc/client';
 import { useDialogs, useNotifications } from '@toolpad/core';
@@ -73,6 +79,9 @@ export default function Requests() {
     const { data: userLookupData } = useTeamUsersLookupQuery();
     const userLookup = userLookupData || {};
 
+    // Get organization profile data for timezone
+    const { data: businessProfile } = useBusinessProfileQuery();
+
     // Get requests from the API
     const { data: requests } = useShiftRequestsListQuery(pendingOnly);
 
@@ -101,13 +110,16 @@ export default function Requests() {
                 const userName =
                     userLookup[member.userId]?.name || member.userId;
 
+                // Use the shift's timezone, or organization's timezone, or default to UTC
+                const shiftTimezone = shift.timezone || businessProfile?.timezone || 'UTC';
+
                 return {
                     'Request Date': dayjs(createdAt).format('YYYY-MM-DD'),
                     Shift: shift.title,
                     Location: shift.location || '',
                     'Shift Date': dayjs(shift.date).format('YYYY-MM-DD'),
-                    'Start Time': dayjs(shift.startTime).format('h:mm A'),
-                    'End Time': dayjs(shift.endTime).format('h:mm A'),
+                    'Start Time': dayjs(shift.startTime).tz(shiftTimezone).format('h:mm A'),
+                    'End Time': dayjs(shift.endTime).tz(shiftTimezone).format('h:mm A'),
                     User: userName,
                     Status: status.charAt(0).toUpperCase() + status.slice(1),
                     Reason: reason || '',
