@@ -515,13 +515,13 @@ export const teamRouter = router({
 
             return {
                 icalSlug,
-                icalLink: `${process.env.NEXT_PUBLIC_APP_URL}/api/ical/${ctx.user.organizationId}/${icalSlug}`,
+                icalLink: `${process.env.NEXT_PUBLIC_BASE_URL}/api/t/${ctx.user.organizationId}/u/${icalSlug}/ical`,
             };
         }
 
         return {
             icalSlug: member.icalSlug,
-            icalLink: `${process.env.NEXT_PUBLIC_APP_URL}/api/ical/${ctx.user.organizationId}/${member.icalSlug}`,
+            icalLink: `${process.env.NEXT_PUBLIC_BASE_URL}/api/t/${ctx.user.organizationId}/u/${member.icalSlug}/ical`,
         };
     }),
 
@@ -554,7 +554,7 @@ export const teamRouter = router({
         return {
             success: true,
             icalSlug,
-            icalLink: `${process.env.NEXT_PUBLIC_APP_URL}/api/ical/${ctx.user.organizationId}/${icalSlug}`,
+            icalLink: `${process.env.NEXT_PUBLIC_APP_URL}/api/t/${ctx.user.organizationId}/u/${icalSlug}/ical/html`,
         };
     }),
 });
