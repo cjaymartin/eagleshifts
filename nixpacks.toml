@@ -12,6 +12,8 @@ cmd = "yarn start"
 
 [variables]
 NODE_ENV = "production"
+TZ = "America/New_York"
+
 # NODE_OPTIONS = "--max_old_space_size=2048"
 
 # Enable swap to help with memory-intensive operations
