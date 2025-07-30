@@ -16,6 +16,8 @@
     "local:mkadmin": "dotenv -e .env.local -- tsx src/scripts/mkadmin.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.856.0",
+    "@aws-sdk/s3-request-presigner": "^3.856.0",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",

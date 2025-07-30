@@ -20,6 +20,7 @@ import {
     useBusinessShiftSettingsQuery,
     useUpdateBusinessShiftSettingsMutation,
 } from '@/queries/team';
+import { useInitializeUploadGroupsMutation } from '@/queries/uploads';
 import { useNotifications } from '@toolpad/core';
 import { debounce } from 'lodash';
 
@@ -37,6 +38,7 @@ export default function BusinessShiftSettingsForm() {
     const { data: shiftSettings, isLoading } = useBusinessShiftSettingsQuery();
     const updateShiftSettingsMutation =
         useUpdateBusinessShiftSettingsMutation();
+    const initializeUploadGroupsMutation = useInitializeUploadGroupsMutation();
     const notifications = useNotifications();
 
     const {
@@ -73,10 +75,21 @@ export default function BusinessShiftSettingsForm() {
     const onSubmit = async (data: ShiftSettingsFormData) => {
         try {
             await updateShiftSettingsMutation.mutateAsync(data);
-            notifications.show('Shift settings updated successfully', {
-                severity: 'success',
-                autoHideDuration: 3000,
-            });
+
+            // Initialize upload groups after updating shift settings
+            try {
+                const result = await initializeUploadGroupsMutation.mutateAsync();
+                notifications.show(`Shift settings updated and upload groups initialized: ${result.created} created, ${result.deactivated} deactivated`, {
+                    severity: 'success',
+                    autoHideDuration: 3000,
+                });
+            } catch (uploadError: any) {
+                console.error('Error initializing upload groups:', uploadError);
+                notifications.show('Shift settings updated but failed to initialize upload groups', {
+                    severity: 'warning',
+                    autoHideDuration: 3000,
+                });
+            }
         } catch (error: any) {
             notifications.show('Failed to update shift settings', {
                 severity: 'error',

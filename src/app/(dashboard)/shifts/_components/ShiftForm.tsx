@@ -25,6 +25,7 @@ import { useBusinessProfileQuery } from '@/queries/team';
 import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/api/trpc/[trpc]';
 import ShiftAssignmentTool from '@/app/(dashboard)/shifts/_components/ShiftAssignmentTool';
+import ShiftUploads from '@/app/(dashboard)/shifts/_components/ShiftUploads';
 import {
     useShiftCreateMutation,
     useShiftUpdateMutation,
@@ -537,6 +538,14 @@ export default function ShiftForm(props: ShiftFormProps) {
                             />
                         )}
                     />
+
+                    {/* Uploads section */}
+                    {shiftId && (
+                        <ShiftUploads 
+                            shiftId={shiftId} 
+                            readOnly={!isAdmin && !isAssigned}
+                        />
+                    )}
 
                     <Controller
                         name="notes"

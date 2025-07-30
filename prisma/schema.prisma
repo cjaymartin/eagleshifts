@@ -108,6 +108,7 @@ model Organization {
   invitations Invitation[]
   Shift       Shift[]
   profile     OrganizationProfile?
+  uploadGroups UploadGroup[]
 
   @@unique([slug])
   @@map("organization")
@@ -152,6 +153,8 @@ model Member {
   shiftAssignments shiftAssignment[]
   shiftRequests  ShiftRequest[]
   logs           LogEntry[]
+  uploads        Upload[]        @relation("Uploader")
+  deletedUploads Upload[]        @relation("Deleter")
 
   @@unique([organizationId, userId])
   @@map("member")
@@ -207,6 +210,7 @@ model Shift {
   shiftAssignments shiftAssignment[]
   shiftRequests    ShiftRequest[]
   memberId         String?
+  uploads          Upload[]
 
   @@map("shift")
 }
@@ -270,4 +274,43 @@ model LogEntry {
   member   Member? @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@map("log")
+}
+
+model UploadGroup {
+  id             String   @id @default(cuid())
+  organizationId String
+  uploadName     String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  isActive       Boolean  @default(true)
+
+  // Relationships
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  uploads      Upload[]
+
+  @@unique([organizationId, uploadName])
+  @@map("upload_group")
+}
+
+model Upload {
+  id            String   @id @default(cuid())
+  uploadGroupId String
+  shiftId       String
+  fileName      String
+  fileKey       String   @unique
+  fileSize      Int
+  fileType      String
+  uploadedAt    DateTime @default(now())
+  isDeleted     Boolean  @default(false)
+  deletedAt     DateTime?
+
+  // Relationships
+  uploadGroup   UploadGroup @relation(fields: [uploadGroupId], references: [id], onDelete: Cascade)
+  shift         Shift       @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  uploaderId    String
+  uploader      Member      @relation("Uploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+  deleterId     String?
+  deleter       Member?     @relation("Deleter", fields: [deleterId], references: [id])
+
+  @@map("upload")
 }
