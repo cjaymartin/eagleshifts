@@ -15,6 +15,7 @@ import {
     Group,
     RequestPage,
     Book,
+    UploadOutlined,
 } from '@mui/icons-material';
 
 type SmartAppProviderProps = {
@@ -52,9 +53,15 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
                 segment: 'availability',
                 icon: <EventAvailable />,
             },
+
             ...(['admin', 'owner'].includes(session?.user?.role ?? 'guest')
                 ? [
                       { kind: 'header', title: 'Admin' },
+                      {
+                          title: 'Uploaded Files',
+                          segment: 'uploads',
+                          icon: <UploadOutlined />,
+                      },
                       {
                           title: 'Requests',
                           segment: 'requests',

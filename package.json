@@ -52,6 +52,7 @@
     "react": "^19.0.0",
     "react-big-calendar": "^1.19.4",
     "react-dom": "^19.0.0",
+    "react-file-viewer": "^1.2.1",
     "react-hook-form": "^7.58.1",
     "react-hook-form-mui": "^7.6.2",
     "superjson": "^2.2.2",
