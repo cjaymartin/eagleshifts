@@ -5,12 +5,11 @@ import { getFileUrl } from '@/utils/s3';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ uploadId: string }> }
+    { params }: { params: { uploadId: string } }
 ) {
     try {
-        const paramsRes = await params;
         // Get the upload ID from the URL
-        const { uploadId } = paramsRes;
+        const { uploadId } = params;
 
         // Get the user session
         const session = await auth.api.getSession({
