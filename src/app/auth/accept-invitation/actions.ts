@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { auth, signCookie } from '@/lib/auth';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
+import { logTeamInviteAccept } from '@/lib/logging';
 // Import only what we need
 
 function generateBetterAuthId(): string {
@@ -113,6 +114,20 @@ export default async function acceptInvitation(invitationId: string) {
     //     path: '/',
     //     expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
     // });
+
+    // Log the invitation acceptance
+    await logTeamInviteAccept(
+        prisma,
+        invitation.organizationId,
+        user.id,
+        invitationId,
+        invitation.email,
+        invitation.role || 'member',
+        {
+            organizationName: invitation.organization.name,
+            organizationId: invitation.organizationId
+        }
+    );
 
     // Delete the invitation after it's been used
     await prisma.invitation.delete({

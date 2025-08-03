@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { TRPCError } from '@trpc/server';
-import { logShiftCreate, logShiftUpdate, logShiftDelete, LogEntityType } from '@/lib/logging';
+import { logShiftCreate, logShiftUpdate, logShiftDelete, logShiftAssignmentCreate, LogEntityType } from '@/lib/logging';
 
 // Extend dayjs with UTC and timezone plugins
 dayjs.extend(utc);
@@ -644,6 +644,31 @@ export const shiftsRouter = router({
                                     'Created assignment:',
                                     createdAssignment
                                 );
+
+                                // Log the assignment creation
+                                try {
+                                    // Get member name for logging
+                                    const member = await ctx.prisma.member.findUnique({
+                                        where: { id: assignment.memberId },
+                                        include: { user: true },
+                                    });
+
+                                    const memberName = member?.name || member?.user?.name || member?.user?.email || 'Unknown User';
+
+                                    await logShiftAssignmentCreate(
+                                        ctx.prisma,
+                                        ctx.user.organizationId,
+                                        ctx.user.id,
+                                        createdAssignment.id,
+                                        shift.id,
+                                        createdAssignment.memberId,
+                                        shift.title,
+                                        memberName,
+                                        { outcome: createdAssignment.outcome, reason: createdAssignment.reason }
+                                    );
+                                } catch (logError) {
+                                    console.error('Error logging assignment creation:', logError);
+                                }
                             } catch (err) {
                                 console.error(
                                     'Error creating assignment:',
@@ -913,6 +938,31 @@ export const shiftsRouter = router({
                                         'Created assignment:',
                                         createdAssignment
                                     );
+
+                                    // Log the assignment creation
+                                    try {
+                                        // Get member name for logging
+                                        const member = await ctx.prisma.member.findUnique({
+                                            where: { id: assignment.memberId },
+                                            include: { user: true },
+                                        });
+
+                                        const memberName = member?.name || member?.user?.name || member?.user?.email || 'Unknown User';
+
+                                        await logShiftAssignmentCreate(
+                                            ctx.prisma,
+                                            ctx.user.organizationId,
+                                            ctx.user.id,
+                                            createdAssignment.id,
+                                            id, // shift id
+                                            createdAssignment.memberId,
+                                            data.title, // shift title
+                                            memberName,
+                                            { outcome: createdAssignment.outcome, reason: createdAssignment.reason }
+                                        );
+                                    } catch (logError) {
+                                        console.error('Error logging assignment creation:', logError);
+                                    }
                                 } catch (err) {
                                     console.error(
                                         'Error creating assignment:',

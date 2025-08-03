@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { logTeamInviteAccept } from '@/lib/logging';
 
 export default async function OrganizationAuthProvider({
     children,
@@ -47,6 +48,9 @@ export default async function OrganizationAuthProvider({
                 slug: loginOrganizationSlug,
             },
         },
+        include: {
+            organization: true,
+        },
     });
     if (invitation) {
         //accept the invitation
@@ -56,6 +60,20 @@ export default async function OrganizationAuthProvider({
                 invitationId: invitation.id,
             },
         });
+
+        // Log the invitation acceptance
+        await logTeamInviteAccept(
+            prisma,
+            invitation.organizationId,
+            session.user.id,
+            invitation.id,
+            session.user.email,
+            invitation.role || 'member',
+            {
+                organizationName: invitation.organization.name,
+                organizationId: invitation.organizationId
+            }
+        );
     }
 
     await auth.api

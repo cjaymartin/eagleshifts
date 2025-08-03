@@ -8,6 +8,7 @@ import {
     sendShiftRequestNotificationToAdmin,
     sendShiftRequestResolutionToUser,
 } from '@/lib/email';
+import { logShiftRequestCreate, logShiftRequestUpdate, logShiftAssignmentCreate } from '@/lib/logging';
 
 // Extend dayjs with UTC plugin
 dayjs.extend(utc);
@@ -171,6 +172,19 @@ export const requestsRouter = router({
                 },
             });
 
+            // Log the request creation
+            await logShiftRequestCreate(
+                ctx.prisma,
+                ctx.user.organizationId,
+                ctx.user.id,
+                request.id,
+                request.shiftId,
+                request.memberId,
+                request.shift.title,
+                request.member.user.name || request.member.user.email || 'Unknown User',
+                { reason: request.reason }
+            );
+
             // Find admin users to notify
             const adminMembers = await ctx.prisma.member.findMany({
                 where: {
@@ -308,6 +322,20 @@ export const requestsRouter = router({
                     },
                 });
 
+                // Log the request update
+                await logShiftRequestUpdate(
+                    ctx.prisma,
+                    ctx.user.organizationId,
+                    ctx.user.id,
+                    request.id,
+                    request.shiftId,
+                    request.memberId,
+                    request.shift.title,
+                    request.member.user.name || request.member.user.email || 'Unknown User',
+                    request.status,
+                    { reason: request.reason }
+                );
+
                 // Send email notification to the user if status changed to approved or rejected
                 if (
                     input.status === 'approved' ||
@@ -345,7 +373,7 @@ export const requestsRouter = router({
 
                     if (!existingAssignment) {
                         // Create a new assignment
-                        await ctx.prisma.shiftAssignment.create({
+                        const createdAssignment = await ctx.prisma.shiftAssignment.create({
                             data: {
                                 shiftId: request.shiftId,
                                 memberId: request.memberId,
@@ -353,6 +381,19 @@ export const requestsRouter = router({
                                 reason: 'Approved from request',
                             },
                         });
+
+                        // Log the assignment creation
+                        await logShiftAssignmentCreate(
+                            ctx.prisma,
+                            ctx.user.organizationId,
+                            ctx.user.id,
+                            createdAssignment.id,
+                            request.shiftId,
+                            request.memberId,
+                            request.shift.title,
+                            request.member.user.name || request.member.user.email || 'Unknown User',
+                            { outcome: 'assigned', reason: 'Approved from request' }
+                        );
                     } else {
                         // Update the existing assignment
                         await ctx.prisma.shiftAssignment.update({

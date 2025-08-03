@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { auth, signCookie } from '@/lib/auth';
 import { cookies } from 'next/headers';
 import { TRPCError } from '@trpc/server';
+import { logUserStatusChange, logTeamInviteSend, logTeamInviteAccept } from '@/lib/logging';
 
 export const usersRouter = router({
     // Get user by ID - all authenticated users can read user data
@@ -276,6 +277,22 @@ export const usersRouter = router({
                 },
             });
 
+            // Log the user status change if role was updated
+            if (role && role !== currentMember.role) {
+                await logUserStatusChange(
+                    ctx.prisma,
+                    ctx.user.organizationId,
+                    ctx.user.id,
+                    updatedMember.userId,
+                    updatedMember.name || updatedMember.user.name || updatedMember.user.email,
+                    role,
+                    { 
+                        previousRole: currentMember.role,
+                        memberId: memberId
+                    }
+                );
+            }
+
             // If displayName is provided, update the member's name field
             if (displayName) {
                 await ctx.prisma.member.update({
@@ -357,6 +374,20 @@ export const usersRouter = router({
             await ctx.prisma.invitation.delete({
                 where: { id: invitationId },
             });
+
+            // Log the invitation deletion
+            await logTeamInviteSend(
+                ctx.prisma,
+                ctx.user.organizationId,
+                ctx.user.id,
+                invitationId,
+                invitation.email,
+                invitation.role || 'member',
+                { 
+                    action: 'delete',
+                    status: invitation.status
+                }
+            );
 
             return {
                 success: true,
