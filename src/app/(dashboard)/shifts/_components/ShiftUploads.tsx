@@ -176,8 +176,7 @@ export default function ShiftUploads({ shiftId, readOnly }: ShiftUploadsProps) {
                                         </Typography>
 
                                         <FilePreviewButton 
-                                            fileName={upload.fileName}
-                                            fileUrl={`/api/uploads/doc-preview/${upload.id}`}
+                                            uploadId={upload.id}
                                         />
                                         <IconButton
                                             size="small"

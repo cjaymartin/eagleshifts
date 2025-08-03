@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_22", "yarn", "tzdata", "libreoffice"]
+nixPkgs = ["nodejs_22", "yarn", "tzdata"]
 
 [phases.install]
 cmds = ["yarn install"]
