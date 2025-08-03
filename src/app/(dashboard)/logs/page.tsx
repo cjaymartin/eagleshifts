@@ -23,7 +23,7 @@ import timezone from 'dayjs/plugin/timezone';
 import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
 import { useAuthQuery, useTeamUsersLookupQuery } from '@/queries/users';
-import { useLogsQuery, useLogTypesQuery } from '@/queries/logs';
+import { useLogsQuery, useLogTypesQuery } from '../../../queries/logs';
 import { useShiftGetQuery } from '@/queries/shifts';
 import { LogFilters } from './_components/LogFilters';
 import { LogEntityType } from '@/lib/logging';
