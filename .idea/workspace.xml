@@ -6,14 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="d58e61e2-8c55-42b2-878e-5572cbd53eb3" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/nixpacks.toml" beforeDir="false" afterPath="$PROJECT_DIR$/nixpacks.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftUploads.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftUploads.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/uploads/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/uploads/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/FilePreview.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/FilePreview.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/queries/uploads.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/queries/uploads.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server/api/routers/uploadsRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/uploadsRouter.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/s3.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/s3.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/requests/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/requests/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/uploads/view/[uploadId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/uploads/view/[uploadId]/route.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -52,7 +48,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "previews",
+    "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
     "javascript.nodejs.core.library.configured.version": "21.6.2",
     "javascript.nodejs.core.library.typings.version": "24.0.3",

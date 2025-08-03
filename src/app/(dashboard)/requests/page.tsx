@@ -27,11 +27,7 @@ import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
 import Download from '@mui/icons-material/Download';
 import { useBusinessProfileQuery } from '@/queries/team';
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 import { useAuthQuery, useTeamUsersLookupQuery } from '@/queries/users';
-import { trpc } from '@/lib/trpc/client';
 import { useDialogs, useNotifications } from '@toolpad/core';
 import RequestDialog from './_components/RequestDialog';
 import {
@@ -39,6 +35,9 @@ import {
     useShiftRequestDeleteOldMutation,
     useShiftRequestSeedQuery,
 } from '@/queries/requests';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Define interfaces for the ShiftRequest and related objects
 interface User {
@@ -111,15 +110,20 @@ export default function Requests() {
                     userLookup[member.userId]?.name || member.userId;
 
                 // Use the shift's timezone, or organization's timezone, or default to UTC
-                const shiftTimezone = shift.timezone || businessProfile?.timezone || 'UTC';
+                const shiftTimezone =
+                    shift.timezone || businessProfile?.timezone || 'UTC';
 
                 return {
                     'Request Date': dayjs(createdAt).format('YYYY-MM-DD'),
                     Shift: shift.title,
                     Location: shift.location || '',
                     'Shift Date': dayjs(shift.date).format('YYYY-MM-DD'),
-                    'Start Time': dayjs(shift.startTime).tz(shiftTimezone).format('h:mm A'),
-                    'End Time': dayjs(shift.endTime).tz(shiftTimezone).format('h:mm A'),
+                    'Start Time': dayjs(shift.startTime)
+                        .tz(shiftTimezone)
+                        .format('h:mm A'),
+                    'End Time': dayjs(shift.endTime)
+                        .tz(shiftTimezone)
+                        .format('h:mm A'),
                     User: userName,
                     Status: status.charAt(0).toUpperCase() + status.slice(1),
                     Reason: reason || '',
@@ -128,7 +132,10 @@ export default function Requests() {
 
         const ws = XLSX.utils.json_to_sheet(csvData);
         const wb = { Sheets: { data: ws }, SheetNames: ['data'] };
-        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const excelBuffer = XLSX.write(wb, {
+            bookType: 'xlsx',
+            type: 'array',
+        } as any);
         const data = new Blob([excelBuffer], {
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
         });

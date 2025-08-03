@@ -62,12 +62,19 @@ export default function Shifts() {
             const { title, location, startTime, endTime, slots } = x;
 
             // Use the shift's timezone, or organization's timezone, or default to UTC
-            const shiftTimezone = x.timezone || businessProfile?.timezone || 'UTC';
+            const shiftTimezone =
+                x.timezone || businessProfile?.timezone || 'UTC';
 
             // Format times using the appropriate timezone
-            const formattedDate = dayjs(startTime).tz(shiftTimezone).format('YYYY-MM-DD');
-            const formattedStartTime = dayjs(startTime).tz(shiftTimezone).format('hh:mm a');
-            const formattedEndTime = dayjs(endTime).tz(shiftTimezone).format('hh:mm a');
+            const formattedDate = dayjs(startTime)
+                .tz(shiftTimezone)
+                .format('YYYY-MM-DD');
+            const formattedStartTime = dayjs(startTime)
+                .tz(shiftTimezone)
+                .format('hh:mm a');
+            const formattedEndTime = dayjs(endTime)
+                .tz(shiftTimezone)
+                .format('hh:mm a');
 
             const assignments = x.shiftAssignments
                 .map((assignment) => userLookup[assignment.memberId])
@@ -87,7 +94,10 @@ export default function Shifts() {
 
         const ws = XLSX.utils.json_to_sheet(csvData as any);
         const wb = { Sheets: { data: ws }, SheetNames: ['data'] };
-        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const excelBuffer = XLSX.write(wb, {
+            bookType: 'xlsx',
+            type: 'array',
+        } as any);
         const data = new Blob([excelBuffer], { type: fileType });
         FileSaver.saveAs(data, fileName + fileExtension);
     };
