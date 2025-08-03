@@ -16,6 +16,7 @@ import {
     RequestPage,
     Book,
     UploadOutlined,
+    History,
 } from '@mui/icons-material';
 
 type SmartAppProviderProps = {
@@ -68,6 +69,7 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
                           icon: <RequestPage />,
                       },
                       { title: 'My Team', segment: 'team', icon: <Group /> },
+                      { title: 'Activity Logs', segment: 'logs', icon: <History /> },
                   ]
                 : []),
         ];

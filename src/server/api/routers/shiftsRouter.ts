@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { TRPCError } from '@trpc/server';
+import { logShiftCreate, logShiftUpdate, logShiftDelete, LogEntityType } from '@/lib/logging';
 
 // Extend dayjs with UTC and timezone plugins
 dayjs.extend(utc);
@@ -531,6 +532,16 @@ export const shiftsRouter = router({
                 },
             });
 
+            // Log the shift creation
+            await logShiftCreate(
+                ctx.prisma,
+                ctx.user.organizationId,
+                ctx.user.id,
+                shift.id,
+                shift.title,
+                { shift: { ...shift, startTime: shift.startTime.toISOString(), endTime: shift.endTime.toISOString() } }
+            );
+
             // If assignments are provided, create them
             if (input.assignments && input.assignments.length > 0) {
                 console.log('Creating assignments:', input.assignments);
@@ -717,6 +728,19 @@ export const shiftsRouter = router({
             try {
                 const { id, ...data } = input;
 
+                // Get the original shift for logging the before state
+                const originalShift = await ctx.prisma.shift.findUnique({
+                    where: { id },
+                    include: { shiftAssignments: true },
+                });
+
+                if (!originalShift) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Shift not found',
+                    });
+                }
+
                 // First update the shift
                 const shift = await ctx.prisma.shift.update({
                     where: {
@@ -739,6 +763,35 @@ export const shiftsRouter = router({
                         shiftAssignments: true,
                     },
                 });
+
+                // Log the shift update
+                await logShiftUpdate(
+                    ctx.prisma,
+                    ctx.user.organizationId,
+                    ctx.user.id,
+                    shift.id,
+                    shift.title,
+                    { 
+                        ...originalShift, 
+                        startTime: originalShift.startTime.toISOString(), 
+                        endTime: originalShift.endTime.toISOString(),
+                        shiftAssignments: originalShift.shiftAssignments.map(a => ({
+                            ...a,
+                            createdAt: a.createdAt.toISOString(),
+                            updatedAt: a.updatedAt.toISOString()
+                        }))
+                    },
+                    { 
+                        ...shift, 
+                        startTime: shift.startTime.toISOString(), 
+                        endTime: shift.endTime.toISOString(),
+                        shiftAssignments: shift.shiftAssignments.map(a => ({
+                            ...a,
+                            createdAt: a.createdAt.toISOString(),
+                            updatedAt: a.updatedAt.toISOString()
+                        }))
+                    }
+                );
 
                 // If assignments are provided, update them
                 if (data.assignments) {
@@ -957,19 +1010,57 @@ export const shiftsRouter = router({
         .input(z.object({ id: z.string() }))
         .mutation(async ({ ctx, input }) => {
             try {
-                const shift = await ctx.prisma.shift.deleteMany({
+                // First fetch the shift to get its details for logging
+                const shiftToDelete = await ctx.prisma.shift.findFirst({
+                    where: {
+                        id: input.id,
+                        organizationId: ctx.user.organizationId,
+                    },
+                    include: {
+                        shiftAssignments: true,
+                    },
+                });
+
+                if (!shiftToDelete) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Shift not found',
+                    });
+                }
+
+                // Delete the shift
+                const result = await ctx.prisma.shift.deleteMany({
                     where: {
                         id: input.id,
                         organizationId: ctx.user.organizationId,
                     },
                 });
 
-                if (!shift) {
+                if (result.count === 0) {
                     throw new TRPCError({
                         code: 'NOT_FOUND',
-                        message: 'Shift not found',
+                        message: 'Shift not found or not deleted',
                     });
                 }
+
+                // Log the shift deletion
+                await logShiftDelete(
+                    ctx.prisma,
+                    ctx.user.organizationId,
+                    ctx.user.id,
+                    shiftToDelete.id,
+                    shiftToDelete.title,
+                    { 
+                        ...shiftToDelete, 
+                        startTime: shiftToDelete.startTime.toISOString(), 
+                        endTime: shiftToDelete.endTime.toISOString(),
+                        shiftAssignments: shiftToDelete.shiftAssignments.map(a => ({
+                            ...a,
+                            createdAt: a.createdAt.toISOString(),
+                            updatedAt: a.updatedAt.toISOString()
+                        }))
+                    }
+                );
 
                 return { success: true, message: 'Shift deleted successfully' };
             } catch (error: any) {

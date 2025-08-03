@@ -28,6 +28,7 @@ model User {
 
   members     Member[]
   invitations Invitation[]
+  logs        LogEntry[]
 
   @@unique([email])
   @@map("user")
@@ -99,32 +100,34 @@ model TwoFactor {
 model Organization {
   id String @id
 
-  name        String
-  slug        String?
-  logo        String?
-  createdAt   DateTime     @default(dbgenerated("LOCALTIMESTAMP")) @db.Timestamp(6)
-  metadata    String?
-  members     Member[]
-  invitations Invitation[]
-  Shift       Shift[]
-  profile     OrganizationProfile?
+  name         String
+  slug         String?
+  logo         String?
+  createdAt    DateTime             @default(dbgenerated("LOCALTIMESTAMP")) @db.Timestamp(6)
+  metadata     String?
+  members      Member[]
+  invitations  Invitation[]
+  Shift        Shift[]
+  profile      OrganizationProfile?
   uploadGroups UploadGroup[]
+
+  logEntries LogEntry[]
 
   @@unique([slug])
   @@map("organization")
 }
 
 model OrganizationProfile {
-  id             String       @id
-  organization   Organization @relation(fields: [id], references: [id], onDelete: Cascade)
-  weekStart      String       @default("saturday")
-  timezone       String       @default("America/New_York")
+  id           String       @id
+  organization Organization @relation(fields: [id], references: [id], onDelete: Cascade)
+  weekStart    String       @default("saturday")
+  timezone     String       @default("America/New_York")
 
   // Business notification settings
   digestEmailDate String?
 
   // Business shift settings
-  uploadNames    String?      // Stored as JSON array
+  uploadNames String? // Stored as JSON array
 
   @@map("organization_profile")
 }
@@ -148,27 +151,26 @@ model Member {
   phoneNumber          String?
   metadata             String?
 
-  settings       MemberSettings?
-  availabilities Availability[]
+  settings         MemberSettings?
+  availabilities   Availability[]
   shiftAssignments shiftAssignment[]
-  shiftRequests  ShiftRequest[]
-  logs           LogEntry[]
-  uploads        Upload[]        @relation("Uploader")
-  deletedUploads Upload[]        @relation("Deleter")
+  shiftRequests    ShiftRequest[]
+  uploads          Upload[]          @relation("Uploader")
+  deletedUploads   Upload[]          @relation("Deleter")
 
   @@unique([organizationId, userId])
   @@map("member")
 }
 
 model MemberSettings {
-  id                    String  @id
-  member                Member  @relation(fields: [id], references: [id], onDelete: Cascade)
+  id     String @id
+  member Member @relation(fields: [id], references: [id], onDelete: Cascade)
 
   // Notification settings
-  notifyMeBeforeShift   Boolean @default(false)
+  notifyMeBeforeShift     Boolean @default(false)
   notifyMeBeforeShiftDays String?
-  weeklyDigest          Boolean @default(false)
-  unfilledDigest        Boolean @default(false)
+  weeklyDigest            Boolean @default(false)
+  unfilledDigest          Boolean @default(false)
 
   @@map("member_settings")
 }
@@ -206,7 +208,7 @@ model Shift {
 
   // Relationships
   organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  //assignments   Member[]       @relation("ShiftAssignments")
+  // assignments   Member[]       @relation("ShiftAssignments")
   shiftAssignments shiftAssignment[]
   shiftRequests    ShiftRequest[]
   memberId         String?
@@ -264,15 +266,25 @@ model ShiftRequest {
 }
 
 model LogEntry {
-  id        String   @id @default(cuid())
-  action    String
-  details   String?
-  timestamp DateTime @default(now())
+  id             String   @id @default(cuid())
+  organizationId String
+  timestamp      DateTime @default(now())
+  userId         String
+  actionType     String // Enum: LOGIN, SHIFT_CREATE, SHIFT_UPDATE, etc.
+  entityId       String? // ID of the related entity (shift, user, etc.)
+  entityType     String? // Type of the related entity
+  description    String
+  metadata       Json? // Additional context data (before/after states, etc.)
 
-  // Relationships
-  memberId String?
-  member   Member? @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
 
+  @@index([organizationId])
+  @@index([userId])
+  @@index([actionType])
+  @@index([entityId])
+  @@index([timestamp])
   @@map("log")
 }
 
@@ -293,24 +305,24 @@ model UploadGroup {
 }
 
 model Upload {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   uploadGroupId String
   shiftId       String
   fileName      String
-  fileKey       String   @unique
+  fileKey       String    @unique
   fileSize      Int
   fileType      String
-  uploadedAt    DateTime @default(now())
-  isDeleted     Boolean  @default(false)
+  uploadedAt    DateTime  @default(now())
+  isDeleted     Boolean   @default(false)
   deletedAt     DateTime?
 
   // Relationships
-  uploadGroup   UploadGroup @relation(fields: [uploadGroupId], references: [id], onDelete: Cascade)
-  shift         Shift       @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  uploaderId    String
-  uploader      Member      @relation("Uploader", fields: [uploaderId], references: [id], onDelete: Cascade)
-  deleterId     String?
-  deleter       Member?     @relation("Deleter", fields: [deleterId], references: [id])
+  uploadGroup UploadGroup @relation(fields: [uploadGroupId], references: [id], onDelete: Cascade)
+  shift       Shift       @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  uploaderId  String
+  uploader    Member      @relation("Uploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+  deleterId   String?
+  deleter     Member?     @relation("Deleter", fields: [deleterId], references: [id])
 
   @@map("upload")
 }
