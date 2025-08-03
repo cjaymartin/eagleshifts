@@ -292,18 +292,18 @@ export default function Requests() {
                         </Button>
                     </Tooltip>
 
-                    <Tooltip title="Creates random requests for existing shifts">
-                        <Button
-                            onClick={handleSeedRequests}
-                            variant="outlined"
-                            color="primary"
-                            disabled={seedQuery.isFetching}
-                        >
-                            {seedQuery.isFetching
-                                ? 'Seeding...'
-                                : 'Seed Random Requests'}
-                        </Button>
-                    </Tooltip>
+                    {/*<Tooltip title="Creates random requests for existing shifts">*/}
+                    {/*    <Button*/}
+                    {/*        onClick={handleSeedRequests}*/}
+                    {/*        variant="outlined"*/}
+                    {/*        color="primary"*/}
+                    {/*        disabled={seedQuery.isFetching}*/}
+                    {/*    >*/}
+                    {/*        {seedQuery.isFetching*/}
+                    {/*            ? 'Seeding...'*/}
+                    {/*            : 'Seed Random Requests'}*/}
+                    {/*    </Button>*/}
+                    {/*</Tooltip>*/}
                 </Box>
             )}
         </Box>

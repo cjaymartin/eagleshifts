@@ -4,22 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d58e61e2-8c55-42b2-878e-5572cbd53eb3" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/availability/_components/AvailabilityDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/availability/_components/AvailabilityDialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/availability/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/availability/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftDialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftForm.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/team/_components/TeamForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/team/_components/TeamForm.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/team/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/team/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/uploads/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/uploads/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/auth/accept-invitation/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/auth/accept-invitation/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/FilePreview.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/FilePreview.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/LoginDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/LoginDialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/providers/OrganizationAuthProvider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/providers/OrganizationAuthProvider.tsx" afterDir="false" />
-    </list>
+    <list default="true" id="d58e61e2-8c55-42b2-878e-5572cbd53eb3" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -181,7 +166,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/src/app/(dashboard)/team/_components/TeamForm.tsx</url>
-          <line>103</line>
+          <line>102</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
