@@ -21,6 +21,16 @@ export const useFileUrlQuery = (uploadId: string) => {
     return trpc.uploads.getFileUrl.useQuery({ uploadId });
 };
 
+// Convert DOCX to PDF
+export const useConvertDocxToPdfQuery = (uploadId: string) => {
+    return trpc.uploads.convertDocxToPdf.useQuery({ uploadId });
+};
+
+// Convert XLSX to PDF
+export const useConvertXlsxToPdfQuery = (uploadId: string) => {
+    return trpc.uploads.convertXlsxToPdf.useQuery({ uploadId });
+};
+
 // Delete a file (mark as deleted)
 export const useDeleteFileMutation = () => {
     return trpc.uploads.deleteFile.useMutation();

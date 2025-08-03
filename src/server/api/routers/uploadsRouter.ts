@@ -3,6 +3,7 @@ import { router, adminProcedure, memberProcedure } from '@/server/trpc';
 import { TRPCError } from '@trpc/server';
 import {
     deleteFile,
+    downloadFile,
     generateFileKey,
     getFileUrl,
     uploadFile,
@@ -516,6 +517,169 @@ export const uploadsRouter = router({
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: `Failed to permanently delete file: ${error.message}`,
+                });
+            }
+        }),
+
+    // Convert DOCX to PDF
+    convertDocxToPdf: memberProcedure
+        .input(z.object({ uploadId: z.string() }))
+        .query(async ({ ctx, input }) => {
+            console.log('CONVERTING TO PDF');
+            try {
+                // Get the upload
+                const upload = await ctx.prisma.upload.findUnique({
+                    where: { id: input.uploadId },
+                    include: {
+                        shift: true,
+                    },
+                });
+
+                if (!upload) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Upload not found',
+                    });
+                }
+
+                // Check if user is authorized to access this upload
+                const isAuthorized = await isAuthorizedForShiftUploads(
+                    ctx,
+                    upload.shiftId
+                );
+                if (!isAuthorized) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message:
+                            'You do not have permission to access this upload',
+                    });
+                }
+
+                // Check if the upload belongs to the user's organization
+                if (upload.shift.organizationId !== ctx.user.organizationId) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message:
+                            'You do not have permission to access this upload',
+                    });
+                }
+
+                // Check if the file is a DOCX
+                if (!upload.fileName.toLowerCase().endsWith('.docx')) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: 'File is not a DOCX',
+                    });
+                }
+
+                // Download the file from S3
+                const fileBuffer = await downloadFile(upload.fileKey);
+
+                // Generate a new key for the PDF file
+                const pdfFileName = upload.fileName.replace(/\.docx$/i, '.pdf');
+                const pdfFileKey = `${upload.fileKey.replace(/\.docx$/i, '.pdf')}`;
+
+                // TODO: Convert DOCX to PDF
+                // For now, we'll just return a placeholder URL
+                // In a real implementation, we would:
+                // 1. Convert the DOCX buffer to a PDF buffer
+                // 2. Upload the PDF buffer to S3
+                // 3. Return a signed URL for the PDF
+
+                // Return a URL to the doc-preview route
+                const url = `${process.env.NEXT_PUBLIC_APP_URL}/api/uploads/doc-preview/${upload.id}`;
+
+                return {
+                    url,
+                    fileName: pdfFileName,
+                    fileType: 'application/pdf',
+                };
+            } catch (error: any) {
+                if (error instanceof TRPCError) throw error;
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: `Failed to convert DOCX to PDF: ${error.message}`,
+                });
+            }
+        }),
+
+    // Convert XLSX to PDF
+    convertXlsxToPdf: memberProcedure
+        .input(z.object({ uploadId: z.string() }))
+        .query(async ({ ctx, input }) => {
+            try {
+                // Get the upload
+                const upload = await ctx.prisma.upload.findUnique({
+                    where: { id: input.uploadId },
+                    include: {
+                        shift: true,
+                    },
+                });
+
+                if (!upload) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Upload not found',
+                    });
+                }
+
+                // Check if user is authorized to access this upload
+                const isAuthorized = await isAuthorizedForShiftUploads(
+                    ctx,
+                    upload.shiftId
+                );
+                if (!isAuthorized) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message:
+                            'You do not have permission to access this upload',
+                    });
+                }
+
+                // Check if the upload belongs to the user's organization
+                if (upload.shift.organizationId !== ctx.user.organizationId) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message:
+                            'You do not have permission to access this upload',
+                    });
+                }
+
+                // Check if the file is an XLSX
+                if (!upload.fileName.toLowerCase().endsWith('.xlsx')) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: 'File is not an XLSX',
+                    });
+                }
+
+                // Download the file from S3
+                const fileBuffer = await downloadFile(upload.fileKey);
+
+                // Generate a new key for the PDF file
+                const pdfFileName = upload.fileName.replace(/\.xlsx$/i, '.pdf');
+                const pdfFileKey = `${upload.fileKey.replace(/\.xlsx$/i, '.pdf')}`;
+
+                // TODO: Convert XLSX to PDF
+                // For now, we'll just return a placeholder URL
+                // In a real implementation, we would:
+                // 1. Convert the XLSX buffer to a PDF buffer
+                // 2. Upload the PDF buffer to S3
+                // 3. Return a signed URL for the PDF
+
+                // Return a URL to the doc-preview route
+                const url = `${process.env.NEXT_PUBLIC_APP_URL}/api/uploads/doc-preview/${upload.id}`;
+
+                return {
+                    url,
+                    fileName: pdfFileName,
+                    fileType: 'application/pdf',
+                };
+            } catch (error: any) {
+                if (error instanceof TRPCError) throw error;
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: `Failed to convert XLSX to PDF: ${error.message}`,
                 });
             }
         }),

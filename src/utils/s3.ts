@@ -108,3 +108,26 @@ export const deleteFile = async (fileKey: string): Promise<void> => {
 
     await s3Client.send(new DeleteObjectCommand(params));
 };
+
+/**
+ * Download a file from S3
+ * @param fileKey - The key of the file to download
+ * @returns The file buffer
+ */
+export const downloadFile = async (fileKey: string): Promise<Buffer> => {
+    const params = {
+        Bucket: bucketName,
+        Key: fileKey,
+    };
+
+    const command = new GetObjectCommand(params);
+    const response = await s3Client.send(command);
+
+    // Convert the stream to a buffer
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of response.Body as any) {
+        chunks.push(chunk);
+    }
+
+    return Buffer.concat(chunks);
+};

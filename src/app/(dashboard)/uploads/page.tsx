@@ -399,7 +399,7 @@ export default function UploadsPage() {
                                             <TableCell>
                                                 <FilePreviewButton
                                                     fileName={upload.fileName}
-                                                    fileUrl={`/api/uploads/view/${upload.id}`}
+                                                    fileUrl={`/api/uploads/doc-preview/${upload.id}`}
                                                 />
                                                 <IconButton
                                                     size="small"
