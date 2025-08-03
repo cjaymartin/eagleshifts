@@ -46,10 +46,7 @@ export default function Shifts() {
 
     // Get organization profile data for timezone
     const { data: businessProfile } = useBusinessProfileQuery();
-
     const { data: shifts } = trpc.shifts.list.useQuery(filters as any);
-
-    console.log({ shifts });
 
     const fileType =
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';

@@ -232,13 +232,6 @@ export default function Availability() {
                 .utc(availability.endDate, 'YYYY-MM-DD')
                 .add(1, 'day');
 
-            console.log(
-                `Availability ${availability.id}: startDate=${availability.startDate}, endDate=${availability.endDate}`
-            );
-            console.log(
-                `Calendar event: start=${startDate.format()}, end=${endDate.format()}`
-            );
-
             return {
                 id: availability.id,
                 title:

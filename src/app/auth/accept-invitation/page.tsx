@@ -33,9 +33,7 @@ export default function AcceptInvitationPage() {
                 return;
             }
             try {
-                console.log('ACCEPTING INVITATION PAGE LOADED');
                 const result = await acceptInvitation(invitationId);
-                console.log({ result });
 
                 setSuccess(true);
                 setLoading(false);

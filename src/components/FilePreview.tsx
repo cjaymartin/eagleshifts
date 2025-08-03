@@ -45,8 +45,6 @@ export const FilePreviewButton: React.FC<FilePreviewButtonProps> = ({
     const [open, setOpen] = useState(false);
     const { data, isLoading } = useFileUrlQuery(uploadId);
 
-    console.log({ uploadId, data });
-
     // Don't render anything while loading or if no data
     if (isLoading || !data) {
         return null;

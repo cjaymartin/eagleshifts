@@ -31,8 +31,6 @@ export default function ShiftDialog({
         onClose();
     }
 
-    console.log('ShiftDialog payload:', payload);
-
     return (
         <Dialog
             fullWidth={true}
@@ -58,7 +56,7 @@ export default function ShiftDialog({
                         isNew={!!isNew}
                         shiftId={payload?.id}
                         shift={payload}
-                        //handleClose={handleClose as any}
+                        onClose={handleClose as any}
                     />
                 </Container>
             </DialogContent>

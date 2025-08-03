@@ -87,11 +87,6 @@ export default function TeamForm(props: TeamFormProps) {
     // Form submission handler
     const onSubmit = handleSubmit(async (data: TeamUserFormData) => {
         if (isNew) {
-            console.log(
-                'Invite functionality will be implemented separately',
-                data
-            );
-
             await createInvitationMutation.mutateAsync({
                 email: data.email,
                 role: data.role,

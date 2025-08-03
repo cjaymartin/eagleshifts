@@ -19,7 +19,6 @@ export default async function OrganizationAuthProvider({
             headers: await headers(),
         })
         .catch((e) => {
-            console.log('AOE');
             console.log(e);
         });
     if (activeOrg) {
@@ -71,7 +70,7 @@ export default async function OrganizationAuthProvider({
             invitation.role || 'member',
             {
                 organizationName: invitation.organization.name,
-                organizationId: invitation.organizationId
+                organizationId: invitation.organizationId,
             }
         );
     }

@@ -49,7 +49,11 @@ export default function ShiftAssignmentTool({
     const exclude = assignments.map((x) => x.memberId);
 
     // Check if the current user is in the assignments list
-    const isCurrentUserAssigned = isAdmin || assignments.some(assignment => assignment.memberId === currentMemberId);
+    const isCurrentUserAssigned =
+        isAdmin ||
+        assignments.some(
+            (assignment) => assignment.memberId === currentMemberId
+        );
 
     // If the user is not an admin and not in the assignments list, don't show the tool
     if (!isAdmin && !isCurrentUserAssigned) {
@@ -98,10 +102,6 @@ export default function ShiftAssignmentTool({
                                 onDelete={() => {
                                     const newAssignments = assignments.filter(
                                         (x) => x.memberId !== row.memberId
-                                    );
-                                    console.log(
-                                        'Delete assignment for member:',
-                                        row.memberId
                                     );
                                     onChange(newAssignments);
                                 }}

@@ -93,9 +93,6 @@ export default function SignIn({ activeOrganization }: SignInProps) {
             return;
         }
         const data = new FormData(event.currentTarget);
-        console.log({
-            email: data.get('email'),
-        });
     };
 
     const validateInputs = () => {

@@ -203,11 +203,7 @@ export default function UploadsPage() {
                             justifyContent: 'space-between',
                             alignItems: 'center',
                         }}
-                    >
-                        <Typography variant="h4" gutterBottom>
-                            Uploaded Files
-                        </Typography>
-                    </Box>
+                    ></Box>
 
                     <Card>
                         <CardContent>
@@ -228,7 +224,9 @@ export default function UploadsPage() {
                                                 )
                                             }
                                         >
-                                            <MenuItem value="">All Types</MenuItem>
+                                            <MenuItem value="">
+                                                All Types
+                                            </MenuItem>
                                             {uploadGroups
                                                 .filter((group) => {
                                                     // If showOnlyInactive is true, check if there are any inactive groups
@@ -281,7 +279,8 @@ export default function UploadsPage() {
                                                     key={member.id}
                                                     value={member.id}
                                                 >
-                                                    {member.name || member.email}
+                                                    {member.name ||
+                                                        member.email}
                                                 </MenuItem>
                                             ))}
                                         </Select>
@@ -365,7 +364,8 @@ export default function UploadsPage() {
                                             </TableCell>
                                             <TableCell>
                                                 {upload.uploadGroup.uploadName}
-                                                {!upload.uploadGroup.isActive && (
+                                                {!upload.uploadGroup
+                                                    .isActive && (
                                                     <Chip
                                                         size="small"
                                                         label="Inactive"
@@ -374,9 +374,12 @@ export default function UploadsPage() {
                                                     />
                                                 )}
                                             </TableCell>
-                                            <TableCell>{upload.fileName}</TableCell>
                                             <TableCell>
-                                                {upload.uploader?.name || 'Unknown'}
+                                                {upload.fileName}
+                                            </TableCell>
+                                            <TableCell>
+                                                {upload.uploader?.name ||
+                                                    'Unknown'}
                                             </TableCell>
                                             <TableCell>
                                                 {formatDate(upload.uploadedAt)}
@@ -403,7 +406,9 @@ export default function UploadsPage() {
                                                 <IconButton
                                                     size="small"
                                                     onClick={() =>
-                                                        handleViewFile(upload.id)
+                                                        handleViewFile(
+                                                            upload.id
+                                                        )
                                                     }
                                                     title="Download file"
                                                 >

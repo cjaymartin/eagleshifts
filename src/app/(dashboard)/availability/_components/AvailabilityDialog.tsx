@@ -26,8 +26,6 @@ export default function AvailabilityDialog({
         onClose();
     }
 
-    console.log('AvailabilityDialog payload:', payload);
-
     return (
         <Dialog
             fullWidth={true}
@@ -39,7 +37,9 @@ export default function AvailabilityDialog({
         >
             <DialogTitle>
                 <Box display="flex">
-                    <Box flexGrow={1}>{isNew ? 'Add' : 'Edit'} Availability</Box>
+                    <Box flexGrow={1}>
+                        {isNew ? 'Add' : 'Edit'} Availability
+                    </Box>
                     <Box>
                         <IconButton onClick={handleClose}>
                             <CloseIcon />

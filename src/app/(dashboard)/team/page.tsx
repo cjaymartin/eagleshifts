@@ -168,7 +168,6 @@ function TeamContent() {
 
     // Handle user editing
     const handleEdit = (user: TeamUser) => {
-        console.log('HEH ', user);
         dialogs.open(TeamDialog, { user } as any);
     };
 
@@ -178,7 +177,6 @@ function TeamContent() {
 
     // Handle user imitation
     const handleImitate = async (memberId: string) => {
-        console.log('HANDLE ME');
         try {
             const imitation = await imitateUserMutation.mutateAsync({
                 memberId,
@@ -232,8 +230,6 @@ function TeamContent() {
     if (isLoading) {
         return <TeamPageSkeleton />;
     }
-
-    console.log({ teamUsers });
 
     // Render different content based on admin status
     return (

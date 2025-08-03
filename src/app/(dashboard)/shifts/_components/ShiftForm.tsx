@@ -39,7 +39,6 @@ dayjs.extend(timezone);
 const useShiftDialogHelpers = () => ({
     reset: () => {
         // In a real implementation, this would close the dialog
-        console.log('Dialog reset called');
     },
 });
 
@@ -125,22 +124,15 @@ export default function ShiftForm(props: ShiftFormProps) {
         defaultValues: transformedShift as any,
     });
 
-    console.log('FORMING');
-    console.log(props.shift);
-    const sd = watch('startTime');
-    const ed = watch('endTime');
-    console.log('Start Time:', sd);
-    console.log('End Time:', ed);
-
-    // Helper for setting form errors
-    const setErrors = (errorList: any) => {
-        errorList.forEach((err: any) => {
-            setError(err.field, {
-                type: 'manual',
-                message: err.message,
-            });
-        });
-    };
+    // // Helper for setting form errors
+    // const setErrors = (errorList: any) => {
+    //     errorList.forEach((err: any) => {
+    //         setError(err.field, {
+    //             type: 'manual',
+    //             message: err.message,
+    //         });
+    //     });
+    // };
 
     const { data: session } = useAuthQuery();
     const user = session?.user;
@@ -257,38 +249,24 @@ export default function ShiftForm(props: ShiftFormProps) {
                 return;
             }
 
-            // Use the shift's timezone, or organization's timezone, or default to UTC
             const timezone =
                 shift?.timezone || businessProfile?.timezone || 'UTC';
 
-            // Create datetime strings by combining the date with the time
-            // We need to work with the local time directly to avoid double timezone conversion
-            console.log('DATE', formData.date);
-            console.log('FROM', formData.startTime);
             const startLocalTime = dayjs(formData.date)
                 .hour(dayjs(formData.startTime).hour())
                 .minute(dayjs(formData.startTime).minute())
                 .second(dayjs(formData.startTime).second())
                 .tz(timezone, true); // true keeps the local time and just changes the timezone
 
-            console.log('TO', startLocalTime.format());
-
-            console.log('EFROM', formData.startTime);
             const endLocalTime = dayjs(formData.date)
                 .hour(dayjs(formData.endTime).hour())
                 .minute(dayjs(formData.endTime).minute())
                 .second(dayjs(formData.endTime).second())
                 .tz(timezone, true); // true keeps the local time and just changes the timezone
 
-            console.log('ETO', startLocalTime.format());
-            // Create ISO strings with timezone information instead of UTC
             const startTimeISO = startLocalTime.format();
             const endTimeISO = endLocalTime.format();
 
-            console.log('STARTISO', startTimeISO);
-            console.log('ENDISO', endTimeISO);
-
-            // Format data for API - note that we're not including the date field
             const shiftData = {
                 id: shiftId,
                 title: formData.title,
@@ -302,16 +280,12 @@ export default function ShiftForm(props: ShiftFormProps) {
                 assignments: formData.assignments || [],
             };
 
-            console.log({ shiftData });
-
-            // Update shift
             await updateMutation.mutateAsync(shiftData);
             notifications.show('Shift updated successfully', {
                 severity: 'success',
                 autoHideDuration: 3000,
             });
 
-            // Close dialog
             if (onClose) {
                 onClose();
             } else {
@@ -523,9 +497,6 @@ export default function ShiftForm(props: ShiftFormProps) {
                         </Grid>
                     </Grid>
 
-                    {/* Log the assignments data */}
-                    {console.log('Assignments data:', getValues('assignments'))}
-
                     <Controller
                         name="assignments"
                         control={control}
@@ -541,8 +512,8 @@ export default function ShiftForm(props: ShiftFormProps) {
 
                     {/* Uploads section */}
                     {shiftId && (
-                        <ShiftUploads 
-                            shiftId={shiftId} 
+                        <ShiftUploads
+                            shiftId={shiftId}
                             readOnly={!isAdmin && !isAssigned}
                         />
                     )}
@@ -600,7 +571,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                         <Button
                             variant="contained"
                             color="secondary"
-                            onClick={onClose || handleClose}
+                            onClick={onClose}
                             disabled={isSubmitting}
                         >
                             {isAdmin ? 'Cancel' : 'Close'}
