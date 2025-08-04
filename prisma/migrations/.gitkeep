@@ -1,0 +1,2 @@
+# This file ensures the migrations directory is tracked by Git
+# even when it's empty. Once migrations are created, this file can be removed.
