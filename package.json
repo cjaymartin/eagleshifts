@@ -9,10 +9,13 @@
     "devhttps": "next dev --experimental-https",
     "dev": "cross-env NODE_OPTIONS='--inspect' next dev",
     "build": "npx prisma generate && next build",
-    "start": "next start",
+    "start": "npx prisma migrate deploy && next start",
     "lint": "next lint",
     "db:pull:dev": "dotenv -e .env.local -- npx prisma db pull",
     "db:push:dev": "dotenv -e .env.local -- npx prisma db push",
+    "db:migrate:dev": "dotenv -e .env.local -- npx prisma migrate dev",
+    "db:migrate:deploy": "npx prisma migrate deploy",
+    "db:migrate:status": "npx prisma migrate status",
     "local:mkadmin": "dotenv -e .env.local -- tsx src/scripts/mkadmin.ts"
   },
   "dependencies": {
