@@ -358,6 +358,7 @@ export default function LocationForm({
                                 renderOption={(props, option) => (
                                     <li {...props} key={option.id}>
                                         <Box
+                                            key={option.id}
                                             component="span"
                                             sx={{
                                                 width: 14,
