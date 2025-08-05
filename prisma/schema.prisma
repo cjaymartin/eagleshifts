@@ -110,6 +110,8 @@ model Organization {
   Shift        Shift[]
   profile      OrganizationProfile?
   uploadGroups UploadGroup[]
+  locations    Location[]
+  locationGroups LocationGroup[]
 
   logEntries LogEntry[]
 
@@ -195,19 +197,21 @@ model Shift {
   id             String @id @default(cuid())
   organizationId String
 
-  title      String
-  location   String?
-  startTime  DateTime
-  endTime    DateTime
-  slots      Int
-  notes      String?
-  adminNotes String?
-  timezone   String   @default("America/New_York")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  title        String
+  legacyLocation String?
+  locationId   String?
+  startTime    DateTime
+  endTime      DateTime
+  slots        Int
+  notes        String?
+  adminNotes   String?
+  timezone     String   @default("America/New_York")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relationships
   organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location         Location?         @relation(fields: [locationId], references: [id])
   // assignments   Member[]       @relation("ShiftAssignments")
   shiftAssignments shiftAssignment[]
   shiftRequests    ShiftRequest[]
@@ -325,4 +329,41 @@ model Upload {
   deleter     Member?     @relation("Deleter", fields: [deleterId], references: [id])
 
   @@map("upload")
+}
+
+model LocationGroup {
+  id             String     @id @default(cuid())
+  organizationId String
+  name           String
+  color          String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  // Relationships
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locations      Location[]
+
+  @@unique([organizationId, name])
+  @@map("location_group")
+}
+
+model Location {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  address        String
+  latitude       Float
+  longitude      Float
+  groupId        String?
+  tags           String?      // Stored as JSON array
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relationships
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  group          LocationGroup? @relation(fields: [groupId], references: [id])
+  shifts         Shift[]
+
+  @@unique([organizationId, name])
+  @@map("location")
 }

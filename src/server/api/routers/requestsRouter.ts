@@ -8,7 +8,11 @@ import {
     sendShiftRequestNotificationToAdmin,
     sendShiftRequestResolutionToUser,
 } from '@/lib/email';
-import { logShiftRequestCreate, logShiftRequestUpdate, logShiftAssignmentCreate } from '@/lib/logging';
+import {
+    logShiftRequestCreate,
+    logShiftRequestUpdate,
+    logShiftAssignmentCreate,
+} from '@/lib/logging';
 
 // Extend dayjs with UTC plugin
 dayjs.extend(utc);
@@ -167,7 +171,7 @@ export const requestsRouter = router({
                     reason: input.reason,
                 },
                 include: {
-                    shift: true,
+                    shift: { include: { location: true } },
                     member: { include: { user: true } },
                 },
             });
@@ -181,7 +185,9 @@ export const requestsRouter = router({
                 request.shiftId,
                 request.memberId,
                 request.shift.title,
-                request.member.user.name || request.member.user.email || 'Unknown User',
+                request.member.user.name ||
+                    request.member.user.email ||
+                    'Unknown User',
                 { reason: request.reason }
             );
 
@@ -212,7 +218,8 @@ export const requestsRouter = router({
                             'Unknown User',
                         userEmail: request.member.user.email || 'Unknown Email',
                         shiftTitle: request.shift.title || 'Untitled Shift',
-                        shiftLocation: request.shift.location || 'No Location',
+                        shiftLocation:
+                            request.shift?.location?.name || 'No Location',
                         shiftDate: request.shift.startTime,
                         adminEmails: adminMembers
                             .map((admin) => admin.user.email)
@@ -317,7 +324,7 @@ export const requestsRouter = router({
                         reason: input.reason,
                     },
                     include: {
-                        shift: true,
+                        shift: { include: { location: true } },
                         member: { include: { user: true } },
                     },
                 });
@@ -331,7 +338,9 @@ export const requestsRouter = router({
                     request.shiftId,
                     request.memberId,
                     request.shift.title,
-                    request.member.user.name || request.member.user.email || 'Unknown User',
+                    request.member.user.name ||
+                        request.member.user.email ||
+                        'Unknown User',
                     request.status,
                     { reason: request.reason }
                 );
@@ -346,7 +355,7 @@ export const requestsRouter = router({
                             userEmail: request.member.user.email || '',
                             shiftTitle: request.shift.title || 'Untitled Shift',
                             shiftLocation:
-                                request.shift.location || 'No Location',
+                                request.shift?.location?.name || 'No Location',
                             shiftDate: request.shift.startTime,
                             status: input.status as 'approved' | 'rejected',
                             reason: input.reason,
@@ -373,14 +382,15 @@ export const requestsRouter = router({
 
                     if (!existingAssignment) {
                         // Create a new assignment
-                        const createdAssignment = await ctx.prisma.shiftAssignment.create({
-                            data: {
-                                shiftId: request.shiftId,
-                                memberId: request.memberId,
-                                outcome: 'assigned',
-                                reason: 'Approved from request',
-                            },
-                        });
+                        const createdAssignment =
+                            await ctx.prisma.shiftAssignment.create({
+                                data: {
+                                    shiftId: request.shiftId,
+                                    memberId: request.memberId,
+                                    outcome: 'assigned',
+                                    reason: 'Approved from request',
+                                },
+                            });
 
                         // Log the assignment creation
                         await logShiftAssignmentCreate(
@@ -391,8 +401,13 @@ export const requestsRouter = router({
                             request.shiftId,
                             request.memberId,
                             request.shift.title,
-                            request.member.user.name || request.member.user.email || 'Unknown User',
-                            { outcome: 'assigned', reason: 'Approved from request' }
+                            request.member.user.name ||
+                                request.member.user.email ||
+                                'Unknown User',
+                            {
+                                outcome: 'assigned',
+                                reason: 'Approved from request',
+                            }
                         );
                     } else {
                         // Update the existing assignment

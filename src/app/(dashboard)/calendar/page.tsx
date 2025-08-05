@@ -56,8 +56,11 @@ export default function Calendar() {
     // Filters state
     const [filters, setFilters] = useState<ShiftFilterSchema>();
 
-    // Fetch shifts data using the same query as the shifts page
-    const { data: shifts } = trpc.shifts.list.useQuery(filters as any);
+    // Fetch shifts data using the same query as the shifts page, but include location and group data
+    const { data: shifts } = trpc.shifts.list.useQuery({
+        ...(filters as any),
+        includeLocationGroup: true,
+    });
 
     // Create a lookup object for shifts by ID
     const shiftLookup = React.useMemo(() => {
@@ -98,6 +101,60 @@ export default function Calendar() {
         [dialogs, isAdmin]
     );
 
+    // Function to lighten or darken a color
+    const lightenColor = (
+        color: string,
+        amount: number
+    ): { color: string; originalColor: string } => {
+        // Remove the # if it exists
+        const originalColor = color.startsWith('#') ? color : `#${color}`;
+        color = color.replace('#', '');
+
+        // Parse the color components
+        const r = parseInt(color.substring(0, 2), 16);
+        const g = parseInt(color.substring(2, 4), 16);
+        const b = parseInt(color.substring(4, 6), 16);
+
+        // Lighten or darken each component
+        let newR, newG, newB;
+
+        if (amount >= 0) {
+            // Lighten
+            newR = Math.min(255, r + Math.round((255 - r) * amount));
+            newG = Math.min(255, g + Math.round((255 - g) * amount));
+            newB = Math.min(255, b + Math.round((255 - b) * amount));
+        } else {
+            // Darken
+            amount = Math.abs(amount);
+            newR = Math.max(0, r - Math.round(r * amount));
+            newG = Math.max(0, g - Math.round(g * amount));
+            newB = Math.max(0, b - Math.round(b * amount));
+        }
+
+        // Convert back to hex
+        const newColor = `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+
+        return { color: newColor, originalColor };
+    };
+
+    // Function to determine if text should be black or white based on background color
+    const getTextColor = (backgroundColor: string): string => {
+        // Remove the # if it exists
+        const color = backgroundColor.replace('#', '');
+
+        // Parse the color components
+        const r = parseInt(color.substring(0, 2), 16);
+        const g = parseInt(color.substring(2, 4), 16);
+        const b = parseInt(color.substring(4, 6), 16);
+
+        // Calculate relative luminance using the formula for perceived brightness
+        // https://www.w3.org/TR/WCAG20-TECHS/G18.html
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+        // Use black text if the background is light, white text if it's dark
+        return luminance > 0.5 ? '#000000' : '#ffffff';
+    };
+
     // Get event style based on shift status
     const eventPropGetter = useCallback(
         (
@@ -107,35 +164,88 @@ export default function Calendar() {
             isSelected: boolean
         ) => {
             const shift = shiftLookup[event.id];
+
             const assignments = shift?.shiftAssignments?.length || 0;
             const slots = shift?.slots || 1;
             const isFull = assignments >= slots && assignments > 0;
             const isEmpty = assignments <= 0;
             const isPartial = !isFull && !isEmpty;
 
+            // Check if shift has a location with a group that has a color
+            const hasGroupColor = (shift?.location as any)?.group?.color;
+
+            // Default colors if no group color is available
+            const defaultFullColor = '#007700';
+            const defaultPartialColor = '#007777';
+
+            // Use group color if available, otherwise use default colors
+            const baseColor = hasGroupColor
+                ? (shift?.location as any).group.color
+                : isFull
+                  ? defaultFullColor
+                  : defaultPartialColor;
+
+            // Lighten the color for open shifts
+            const openShiftResult = hasGroupColor
+                ? lightenColor(baseColor, 0.3) // Lighten by 30%
+                : { color: baseColor, originalColor: baseColor };
+            const openShiftColor = openShiftResult.color;
+            const openShiftBorderColor = openShiftResult.originalColor;
+
+            // Use a darker tone when selected
+            const selectedResult = hasGroupColor
+                ? lightenColor(baseColor, -0.2) // Darken by 20%
+                : {
+                      color: isFull ? '#005500' : '#006666',
+                      originalColor: baseColor,
+                  };
+            const selectedColor = selectedResult.color;
+            const selectedBorderColor = selectedResult.originalColor;
+
+            // Determine text colors based on background colors
+            const baseTextColor = getTextColor(baseColor);
+            const openShiftTextColor = getTextColor(openShiftColor);
+            const selectedTextColor = getTextColor(selectedColor);
+
             return {
                 ...(!isSelected &&
                     isFull && {
                         style: {
-                            backgroundColor: '#007700',
+                            backgroundColor: baseColor,
+                            color: baseTextColor,
+                            borderWidth: '2px',
+                            borderStyle: 'solid',
+                            borderColor: baseColor,
                         },
                     }),
                 ...(isSelected &&
                     isFull && {
                         style: {
-                            backgroundColor: '#005500',
+                            backgroundColor: selectedColor,
+                            color: selectedTextColor,
+                            borderWidth: '2px',
+                            borderStyle: 'solid',
+                            borderColor: selectedBorderColor,
                         },
                     }),
                 ...(!isSelected &&
-                    isPartial && {
+                    !isFull && {
                         style: {
-                            backgroundColor: '#007777',
+                            backgroundColor: openShiftColor,
+                            color: openShiftTextColor,
+                            borderWidth: '2px',
+                            borderStyle: 'solid',
+                            borderColor: openShiftBorderColor,
                         },
                     }),
                 ...(isSelected &&
-                    isPartial && {
+                    !isFull && {
                         style: {
-                            backgroundColor: '#006666',
+                            backgroundColor: selectedColor,
+                            color: selectedTextColor,
+                            borderWidth: '2px',
+                            borderStyle: 'solid',
+                            borderColor: selectedBorderColor,
                         },
                     }),
             };
@@ -153,7 +263,8 @@ export default function Calendar() {
     }> =
         shifts?.map((shift) => {
             // Use the shift's timezone, or organization's timezone, or default to UTC
-            const shiftTimezone = shift.timezone || businessProfile?.timezone || 'UTC';
+            const shiftTimezone =
+                shift.timezone || businessProfile?.timezone || 'UTC';
 
             return {
                 id: shift.id,

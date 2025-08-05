@@ -160,6 +160,7 @@ export const shiftsRouter = router({
                     unfilled: z
                         .enum(['unfilled', 'filled', 'mine', 'any'])
                         .optional(),
+                    includeLocationGroup: z.boolean().optional(),
                 })
                 .optional()
         )
@@ -180,10 +181,24 @@ export const shiftsRouter = router({
                         mode: 'insensitive',
                     };
                 if (input.location)
-                    where.location = {
-                        contains: input.location,
-                        mode: 'insensitive',
-                    };
+                    where.OR = [
+                        {
+                            // Support legacy location field
+                            legacyLocation: {
+                                contains: input.location,
+                                mode: 'insensitive',
+                            }
+                        },
+                        {
+                            // Support new location relationship
+                            location: {
+                                name: {
+                                    contains: input.location,
+                                    mode: 'insensitive',
+                                }
+                            }
+                        }
+                    ];
 
                 if (input.startDate || input.endDate) {
                     // Filter based on startTime instead of date
@@ -271,6 +286,11 @@ export const shiftsRouter = router({
                 include: {
                     shiftAssignments: true,
                     shiftRequests: true,
+                    location: input?.includeLocationGroup !== false ? {
+                        include: {
+                            group: true,
+                        },
+                    } : undefined,
                 },
                 orderBy: { startTime: 'asc' },
             });
@@ -343,14 +363,19 @@ export const shiftsRouter = router({
             }
 
             // Convert startTime and endTime from UTC to the shift's timezone
-            return filteredShifts.map((shift) => ({
-                ...shift,
-                startTime: convertUtcToTimezone(
-                    shift.startTime,
-                    shift.timezone
-                ),
-                endTime: convertUtcToTimezone(shift.endTime, shift.timezone),
-            }));
+            return filteredShifts.map((shift) => {
+                // Create a new object with all properties from the shift
+                const result = {
+                    ...shift,
+                    startTime: convertUtcToTimezone(
+                        shift.startTime,
+                        shift.timezone
+                    ),
+                    endTime: convertUtcToTimezone(shift.endTime, shift.timezone),
+                };
+
+                return result;
+            });
         }),
 
     byId: memberProcedure
@@ -364,6 +389,11 @@ export const shiftsRouter = router({
                 include: {
                     shiftAssignments: true,
                     shiftRequests: true,
+                    location: {
+                        include: {
+                            group: true,
+                        },
+                    },
                 },
             });
 
@@ -442,7 +472,8 @@ export const shiftsRouter = router({
         .input(
             z.object({
                 title: z.string(),
-                location: z.string().optional(),
+                locationId: z.string().optional(),
+                legacyLocation: z.string().optional(),
                 startTime: z.string(), // ISO8601 date string
                 endTime: z.string(), // ISO8601 date string
                 slots: z.number(),
@@ -514,7 +545,8 @@ export const shiftsRouter = router({
                 data: {
                     organizationId: ctx.user.organizationId,
                     title: input.title,
-                    location: input.location,
+                    locationId: input.locationId,
+                    legacyLocation: input.locationId ? undefined : input.legacyLocation,
                     startTime: convertToTimezone(
                         input.startTime,
                         input.timezone
@@ -529,6 +561,11 @@ export const shiftsRouter = router({
                 },
                 include: {
                     shiftAssignments: true,
+                    location: {
+                        include: {
+                            group: true,
+                        },
+                    },
                 },
             });
 
@@ -729,7 +766,8 @@ export const shiftsRouter = router({
             z.object({
                 id: z.string(),
                 title: z.string(),
-                location: z.string().optional(),
+                locationId: z.string().optional(),
+                legacyLocation: z.string().optional(),
                 startTime: z.string(), // ISO8601 date string
                 endTime: z.string(), // ISO8601 date string
                 slots: z.number(),
@@ -756,7 +794,14 @@ export const shiftsRouter = router({
                 // Get the original shift for logging the before state
                 const originalShift = await ctx.prisma.shift.findUnique({
                     where: { id },
-                    include: { shiftAssignments: true },
+                    include: { 
+                        shiftAssignments: true,
+                        location: {
+                            include: {
+                                group: true,
+                            },
+                        },
+                    },
                 });
 
                 if (!originalShift) {
@@ -773,7 +818,8 @@ export const shiftsRouter = router({
                     },
                     data: {
                         title: data.title,
-                        location: data.location,
+                        locationId: data.locationId,
+                        legacyLocation: data.locationId ? undefined : data.legacyLocation,
                         startTime: convertToTimezone(
                             data.startTime,
                             data.timezone
@@ -786,6 +832,11 @@ export const shiftsRouter = router({
                     },
                     include: {
                         shiftAssignments: true,
+                        location: {
+                            include: {
+                                group: true,
+                            },
+                        },
                     },
                 });
 
@@ -1008,7 +1059,14 @@ export const shiftsRouter = router({
                 if (data.assignments) {
                     const updatedShift = await ctx.prisma.shift.findUnique({
                         where: { id },
-                        include: { shiftAssignments: true },
+                        include: { 
+                            shiftAssignments: true,
+                            location: {
+                                include: {
+                                    group: true,
+                                },
+                            },
+                        },
                     });
 
                     console.log(

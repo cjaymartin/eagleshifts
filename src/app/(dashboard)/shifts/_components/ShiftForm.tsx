@@ -1,19 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
+    Box,
     Button,
     Container,
+    Dialog,
+    DialogContent,
+    DialogTitle,
     Grid,
+    IconButton,
     Stack,
     TextField,
     Typography,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useForm, Controller } from 'react-hook-form';
-import { useNotifications } from '@toolpad/core';
+import { useNotifications, useDialogs } from '@toolpad/core';
 
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import {
@@ -30,6 +36,9 @@ import {
     useShiftCreateMutation,
     useShiftUpdateMutation,
 } from '@/queries/shifts';
+import LocationAutocomplete from '@/components/form/LocationAutocomplete';
+import LocationViewDialog from '@/components/locations/LocationViewDialog';
+import LocationForm from '@/components/locations/LocationForm';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
@@ -51,6 +60,11 @@ type ShiftFormProps = {
 };
 
 export default function ShiftForm(props: ShiftFormProps) {
+    console.log('ShiftForm render', {
+        props,
+        timestamp: new Date().toISOString(),
+    });
+
     const { reset: handleClose } = useShiftDialogHelpers();
     const { shiftId, shift, isNew: propsIsNew, onClose } = props;
     const notifications = useNotifications();
@@ -58,7 +72,8 @@ export default function ShiftForm(props: ShiftFormProps) {
     const defaultValues = {
         id: '',
         title: '',
-        location: '',
+        locationId: null,
+        legacyLocation: '',
         date: null,
         startTime: null,
         endTime: null,
@@ -67,6 +82,12 @@ export default function ShiftForm(props: ShiftFormProps) {
         adminNotes: '',
         assignments: [],
     };
+
+    // State for location dialogs
+    const [viewLocationId, setViewLocationId] = useState<string | null>(null);
+    const [isLocationViewOpen, setIsLocationViewOpen] = useState(false);
+    const [isLocationFormOpen, setIsLocationFormOpen] = useState(false);
+    const dialogs = useDialogs();
 
     // Get team users data to map from memberId to userId
     const { data: teamUsers = [] } = useTeamUsersQuery();
@@ -101,6 +122,11 @@ export default function ShiftForm(props: ShiftFormProps) {
                         )
                         .toDate()
                   : null,
+              // Handle location fields
+              locationId: shift.locationId || null,
+              legacyLocation: shift.locationId
+                  ? ''
+                  : shift.legacyLocation || shift.location || '',
               assignments:
                   shift.shiftAssignments?.map((assignment) => {
                       return {
@@ -112,6 +138,11 @@ export default function ShiftForm(props: ShiftFormProps) {
           }
         : defaultValues;
 
+    console.log('ShiftForm before useForm', {
+        transformedShift,
+        timestamp: new Date().toISOString(),
+    });
+
     const {
         control,
         handleSubmit,
@@ -120,8 +151,14 @@ export default function ShiftForm(props: ShiftFormProps) {
         watch,
         reset,
         setError,
+        setValue,
     } = useForm({
         defaultValues: transformedShift as any,
+    });
+
+    console.log('ShiftForm after useForm', {
+        formState: { errors, isSubmitting },
+        timestamp: new Date().toISOString(),
     });
 
     // // Helper for setting form errors
@@ -201,7 +238,10 @@ export default function ShiftForm(props: ShiftFormProps) {
                 endTime: endTimeISO,
                 slots: Number(formData.slots),
                 timezone: timezone,
-                location: formData.location,
+                locationId: formData.locationId,
+                legacyLocation: formData.locationId
+                    ? undefined
+                    : formData.legacyLocation,
                 notes: formData.notes,
                 adminNotes: formData.adminNotes,
                 assignments: formData.assignments || [],
@@ -274,7 +314,10 @@ export default function ShiftForm(props: ShiftFormProps) {
                 endTime: endTimeISO,
                 slots: Number(formData.slots),
                 timezone: timezone,
-                location: formData.location,
+                locationId: formData.locationId,
+                legacyLocation: formData.locationId
+                    ? undefined
+                    : formData.legacyLocation,
                 notes: formData.notes,
                 adminNotes: formData.adminNotes,
                 assignments: formData.assignments || [],
@@ -366,20 +409,131 @@ export default function ShiftForm(props: ShiftFormProps) {
                             />
                         )}
                     />
+                    {/* Location Autocomplete */}
                     <Controller
-                        name="location"
+                        name="locationId"
                         control={control}
-                        render={({ field }) => (
-                            <TextField
-                                {...field}
-                                disabled={!isAdmin}
-                                label="Location"
-                                variant="outlined"
-                                error={!!errors.location}
-                                helperText={errors.location?.message as any}
-                            />
-                        )}
+                        render={({ field }) => {
+                            console.log(
+                                'ShiftForm LocationAutocomplete Controller render',
+                                {
+                                    fieldValue: field.value,
+                                    timestamp: new Date().toISOString(),
+                                    fieldRef: field,
+                                }
+                            );
+
+                            return (
+                                <LocationAutocomplete
+                                    value={field.value}
+                                    onChange={(locationId) => {
+                                        console.log(
+                                            'ShiftForm LocationAutocomplete onChange',
+                                            {
+                                                locationId,
+                                                timestamp:
+                                                    new Date().toISOString(),
+                                            }
+                                        );
+                                        field.onChange(locationId);
+                                        // Clear legacy location when a location is selected
+                                        if (locationId) {
+                                            setValue('legacyLocation', '');
+                                        }
+                                    }}
+                                    disabled={!isAdmin}
+                                    onCreateNew={() =>
+                                        setIsLocationFormOpen(true)
+                                    }
+                                    onViewLocation={(locationId) => {
+                                        setViewLocationId(locationId);
+                                        setIsLocationViewOpen(true);
+                                    }}
+                                />
+                            );
+                        }}
                     />
+
+                    {/* Legacy Location (only shown if no location is selected) */}
+                    {(() => {
+                        const locationId = watch('locationId');
+                        console.log('ShiftForm watch locationId', {
+                            locationId,
+                            timestamp: new Date().toISOString(),
+                        });
+                        return !locationId;
+                    })() && (
+                        <Controller
+                            name="legacyLocation"
+                            control={control}
+                            render={({ field }) => (
+                                <TextField
+                                    {...field}
+                                    disabled={!isAdmin}
+                                    label="Legacy Location (text only)"
+                                    variant="outlined"
+                                    fullWidth
+                                    error={!!errors.legacyLocation}
+                                    helperText={
+                                        errors.legacyLocation?.message as any
+                                    }
+                                />
+                            )}
+                        />
+                    )}
+
+                    {/* Location View Dialog */}
+                    <LocationViewDialog
+                        locationId={viewLocationId}
+                        open={isLocationViewOpen}
+                        onClose={() => setIsLocationViewOpen(false)}
+                    />
+
+                    {/* Location Form Dialog */}
+                    {isLocationFormOpen && (
+                        <Dialog
+                            fullWidth={true}
+                            maxWidth="md"
+                            open={isLocationFormOpen}
+                            onClose={() => setIsLocationFormOpen(false)}
+                        >
+                            <DialogTitle>
+                                <Box display="flex" alignItems="center">
+                                    <Box flexGrow={1}>Create New Location</Box>
+                                    <Box>
+                                        <IconButton
+                                            onClick={() =>
+                                                setIsLocationFormOpen(false)
+                                            }
+                                        >
+                                            <CloseIcon />
+                                        </IconButton>
+                                    </Box>
+                                </Box>
+                            </DialogTitle>
+                            <DialogContent>
+                                <LocationForm
+                                    onSubmit={(data: any) => {
+                                        // Close only the location form dialog
+                                        setIsLocationFormOpen(false);
+
+                                        // If we have the ID of the newly created location, select it
+                                        if (data.id) {
+                                            // Wait for the location query to be invalidated and refetched
+                                            // This ensures the new location is available in the dropdown
+                                            setTimeout(() => {
+                                                // Set the locationId field to the newly created location's ID
+                                                setValue('locationId', data.id);
+                                            }, 100);
+                                        }
+                                    }}
+                                    onCancel={() =>
+                                        setIsLocationFormOpen(false)
+                                    }
+                                />
+                            </DialogContent>
+                        </Dialog>
+                    )}
                     <Controller
                         name="date"
                         control={control}

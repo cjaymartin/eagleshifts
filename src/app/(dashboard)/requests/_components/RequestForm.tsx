@@ -27,6 +27,7 @@ import {
     useShiftRequestUpdateMutation,
 } from '@/queries/requests';
 import { useBusinessProfileQuery } from '@/queries/team';
+import { useLocationQuery } from '@/queries/locations';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
@@ -91,6 +92,9 @@ export default function RequestForm(props: RequestFormProps) {
 
     // Use the shift's timezone, or organization's timezone, or default to UTC
     const timezone = shift?.timezone || businessProfile?.timezone || 'UTC';
+
+    // Fetch location data if shift has a locationId
+    const { data: location } = useLocationQuery(shift?.locationId || '');
 
     // Determine if this is a new request based on props or requestId
     const isNew = propsIsNew ?? !requestId;
@@ -179,17 +183,31 @@ export default function RequestForm(props: RequestFormProps) {
                     {shift && (
                         <div>
                             <Typography variant="h6">{shift.title}</Typography>
-                            {shift.location && (
+                            {/* Display location based on new or legacy format */}
+                            {location ? (
                                 <Typography variant="body1">
-                                    {shift.location}
+                                    {location.name}
+                                    {location.address &&
+                                        ` - ${location.address}`}
                                 </Typography>
+                            ) : (
+                                shift.location && (
+                                    <Typography variant="body1">
+                                        {shift.location?.name}
+                                    </Typography>
+                                )
                             )}
                             <Typography variant="body2">
                                 {dayjs(shift.startTime).format('MMMM D, YYYY')}
                             </Typography>
                             <Typography variant="body2">
-                                {dayjs(shift.startTime).tz(timezone).format('h:mm A')} -
-                                {dayjs(shift.endTime).tz(timezone).format('h:mm A')}
+                                {dayjs(shift.startTime)
+                                    .tz(timezone)
+                                    .format('h:mm A')}{' '}
+                                -
+                                {dayjs(shift.endTime)
+                                    .tz(timezone)
+                                    .format('h:mm A')}
                             </Typography>
                         </div>
                     )}

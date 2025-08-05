@@ -17,6 +17,7 @@ import {
     Book,
     UploadOutlined,
     History,
+    LocationOn,
 } from '@mui/icons-material';
 
 type SmartAppProviderProps = {
@@ -58,6 +59,11 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
             ...(['admin', 'owner'].includes(session?.user?.role ?? 'guest')
                 ? [
                       { kind: 'header', title: 'Admin' },
+                      {
+                          title: 'Locations',
+                          segment: 'locations',
+                          icon: <LocationOn />,
+                      },
                       {
                           title: 'Uploads',
                           segment: 'uploads',

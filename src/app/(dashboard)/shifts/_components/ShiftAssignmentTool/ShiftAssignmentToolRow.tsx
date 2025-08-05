@@ -126,8 +126,10 @@ export default function ShiftAssignmentToolRow({
                                         reason: event.target.value,
                                     });
                                 }}
-                                InputProps={{
-                                    readOnly: !isAdmin,
+                                slotProps={{
+                                    input: {
+                                        readOnly: !isAdmin,
+                                    },
                                 }}
                             />
                         </Box>
