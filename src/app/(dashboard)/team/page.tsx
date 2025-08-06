@@ -24,7 +24,6 @@ import {
     useAuthQuery,
     useTeamUsersQuery,
     useDeleteUserMutation,
-    useImitateUserMutation,
     useInvitationListQuery,
     useRejectInvitationMutation,
     useDeleteInvitationMutation,
@@ -34,7 +33,6 @@ import TeamDialog from './_components/TeamDialog';
 import { sortBy } from 'lodash';
 import { trpc } from '@/lib/trpc/client';
 import { useCookies } from 'next-client-cookies';
-import { setImitationSession } from '@/app/(dashboard)/team/actions';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { authClient } from '@/lib/auth-client';
@@ -136,9 +134,6 @@ function TeamContent() {
     const deleteUserMutation = useDeleteUserMutation();
     const deleteInvitationMutation = useDeleteInvitationMutation();
 
-    // Imitate user mutation
-    const imitateUserMutation = useImitateUserMutation();
-
     // Reject invitation mutation
     const rejectInvitationMutation = useRejectInvitationMutation();
 
@@ -178,26 +173,8 @@ function TeamContent() {
     // Handle user imitation
     const handleImitate = async (memberId: string) => {
         try {
-            const imitation = await imitateUserMutation.mutateAsync({
-                memberId,
-            });
-            console.log('Imitation response:');
-            console.dir({ imitation });
-            if (imitation.success) {
-                console.log('Imitation successful:');
-                notifications.show('User invited successfully');
-                await setImitationSession(imitation.cookie);
-                console.log('Imitation session set successfully');
-
-                queryClient.invalidateQueries();
-                authClient.getSession();
-
-                //router.push('/');
-                window.location.href = '/'; // Redirect to home page
-                //then redirect to forwardslash
-            }
-
-            // Redirect is handled in the mutation hook
+            // Redirect to the auth imitation endpoint with memberId
+            window.location.href = `/auth/imitate?memberId=${memberId}&callbackURL=/`;
         } catch (error: any) {
             notifications.show(`Error imitating user: ${error.message}`, {
                 severity: 'error',

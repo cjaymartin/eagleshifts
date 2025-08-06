@@ -17,9 +17,16 @@ import {
 } from 'better-auth/plugins';
 import { nextCookies } from 'better-auth/next-js';
 import path from 'path-browserify';
-import { createAuthMiddleware, APIError } from 'better-auth/api';
+import {
+    createAuthMiddleware,
+    APIError,
+    createAuthEndpoint,
+    originCheck,
+} from 'better-auth/api';
 import { cookies, headers } from 'next/headers';
 import crypto from 'crypto';
+import z from 'zod';
+import { imitate } from './auth/plugins/imitate';
 
 console.log({
     google: {
@@ -69,6 +76,7 @@ export const auth = betterAuth({
         // multiSession(),
         // oneTap(),
         // oAuthProxy(),
+        imitate(),
         organization({
             allowUserToCreateOrganization: (user) => {
                 console.log('ALLOW USER TO CREATE ORGANIZATION', user);
