@@ -50,32 +50,8 @@ export const auth = betterAuth({
             clientId: process.env.GOOGLE_CLIENT_ID as string,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
         },
-        // github: {
-        //   clientId: process.env.GITHUB_CLIENT_ID!,
-        //   clientSecret: process.env.GITHUB_CLIENT_SECRET!
-        // }
     },
     plugins: [
-        //twoFactor({
-        // otpOptions: {
-        //   async sendOTP({ user, otp }) {
-        //     await resend.emails.send({
-        //       from,
-        //       to: user.email,
-        //       subject: "Your OTP",
-        //       html: `Your OTP is ${otp}`,
-        //     });
-        //   },
-        // },
-        //}),
-        //passkey(),
-        //admin(),
-        // openAPI(),
-        //bearer(),
-        // admin(),
-        // multiSession(),
-        // oneTap(),
-        // oAuthProxy(),
         imitate(),
         organization({
             allowUserToCreateOrganization: (user) => {

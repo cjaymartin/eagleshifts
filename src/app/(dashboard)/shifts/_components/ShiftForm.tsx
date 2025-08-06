@@ -541,15 +541,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                             <DatePicker
                                 disabled={!isAdmin}
                                 label="Date"
-                                value={
-                                    field.value
-                                        ? dayjs(field.value).tz(
-                                              shift?.timezone ||
-                                                  businessProfile?.timezone ||
-                                                  'UTC'
-                                          )
-                                        : null
-                                }
+                                value={field.value ? dayjs(field.value) : null}
                                 onChange={(date) =>
                                     field.onChange(date ? date.toDate() : null)
                                 }
@@ -569,15 +561,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                             <TimePicker
                                 disabled={!isAdmin}
                                 label="Start Time"
-                                value={
-                                    field.value
-                                        ? dayjs(field.value).tz(
-                                              shift?.timezone ||
-                                                  businessProfile?.timezone ||
-                                                  'UTC'
-                                          )
-                                        : null
-                                }
+                                value={field.value ? dayjs(field.value) : null}
                                 onChange={(date) =>
                                     field.onChange(date ? date.toDate() : null)
                                 }
@@ -598,15 +582,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                             <TimePicker
                                 disabled={!isAdmin}
                                 label="End Time"
-                                value={
-                                    field.value
-                                        ? dayjs(field.value).tz(
-                                              shift?.timezone ||
-                                                  businessProfile?.timezone ||
-                                                  'UTC'
-                                          )
-                                        : null
-                                }
+                                value={field.value ? dayjs(field.value) : null}
                                 onChange={(date) =>
                                     field.onChange(date ? date.toDate() : null)
                                 }

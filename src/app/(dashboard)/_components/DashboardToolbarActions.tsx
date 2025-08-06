@@ -8,8 +8,13 @@ import {
     SignOutButton,
 } from '@toolpad/core';
 import OrgHeader from '@/app/(dashboard)/_components/OrgHeader';
+import { useAuthQuery } from '@/queries/users';
 
 export default function DashboardToolbarActions() {
+    const { data: session } = useAuthQuery();
+    const role = session?.user?.role || 'member';
+    const isAdminOrOwner = ['admin', 'owner'].includes(role);
+
     const CustomPopoverContent = () => (
         <Stack direction="column">
             {/* This will render the default Account preview */}
@@ -32,16 +37,18 @@ export default function DashboardToolbarActions() {
                     My Account
                 </MenuItem>
 
-                <MenuItem
-                    component="a"
-                    href="/business"
-                    sx={{
-                        justifyContent: 'flex-start',
-                        width: '100%',
-                    }}
-                >
-                    My Business
-                </MenuItem>
+                {isAdminOrOwner && (
+                    <MenuItem
+                        component="a"
+                        href="/business"
+                        sx={{
+                            justifyContent: 'flex-start',
+                            width: '100%',
+                        }}
+                    >
+                        My Business
+                    </MenuItem>
+                )}
             </MenuList>
 
             {/*<Divider />*/}
