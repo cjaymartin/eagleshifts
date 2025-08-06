@@ -174,7 +174,7 @@ function TeamContent() {
     const handleImitate = async (memberId: string) => {
         try {
             // Redirect to the auth imitation endpoint with memberId
-            window.location.href = `/auth/imitate?memberId=${memberId}&callbackURL=/`;
+            window.location.href = `/api/auth/imitate?memberId=${memberId}&callbackURL=/`;
         } catch (error: any) {
             notifications.show(`Error imitating user: ${error.message}`, {
                 severity: 'error',
