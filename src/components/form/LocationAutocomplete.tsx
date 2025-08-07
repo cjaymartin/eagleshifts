@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Add, Close, LocationOn, Visibility } from '@mui/icons-material';
-import { useLocationsQuery } from '@/queries/locations';
+import { useLocationsQuery, useLocationQuery } from '@/queries/locations';
 import { useAuthQuery } from '@/queries/users';
 
 // Type for the location option
@@ -67,11 +67,11 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
     // Fetch locations
     const { data: locationsData, isLoading: isLocationsLoading } =
         useLocationsQuery({
-            name: inputValue.length > 2 ? inputValue : undefined, // Only filter if at least 3 characters
+            search: inputValue.length > 2 ? inputValue : undefined, // Only filter if at least 3 characters
         });
 
     // Combine loading states
-    const isLoading = isSessionLoading || isLocationsLoading;
+    const isLoading = isSessionLoading;
 
     // Transform locations into options for the autocomplete
     const locationOptions = useMemo(() => {
@@ -86,11 +86,39 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
         }));
     }, [locationsData]);
 
+    // Fetch the selected location details if needed
+    const { data: selectedLocationData } = useLocationQuery(value || '');
+
     // Find the selected location
     const selectedLocation = useMemo(() => {
-        if (!value || !locationOptions.length) return null;
-        return locationOptions.find((option) => option.id === value) || null;
-    }, [value, locationOptions]);
+        if (!value) return null;
+
+        // First try to find it in the current search results
+        const foundInOptions = locationOptions.find(
+            (option) => option.id === value
+        );
+        if (foundInOptions) return foundInOptions;
+
+        // If not found in options but we have the data from the direct query, use that
+        if (selectedLocationData) {
+            return {
+                id: selectedLocationData.id,
+                name: selectedLocationData.name,
+                address: selectedLocationData.address,
+                groupName: selectedLocationData.group?.name,
+                groupColor: selectedLocationData.group?.color,
+            };
+        }
+
+        // Fallback to a placeholder to maintain selection state
+        return {
+            id: value,
+            name: 'Loading...',
+            address: '',
+            groupName: undefined,
+            groupColor: undefined,
+        };
+    }, [value, locationOptions, selectedLocationData]);
 
     // Handle view location button click
     const handleViewLocation = useCallback(() => {
@@ -111,16 +139,20 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
                 onChange(option ? option.id : null);
             }}
             inputValue={inputValue}
-            onInputChange={(x, newInputValue) => {
-                console.log('INPUTCHANGE');
-                console.log({ x, newInputValue });
-                setInputValue(newInputValue);
+            onInputChange={(event, newInputValue, reason) => {
+                // Only update the input value if it's a user input event
+                // This prevents the component from resetting when options are loaded
+                console.log({ reason });
+                if (reason === 'input') {
+                    setInputValue(newInputValue);
+                }
             }}
             options={locationOptions}
             getOptionLabel={(option: any) => option.name}
             isOptionEqualToValue={(option: any, value) =>
                 option.id === value.id
             }
+            filterOptions={(x) => x} // Disable built-in filtering to use server-side filtering
             renderOption={(props, option) => (
                 <MenuItem {...props} key={option.id} value={option.id}>
                     <ListItemIcon key={'icon-' + option.id}>
@@ -153,29 +185,37 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
                             <div style={{ display: 'none' }}>
                                 <TextField {...params} />
                             </div>
-                            <Box 
-                                sx={{ 
-                                    border: '1px solid rgba(0, 0, 0, 0.23)', 
-                                    borderRadius: 1, 
+                            <Box
+                                sx={{
+                                    border: '1px solid rgba(0, 0, 0, 0.23)',
+                                    borderRadius: 1,
                                     p: 1,
                                     display: 'flex',
                                     alignItems: 'center',
                                     '&:hover': {
                                         borderColor: 'rgba(0, 0, 0, 0.87)',
-                                    }
+                                    },
                                 }}
                             >
-                                <LocationOn 
+                                <LocationOn
                                     style={{
-                                        color: selectedLocation.groupColor || 'inherit',
-                                        marginRight: 8
+                                        color:
+                                            selectedLocation.groupColor ||
+                                            'inherit',
+                                        marginRight: 8,
                                     }}
                                 />
                                 <Box sx={{ flexGrow: 1 }}>
-                                    <Typography variant="body1">{selectedLocation.name}</Typography>
-                                    <Typography variant="caption" color="textSecondary">
+                                    <Typography variant="body1">
+                                        {selectedLocation.name}
+                                    </Typography>
+                                    <Typography
+                                        variant="caption"
+                                        color="textSecondary"
+                                    >
                                         {selectedLocation.address}
-                                        {selectedLocation.groupName && ` • ${selectedLocation.groupName}`}
+                                        {selectedLocation.groupName &&
+                                            ` • ${selectedLocation.groupName}`}
                                     </Typography>
                                 </Box>
                                 <Tooltip title="Clear selection">

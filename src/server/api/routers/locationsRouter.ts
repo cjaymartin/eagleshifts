@@ -10,13 +10,16 @@ export const locationsRouter = router({
     // Get all locations with filtering options
     getLocations: memberProcedure
         .input(
-            z.object({
-                name: z.string().optional(),
-                groupId: z.string().optional(),
-                tags: z.array(z.string()).optional(),
-                page: z.number().optional().default(1),
-                limit: z.number().optional().default(50),
-            }).optional()
+            z
+                .object({
+                    search: z.string().optional(),
+                    name: z.string().optional(),
+                    groupId: z.string().optional(),
+                    tags: z.array(z.string()).optional(),
+                    page: z.number().optional().default(1),
+                    limit: z.number().optional().default(50),
+                })
+                .optional()
         )
         .query(async ({ ctx, input }) => {
             // Build filter conditions
@@ -25,9 +28,39 @@ export const locationsRouter = router({
             };
 
             if (input) {
+                if (input.search) {
+                    // Search by name, address, group name, or tags
+                    where.OR = [
+                        {
+                            name: {
+                                contains: input.search,
+                                mode: 'insensitive',
+                            },
+                        },
+                        {
+                            address: {
+                                contains: input.search,
+                                mode: 'insensitive',
+                            },
+                        },
+                        {
+                            group: {
+                                name: {
+                                    contains: input.search,
+                                    mode: 'insensitive',
+                                },
+                            },
+                        },
+                        {
+                            tags: {
+                                contains: input.search,
+                            },
+                        },
+                    ];
+                }
                 if (input.name) {
                     // Search by name OR address
-                    where.OR = [
+                    const nameConditions = [
                         {
                             name: {
                                 contains: input.name,
@@ -41,13 +74,24 @@ export const locationsRouter = router({
                             },
                         },
                     ];
+
+                    // If we already have OR conditions for search, we need to add these as AND conditions
+                    if (where.OR) {
+                        where.AND = [
+                            { OR: where.OR },
+                            { OR: nameConditions as any },
+                        ];
+                        delete where.OR;
+                    } else {
+                        where.OR = nameConditions as any;
+                    }
                 }
                 if (input.groupId) {
                     where.groupId = input.groupId;
                 }
                 if (input.tags && input.tags.length > 0) {
                     // For each tag, check if it's included in the JSON array
-                    const tagConditions = input.tags.map(tag => ({
+                    const tagConditions = input.tags.map((tag) => ({
                         tags: {
                             contains: tag,
                         },
@@ -55,10 +99,7 @@ export const locationsRouter = router({
 
                     // If we already have OR conditions for name/address, we need to add these as AND conditions
                     if (where.OR) {
-                        where.AND = [
-                            { OR: where.OR },
-                            { OR: tagConditions }
-                        ];
+                        where.AND = [{ OR: where.OR }, { OR: tagConditions }];
                         delete where.OR;
                     } else {
                         where.OR = tagConditions;
@@ -67,7 +108,10 @@ export const locationsRouter = router({
             }
 
             // Calculate pagination
-            const skip = input && input.page && input.limit ? (input.page - 1) * input.limit : 0;
+            const skip =
+                input && input.page && input.limit
+                    ? (input.page - 1) * input.limit
+                    : 0;
             const take = input?.limit || 50;
 
             // Get filtered locations
@@ -86,7 +130,7 @@ export const locationsRouter = router({
 
             // Parse tags from JSON string to array
             return {
-                locations: locations.map(location => ({
+                locations: locations.map((location) => ({
                     ...location,
                     tags: location.tags ? JSON.parse(location.tags) : [],
                 })),
@@ -406,7 +450,8 @@ export const locationsRouter = router({
             if (duplicateGroup) {
                 throw new TRPCError({
                     code: 'CONFLICT',
-                    message: 'Another location group with this name already exists',
+                    message:
+                        'Another location group with this name already exists',
                 });
             }
 
@@ -451,7 +496,8 @@ export const locationsRouter = router({
             if (group.locations.length > 0) {
                 throw new TRPCError({
                     code: 'PRECONDITION_FAILED',
-                    message: 'Cannot delete a location group that has locations',
+                    message:
+                        'Cannot delete a location group that has locations',
                 });
             }
 
@@ -460,6 +506,9 @@ export const locationsRouter = router({
                 where: { id: input.id },
             });
 
-            return { success: true, message: 'Location group deleted successfully' };
+            return {
+                success: true,
+                message: 'Location group deleted successfully',
+            };
         }),
 });

@@ -23,6 +23,7 @@ type LocationGroupUpdateData = LocationGroupData & { id: string };
 
 // Location queries
 export function useLocationsQuery(filters?: {
+    search?: string;
     name?: string;
     groupId?: string;
     tags?: string[];
