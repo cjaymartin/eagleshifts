@@ -147,6 +147,7 @@ model Member {
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   role         String
   createdAt    DateTime
+  isActivated  Boolean      @default(false)
 
   icalSlug             String? @unique
   isAvailableByDefault Boolean @default(true)

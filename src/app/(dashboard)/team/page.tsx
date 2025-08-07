@@ -15,19 +15,24 @@ import {
     Typography,
     CircularProgress,
     Skeleton,
+    Chip,
 } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
+import EmailIcon from '@mui/icons-material/Email';
 import {
     useAuthQuery,
     useTeamUsersQuery,
     useDeleteUserMutation,
-    useInvitationListQuery,
-    useRejectInvitationMutation,
-    useDeleteInvitationMutation,
 } from '@/queries/users';
+import {
+    useInvitationsListQuery,
+    useDeleteInvitationMutation,
+    useReInviteMutation,
+} from '@/queries/invitations';
 import { useDialogs, useNotifications } from '@toolpad/core';
 import TeamDialog from './_components/TeamDialog';
 import { sortBy } from 'lodash';
@@ -103,15 +108,37 @@ function TeamContent() {
     const { data: teamUsers = [], isLoading: isTeamUsersLoading } =
         useTeamUsersQuery();
     const { data: invitations = [], isLoading: isInvitationsLoading } =
-        useInvitationListQuery();
+        useInvitationsListQuery();
 
     // Show loading state if any data is still loading
     const isLoading =
         isSessionLoading || isTeamUsersLoading || isInvitationsLoading;
 
     // Process data - do this even during loading to maintain hook order
-    const pendingInvitations = React.useMemo(
-        () => invitations?.filter((x) => x.status === 'pending') ?? [],
+
+    // Check if a user has active invitations
+    const hasActiveInvitation = React.useCallback(
+        (email: string) => {
+            return invitations.some(
+                (invitation) =>
+                    invitation.email === email &&
+                    invitation.status === 'pending' &&
+                    new Date(invitation.expiresAt) > new Date() // Check if not expired
+            );
+        },
+        [invitations]
+    );
+
+    // Check if a user has expired invitations
+    const hasExpiredInvitation = React.useCallback(
+        (email: string) => {
+            return invitations.some(
+                (invitation) =>
+                    invitation.email === email &&
+                    invitation.status === 'pending' &&
+                    new Date(invitation.expiresAt) <= new Date() // Check if expired
+            );
+        },
         [invitations]
     );
 
@@ -134,8 +161,8 @@ function TeamContent() {
     const deleteUserMutation = useDeleteUserMutation();
     const deleteInvitationMutation = useDeleteInvitationMutation();
 
-    // Reject invitation mutation
-    const rejectInvitationMutation = useRejectInvitationMutation();
+    // Re-invite mutation
+    const reInviteMutation = useReInviteMutation();
 
     // Handle user deletion
     const handleDelete = async (memberId: string) => {
@@ -182,8 +209,8 @@ function TeamContent() {
         }
     };
 
-    // Handle invitation rejection
-    const handleRejectInvitation = async (invitationId: string) => {
+    // Handle invitation deletion
+    const handleDeleteInvitation = async (invitationId: string) => {
         if (
             window.confirm('Are you sure you want to delete this invitation?')
         ) {
@@ -200,6 +227,31 @@ function TeamContent() {
                     }
                 );
             }
+        }
+    };
+
+    // Fix for any references to handleRejectInvitation
+    const handleRejectInvitation = handleDeleteInvitation;
+
+    // Handle re-invite action
+    const handleReInvite = async (user: {
+        email: string;
+        role: string;
+        name?: string;
+    }) => {
+        try {
+            await reInviteMutation.mutateAsync({
+                email: user.email,
+                role: user.role as 'member' | 'admin' | 'owner',
+                name: user.name,
+            });
+            notifications.show('Invitation sent successfully', {
+                severity: 'success',
+            });
+        } catch (error: any) {
+            notifications.show(`Error sending invitation: ${error.message}`, {
+                severity: 'error',
+            });
         }
     };
 
@@ -240,12 +292,97 @@ function TeamContent() {
                                 <TableBody>
                                     {sortedUsers.map((user) => (
                                         <TableRow key={user.id}>
-                                            <TableCell>{user.name}</TableCell>
-                                            <TableCell>{user.email}</TableCell>
+                                            <TableCell>
+                                                {user.name}
+                                                {!user.isActivated && (
+                                                    <Chip
+                                                        label={
+                                                            hasActiveInvitation(
+                                                                user.email
+                                                            )
+                                                                ? 'Pending'
+                                                                : hasExpiredInvitation(
+                                                                        user.email
+                                                                    )
+                                                                  ? 'Invite Expired'
+                                                                  : 'No Account'
+                                                        }
+                                                        size="small"
+                                                        color={
+                                                            hasActiveInvitation(
+                                                                user.email
+                                                            )
+                                                                ? 'warning'
+                                                                : hasExpiredInvitation(
+                                                                        user.email
+                                                                    )
+                                                                  ? 'error'
+                                                                  : 'error'
+                                                        }
+                                                        sx={{ ml: 1 }}
+                                                    />
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                {user.email &&
+                                                user.email.includes(
+                                                    '@placeholder.local'
+                                                )
+                                                    ? ''
+                                                    : user.email}
+                                            </TableCell>
                                             <TableCell>{user.role}</TableCell>
                                             <TableCell
                                                 sx={{ textAlign: 'right' }}
                                             >
+                                                {!user.isActivated && (
+                                                    <IconButton
+                                                        onClick={() =>
+                                                            handleReInvite({
+                                                                email: user.email,
+                                                                role:
+                                                                    user.role ||
+                                                                    'member',
+                                                                name: user.name,
+                                                                //sendInvitation: true, // Always send invitation when clicking this button
+                                                            })
+                                                        }
+                                                        title={
+                                                            !user.email ||
+                                                            user.email.includes(
+                                                                '@placeholder.local'
+                                                            )
+                                                                ? 'No email address attached to this user'
+                                                                : hasActiveInvitation(
+                                                                        user.email
+                                                                    ) ||
+                                                                    hasExpiredInvitation(
+                                                                        user.email
+                                                                    )
+                                                                  ? 'Resend Invitation'
+                                                                  : 'Send Invite'
+                                                        }
+                                                        disabled={
+                                                            !user.email ||
+                                                            user.email.includes(
+                                                                '@placeholder.local'
+                                                            )
+                                                        }
+                                                    >
+                                                        {
+                                                            hasActiveInvitation(
+                                                                user.email
+                                                            ) ||
+                                                            hasExpiredInvitation(
+                                                                user.email
+                                                            ) ? (
+                                                                <RefreshIcon /> // Use RefreshIcon for "Resend Invitation"
+                                                            ) : (
+                                                                <EmailIcon />
+                                                            ) // Use EmailIcon for "Send Invite"
+                                                        }
+                                                    </IconButton>
+                                                )}
                                                 {role === 'owner' &&
                                                     user.role !== 'owner' && (
                                                         <IconButton
@@ -292,62 +429,6 @@ function TeamContent() {
                                 <AddIcon /> Invite Member
                             </IconButton>
                         </Container>
-
-                        {pendingInvitations.length > 0 && (
-                            <Box mt={4}>
-                                <Typography variant="h6">
-                                    Pending Invitations
-                                </Typography>
-                                <TableContainer component={Paper}>
-                                    <Table>
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell>Email</TableCell>
-                                                <TableCell>Role</TableCell>
-                                                <TableCell
-                                                    sx={{ textAlign: 'right' }}
-                                                >
-                                                    Actions
-                                                </TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {pendingInvitations?.map(
-                                                (invitation) => (
-                                                    <TableRow
-                                                        key={invitation.id}
-                                                    >
-                                                        <TableCell>
-                                                            {invitation.email}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {invitation.role}
-                                                        </TableCell>
-                                                        <TableCell
-                                                            sx={{
-                                                                textAlign:
-                                                                    'right',
-                                                            }}
-                                                        >
-                                                            <IconButton
-                                                                onClick={() =>
-                                                                    handleRejectInvitation(
-                                                                        invitation.id
-                                                                    )
-                                                                }
-                                                                title="Delete Invitation"
-                                                            >
-                                                                <DeleteIcon />
-                                                            </IconButton>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                            </Box>
-                        )}
                     </Box>
                 </>
             )}

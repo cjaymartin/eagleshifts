@@ -9,7 +9,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { auth, signCookie } from '@/lib/auth';
 import { cookies } from 'next/headers';
 import { TRPCError } from '@trpc/server';
-import { logUserStatusChange, logTeamInviteSend, logTeamInviteAccept } from '@/lib/logging';
+import {
+    logUserStatusChange,
+    logTeamInviteSend,
+    logTeamInviteAccept,
+} from '@/lib/logging';
 
 export const usersRouter = router({
     // Get user by ID - all authenticated users can read user data
@@ -235,16 +239,40 @@ export const usersRouter = router({
     // Update a member's role
     updateMember: adminProcedure
         .input(
-            z.object({
-                memberId: z.string(),
-                role: z
-                    .enum(['suspended', 'member', 'admin', 'owner'])
-                    .optional(),
-                displayName: z.string().optional(),
-            })
+            z
+                .object({
+                    memberId: z.string(),
+                    role: z
+                        .enum(['suspended', 'member', 'admin', 'owner'])
+                        .optional(),
+                    displayName: z.string().optional(),
+                    email: z.string().optional(),
+                    sendInvitation: z.boolean().optional(),
+                })
+                .refine(
+                    (data) => {
+                        // If sendInvitation is true, the email field must be a non-empty string and a valid email.
+                        if (data.sendInvitation) {
+                            // We use safeParse to avoid an exception and return a boolean.
+                            const email = data.email;
+                            return email
+                                ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+                                : true;
+                        }
+
+                        // If sendInvitation is false, the email field can be empty or null.
+                        return true;
+                    },
+                    {
+                        message:
+                            'Email is required and must be a valid email when "sendInvitation" is active',
+                        path: ['email'],
+                    }
+                )
         )
         .mutation(async ({ ctx, input }) => {
-            const { memberId, role, displayName } = input;
+            const { memberId, role, displayName, email, sendInvitation } =
+                input;
 
             // Get the current member to check permissions
             const currentMember = await ctx.prisma.member.findUnique({
@@ -266,16 +294,105 @@ export const usersRouter = router({
                 throw new Error('Only owners can change the role of an owner');
             }
 
-            // Update the member
-            const updatedMember = await ctx.prisma.member.update({
-                where: { id: memberId },
-                data: {
-                    ...(role && { role }),
-                },
-                include: {
-                    user: true,
-                },
-            });
+            // Check if email is being updated for a non-activated member
+            let shouldSendInvitation = false;
+            let updatedMember;
+
+            if (email !== undefined && !currentMember.isActivated) {
+                // Email is being updated for a non-activated member
+                // Instead of updating the existing user's email, we'll find or create a user with the new email
+                // and update the member to point to the new user
+
+                // Generate a placeholder email if none is provided
+                const isNoEmailUser = !email || email.trim() === '';
+                const actualEmail = isNoEmailUser
+                    ? `no-email-${uuidv4()}@placeholder.local`
+                    : email.trim();
+
+                // Check if a user with the new email already exists
+                let newUser = isNoEmailUser
+                    ? null
+                    : await ctx.prisma.user.findUnique({
+                          where: { email: actualEmail },
+                      });
+
+                // If no user exists with the new email, create one
+                if (!newUser) {
+                    newUser = await ctx.prisma.user.create({
+                        data: {
+                            id: uuidv4(),
+                            email: actualEmail,
+                            name:
+                                displayName ||
+                                (isNoEmailUser
+                                    ? 'No Email User'
+                                    : actualEmail.split('@')[0]), // Use provided name or default
+                            emailVerified: true,
+                            banned: isNoEmailUser, // Ban users with no email
+                            banReason: isNoEmailUser
+                                ? 'No email provided'
+                                : undefined,
+                            createdAt: new Date(),
+                            updatedAt: new Date(),
+                        },
+                    });
+                }
+
+                // Delete all existing invitations for the old email in this organization
+                const existingInvitations =
+                    await ctx.prisma.invitation.findMany({
+                        where: {
+                            email: currentMember.user.email,
+                            organizationId: ctx.user.organizationId,
+                        },
+                    });
+
+                // Delete all invitations for the old email
+                if (existingInvitations.length > 0) {
+                    await ctx.prisma.invitation.deleteMany({
+                        where: {
+                            email: currentMember.user.email,
+                            organizationId: ctx.user.organizationId,
+                        },
+                    });
+                }
+
+                // Also delete any invitations for the new email in this organization
+                if (!isNoEmailUser) {
+                    await ctx.prisma.invitation.deleteMany({
+                        where: {
+                            email: actualEmail,
+                            organizationId: ctx.user.organizationId,
+                        },
+                    });
+                }
+
+                // Update the member to point to the new user
+                updatedMember = await ctx.prisma.member.update({
+                    where: { id: memberId },
+                    data: {
+                        ...(role && { role }),
+                        userId: newUser.id, // Link to the new user
+                    },
+                    include: {
+                        user: true,
+                    },
+                });
+
+                // The shouldSendInvitation flag will be used later to determine if we should create a new invitation
+                shouldSendInvitation = input.sendInvitation === true;
+            } else {
+                // Normal update without email change or for activated members
+                updatedMember = await ctx.prisma.member.update({
+                    where: { id: memberId },
+                    data: {
+                        ...(role && { role }),
+                    },
+                    include: {
+                        user: true,
+                    },
+                });
+            }
 
             // Log the user status change if role was updated
             if (role && role !== currentMember.role) {
@@ -284,11 +401,13 @@ export const usersRouter = router({
                     ctx.user.organizationId,
                     ctx.user.id,
                     updatedMember.userId,
-                    updatedMember.name || updatedMember.user.name || updatedMember.user.email,
+                    updatedMember.name ||
+                        updatedMember.user.name ||
+                        updatedMember.user.email,
                     role,
-                    { 
+                    {
                         previousRole: currentMember.role,
-                        memberId: memberId
+                        memberId: memberId,
                     }
                 );
             }
@@ -302,6 +421,106 @@ export const usersRouter = router({
 
                 // Update the member name in our result
                 updatedMember.name = displayName;
+            }
+
+            // If email was updated and shouldSendInvitation is true, create a new invitation
+            // Only create an invitation if it's not a no-email user
+            if (
+                email !== undefined &&
+                !currentMember.isActivated &&
+                shouldSendInvitation
+            ) {
+                // Check if this is a no-email user
+                const isNoEmailUser = !email || email.trim() === '';
+
+                // Only proceed with invitation creation and sending if it's not a no-email user
+                if (!isNoEmailUser) {
+                    const invitationId = uuidv4();
+                    const expiresAt = new Date();
+                    expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
+
+                    // Use the actual email (which is the trimmed email)
+                    const actualEmail = email.trim();
+
+                    // Create the invitation
+                    await ctx.prisma.invitation.create({
+                        data: {
+                            id: invitationId,
+                            email: actualEmail,
+                            role: updatedMember.role,
+                            status: 'pending',
+                            expiresAt,
+                            organization: {
+                                connect: { id: ctx.user.organizationId },
+                            },
+                            user: {
+                                connect: { id: ctx.user.id }, // The inviter
+                            },
+                        },
+                    });
+
+                    // Get the organization for the email
+                    const organization =
+                        await ctx.prisma.organization.findUnique({
+                            where: { id: ctx.user.organizationId },
+                        });
+
+                    if (!organization) {
+                        throw new TRPCError({
+                            code: 'NOT_FOUND',
+                            message: 'Organization not found',
+                        });
+                    }
+
+                    // Get the inviter's information
+                    const inviter = await ctx.prisma.member.findFirst({
+                        where: {
+                            userId: ctx.user.id,
+                            organizationId: ctx.user.organizationId,
+                        },
+                        include: {
+                            user: true,
+                        },
+                    });
+
+                    if (!inviter) {
+                        throw new TRPCError({
+                            code: 'NOT_FOUND',
+                            message: 'Inviter not found',
+                        });
+                    }
+
+                    // Send the invitation email
+                    const { sendInvitationEmail } = await import('@/lib/email');
+                    await sendInvitationEmail({
+                        id: invitationId,
+                        email: actualEmail,
+                        inviter: {
+                            user: {
+                                name: inviter.name || inviter.user.name,
+                                email: inviter.user.email,
+                            },
+                        },
+                        organization: {
+                            name: organization.name,
+                        },
+                    });
+
+                    // Log the invitation creation
+                    const { logTeamInviteSend } = await import('@/lib/logging');
+                    await logTeamInviteSend(
+                        ctx.prisma,
+                        ctx.user.organizationId,
+                        ctx.user.id,
+                        invitationId,
+                        actualEmail,
+                        updatedMember.role,
+                        {
+                            action: 'create',
+                            status: 'pending',
+                        }
+                    );
+                }
             }
 
             // Return blended data similar to list procedure
@@ -383,9 +602,9 @@ export const usersRouter = router({
                 invitationId,
                 invitation.email,
                 invitation.role || 'member',
-                { 
+                {
                     action: 'delete',
-                    status: invitation.status
+                    status: invitation.status,
                 }
             );
 

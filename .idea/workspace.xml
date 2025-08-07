@@ -5,7 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d58e61e2-8c55-42b2-878e-5572cbd53eb3" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/prisma/migrations/20250807111238_better_invitations/migration.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/lib/serverTrpc.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/queries/invitations.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/server/api/routers/invitationsRouter.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/schema.prisma" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/team/_components/TeamForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/team/_components/TeamForm.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/team/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/team/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/auth/accept-invitation/actions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/auth/accept-invitation/actions.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/auth/accept-invitation/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/auth/accept-invitation/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/providers/OrganizationAuthProvider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/providers/OrganizationAuthProvider.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/email.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/email.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server/api/root.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/root.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server/api/routers/usersRouter.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/server/api/routers/usersRouter.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,7 +57,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master",
+    "git-widget-placeholder": "invites",
     "ignore.virus.scanning.warn.message": "true",
     "javascript.nodejs.core.library.configured.version": "21.6.2",
     "javascript.nodejs.core.library.typings.version": "24.0.3",
@@ -167,20 +181,13 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/src/app/(dashboard)/team/_components/TeamForm.tsx</url>
-          <line>102</line>
-          <option name="timeStamp" value="3" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/src/app/(dashboard)/_components/DashboardToolbarActions.tsx</url>
           <line>2</line>
-          <properties lambdaOrdinal="-1" />
           <option name="timeStamp" value="10" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/src/app/(dashboard)/availability/page.tsx</url>
           <line>46</line>
-          <properties lambdaOrdinal="-1" />
           <option name="timeStamp" value="11" />
         </line-breakpoint>
       </breakpoints>

@@ -1,10 +1,11 @@
 'use client';
 
 import { Container, CircularProgress, Alert } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import acceptInvitation from './actions';
 import { useCookies } from 'next-client-cookies';
+import { signOut } from '@/lib/auth-client';
 
 export default function AcceptInvitationPage() {
     // Get param for 'invitation' from URL
@@ -18,7 +19,26 @@ export default function AcceptInvitationPage() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
+    // Use a ref to track if we're already processing the invitation
+    const isProcessingRef = useRef(false);
+
     useEffect(() => {
+        // Ensure we're logged out before processing the invitation
+        async function logoutAndContinue() {
+            try {
+                // Sign out the current user if any
+                await signOut();
+
+                // Also manually clear the cookie to be extra sure
+                cookieStore.remove('better-auth.session_token');
+                cookieStore.remove('login-organization-slug');
+            } catch (error) {
+                console.error('Error signing out:', error);
+                // Continue even if logout fails
+            }
+        }
+
+        // First check if we have a valid invitation ID
         if (!invitationId) {
             console.error('No invitation found in URL');
             setError(
@@ -28,31 +48,46 @@ export default function AcceptInvitationPage() {
             return;
         }
 
+        // Process the invitation after logout
         async function processInvitation() {
-            if (!invitationId || success) {
+            // Only process once
+            if (!invitationId || isProcessingRef.current) {
                 return;
             }
+
+            // Mark as processing to prevent duplicate attempts
+            isProcessingRef.current = true;
+
             try {
+                // First ensure we're logged out before accepting the invitation
+                await logoutAndContinue();
+
                 const result = await acceptInvitation(invitationId);
 
                 setSuccess(true);
                 setLoading(false);
 
-                //set the cookie
-                //result.cookie
+                // Set the session cookie
                 cookieStore.set('better-auth.session_token', result.cookie, {
-                    //httpOnly: true,
-                    //secure: process.env.NODE_ENV === 'production',
                     sameSite: 'strict',
-                    //path: '/',
                     expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
                 });
 
-                // Redirect to dashboard after a short delay
+                // Set the login-organization-slug cookie to the organization's slug
+                if (result.organization && result.organization.slug) {
+                    // Set as a plain cookie without SameSite or expiration
+                    cookieStore.set('login-organization-slug', result.organization.slug);
+                    console.log('Set login-organization-slug to:', result.organization.slug);
+                } else {
+                    console.error('Organization slug not found in invitation result:', result.organization);
+                }
+
+                // Use window.location.href for a full page reload to ensure cookies are available
+                // This is more reliable than router.push for cookie handling
+                // Add a small delay to ensure cookies are properly set
                 setTimeout(() => {
-                    //router.push('/');
                     window.location.href = '/';
-                }, 2000);
+                }, 500);
             } catch (err) {
                 console.error('Error accepting invitation:', err);
                 setError(
@@ -61,11 +96,13 @@ export default function AcceptInvitationPage() {
                         : 'An error occurred while accepting the invitation.'
                 );
                 setLoading(false);
+                // Reset processing flag on error so user can try again
+                isProcessingRef.current = false;
             }
         }
 
         void processInvitation();
-    }, [invitationId, router]);
+    }, [invitationId]);
 
     if (loading) {
         return (
