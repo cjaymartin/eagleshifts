@@ -50,3 +50,7 @@ next-env.d.ts
 
 certificates
 /src/generated/
+/.idea/*.local.xml
+/.idea/dataSources.xml
+/.idea/dataSources
+/.idea/sqldialects.xml

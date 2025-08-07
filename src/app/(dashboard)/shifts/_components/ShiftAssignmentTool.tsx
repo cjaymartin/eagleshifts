@@ -14,9 +14,10 @@ import NewTeamMemberRow from './ShiftAssignmentTool/NewTeamMemberRow';
 import { useTeamUsersLookupQuery, useAuthQuery } from '@/queries/users';
 import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/api/trpc/[trpc]';
+import { Control, useWatch } from 'react-hook-form';
 
 export type ShiftAssignmentToolProps = {
-    date: Date;
+    control: Control<any>;
     shift: inferRouterOutputs<AppRouter>['shifts']['byId'];
     value: Array<ShiftAssignmentToolAssignmentRow>;
     onChange: (value: Array<ShiftAssignmentToolAssignmentRow>) => void;
@@ -32,10 +33,12 @@ export type ShiftAssignmentToolAssignmentRow = {
 export default function ShiftAssignmentTool({
     shift,
     readOnly,
-    date,
+    control,
     value: rawAssignments,
     onChange,
 }: ShiftAssignmentToolProps) {
+    const date = useWatch({ control, name: 'date' });
+
     const { data: userLookup } = useTeamUsersLookupQuery();
     const { data: session } = useAuthQuery();
     const user = session?.user;
