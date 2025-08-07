@@ -67,10 +67,26 @@ export function ShiftRow(props: ShiftRowProps) {
         <React.Fragment>
             {/*<CardMedia component="img" src={props.featuredImage} />*/}
             <TableCell>{shift.title}</TableCell>
-            <TableCell>{shift.location?.name || shift.legacyLocation || ''}</TableCell>
+            <TableCell sx={{ maxWidth: 300 }}>
+                {shift.location?.name || shift.legacyLocation || ''}
+                {shift.location?.address && (
+                    <div
+                        style={{
+                            fontSize: '0.8rem',
+                            color: 'rgba(0, 0, 0, 0.6)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        {shift.location.address}
+                    </div>
+                )}
+            </TableCell>
 
             <TableCell>
-                {shift.startTime && dayjs(shift.startTime).tz(timezone).format('YYYY-MM-DD')}
+                {shift.startTime &&
+                    dayjs(shift.startTime).tz(timezone).format('YYYY-MM-DD')}
             </TableCell>
             <TableCell>
                 {formatTime(shift.startTime.toString(), timezone)} -{' '}

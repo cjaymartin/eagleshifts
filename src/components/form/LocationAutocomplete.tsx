@@ -15,7 +15,7 @@ import {
     Typography,
 } from '@mui/material';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Add, LocationOn, Visibility } from '@mui/icons-material';
+import { Add, Close, LocationOn, Visibility } from '@mui/icons-material';
 import { useLocationsQuery } from '@/queries/locations';
 import { useAuthQuery } from '@/queries/users';
 
@@ -145,7 +145,65 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
                     renderCount: ++renderCount,
                 });
 
-                // Simple approach: just render the TextField with minimal props
+                // If a location is selected, show the pin and name and address view
+                if (selectedLocation) {
+                    return (
+                        <React.Fragment>
+                            {/* Hidden TextField to satisfy MUI Autocomplete's requirement for an input element */}
+                            <div style={{ display: 'none' }}>
+                                <TextField {...params} />
+                            </div>
+                            <Box 
+                                sx={{ 
+                                    border: '1px solid rgba(0, 0, 0, 0.23)', 
+                                    borderRadius: 1, 
+                                    p: 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    '&:hover': {
+                                        borderColor: 'rgba(0, 0, 0, 0.87)',
+                                    }
+                                }}
+                            >
+                                <LocationOn 
+                                    style={{
+                                        color: selectedLocation.groupColor || 'inherit',
+                                        marginRight: 8
+                                    }}
+                                />
+                                <Box sx={{ flexGrow: 1 }}>
+                                    <Typography variant="body1">{selectedLocation.name}</Typography>
+                                    <Typography variant="caption" color="textSecondary">
+                                        {selectedLocation.address}
+                                        {selectedLocation.groupName && ` • ${selectedLocation.groupName}`}
+                                    </Typography>
+                                </Box>
+                                <Tooltip title="Clear selection">
+                                    <IconButton
+                                        onClick={() => onChange(null)}
+                                        disabled={disabled}
+                                        size="small"
+                                    >
+                                        <Close />
+                                    </IconButton>
+                                </Tooltip>
+                                {onViewLocation && (
+                                    <Tooltip title="View location details">
+                                        <IconButton
+                                            onClick={handleViewLocation}
+                                            disabled={disabled}
+                                            size="small"
+                                        >
+                                            <Visibility />
+                                        </IconButton>
+                                    </Tooltip>
+                                )}
+                            </Box>
+                        </React.Fragment>
+                    );
+                }
+
+                // If no location is selected, show the regular search field
                 return (
                     <TextField
                         {...params}
@@ -157,18 +215,7 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
                                 endAdornment: (
                                     <React.Fragment>
                                         {params.InputProps.endAdornment}
-                                        {value && onViewLocation && (
-                                            <Tooltip title="View location details">
-                                                <IconButton
-                                                    onClick={handleViewLocation}
-                                                    disabled={disabled}
-                                                    size="small"
-                                                >
-                                                    <Visibility />
-                                                </IconButton>
-                                            </Tooltip>
-                                        )}
-                                        {isAdmin && onCreateNew && !value && (
+                                        {isAdmin && onCreateNew && (
                                             <Tooltip title="Create new location">
                                                 <IconButton
                                                     onClick={onCreateNew}

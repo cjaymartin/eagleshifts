@@ -26,10 +26,21 @@ export const locationsRouter = router({
 
             if (input) {
                 if (input.name) {
-                    where.name = {
-                        contains: input.name,
-                        mode: 'insensitive',
-                    };
+                    // Search by name OR address
+                    where.OR = [
+                        {
+                            name: {
+                                contains: input.name,
+                                mode: 'insensitive',
+                            },
+                        },
+                        {
+                            address: {
+                                contains: input.name,
+                                mode: 'insensitive',
+                            },
+                        },
+                    ];
                 }
                 if (input.groupId) {
                     where.groupId = input.groupId;
@@ -41,7 +52,17 @@ export const locationsRouter = router({
                             contains: tag,
                         },
                     }));
-                    where.OR = tagConditions;
+
+                    // If we already have OR conditions for name/address, we need to add these as AND conditions
+                    if (where.OR) {
+                        where.AND = [
+                            { OR: where.OR },
+                            { OR: tagConditions }
+                        ];
+                        delete where.OR;
+                    } else {
+                        where.OR = tagConditions;
+                    }
                 }
             }
 
