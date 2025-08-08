@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { Box, Container, Grid, IconButton } from '@mui/material';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -54,6 +54,9 @@ export default function Calendar() {
     // Dialog handling
     const dialogs = useDialogs();
 
+    // Ref to store the timeout ID for delayed single-click handling
+    const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     // Filters state
     const [filters, setFilters] = useState<ShiftFilterSchema>();
 
@@ -73,20 +76,37 @@ export default function Calendar() {
         );
     }, [shifts]);
 
-    // Handle single-clicking on an event (shift) - opens view dialog for all users
+    // Handle single-clicking on an event (shift) - opens view dialog for all users with a delay
     const onClickEvent = useCallback(
         (calEvent: { id: string }) => {
             const shift = shiftLookup[calEvent.id];
             if (shift) {
-                dialogs.open(ShiftViewDialog, shift as any);
+                // Clear any existing timeout
+                if (clickTimeoutRef.current) {
+                    clearTimeout(clickTimeoutRef.current);
+                    clickTimeoutRef.current = null;
+                }
+
+                // Set a new timeout to open the view dialog after a short delay
+                // This delay allows time for a potential double-click to be detected
+                clickTimeoutRef.current = setTimeout(() => {
+                    dialogs.open(ShiftViewDialog, shift as any);
+                    clickTimeoutRef.current = null;
+                }, 200); // 300ms delay, which is a common double-click threshold
             }
         },
-        [dialogs, shiftLookup]
+        [dialogs, shiftLookup, clickTimeoutRef]
     );
 
     // Handle double-clicking on an event (shift) - opens edit dialog for admins, view dialog for non-admins
     const onDoubleClickEvent = useCallback(
         (calEvent: { id: string }) => {
+            // Clear any pending single-click timeout to prevent the view dialog from opening
+            if (clickTimeoutRef.current) {
+                clearTimeout(clickTimeoutRef.current);
+                clickTimeoutRef.current = null;
+            }
+
             const shift = shiftLookup[calEvent.id];
             if (shift) {
                 if (isAdmin) {
@@ -96,7 +116,7 @@ export default function Calendar() {
                 }
             }
         },
-        [dialogs, shiftLookup, isAdmin]
+        [dialogs, shiftLookup, isAdmin, clickTimeoutRef]
     );
 
     // Handle selecting a slot (for creating new shifts)
