@@ -310,7 +310,7 @@ export default function Calendar() {
                         step={15}
                         timeslots={4}
                         onView={setCurrentView}
-                        view={currentView}
+                        view={currentView as any}
                         date={currentDate as any}
                         onNavigate={(date) => {
                             setCurrentDate(date);
