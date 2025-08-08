@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
     Autocomplete,
     TextField,
@@ -50,36 +50,49 @@ export default function TimePicker({ name, label, disabled }: TimePickerProps) {
     const [highlightedOption, setHighlightedOption] = useState<any>(null);
 
     // State to control dropdown open state
+    // Initialize to false to ensure dropdowns are closed by default
     const [isOpen, setIsOpen] = useState(false);
 
     // Ref to the autocomplete component
     const autocompleteRef = useRef<any>(null);
 
-    // Find matching options based on input value without filtering
-    const findMatchingOptions = (options: any, inputValue: any) => {
-        if (!inputValue)
-            return { matchingOptions: options, bestMatchIndex: -1 };
+    // Ref to track the latest selected value from onChange
+    const latestSelectedValueRef = useRef<string | null>(null);
 
-        const lowerInput = inputValue.toLowerCase();
+    // Ensure dropdowns are closed when the component is first rendered
+    useEffect(() => {
+        setIsOpen(false);
+    }, []);
 
-        // Remove any colons from the input for easier parsing
+    // Track if this is the initial render
+    const isInitialRender = useRef(true);
+
+    // Update the input value only on initial render
+    useEffect(() => {
+        if (isInitialRender.current) {
+            const { field } = control._fields[name] || {};
+            if (field && field.value) {
+                const formattedTime = dayjs(field.value).format('h:mmA');
+                setInputValue(formattedTime);
+            }
+            isInitialRender.current = false;
+        }
+    }, [control, name]);
+
+    // Helper function to parse time input and return hour and minute
+    const parseTimeInput = (input: string): { hour: number; minute: number; parsed: boolean } => {
+        const lowerInput = input.toLowerCase();
         const cleanInput = lowerInput.replace(/:/g, '');
-
-        let bestMatchIndex = -1;
+        let hour = 0;
+        let minute = 0;
+        let parsed = false;
 
         // Pattern 1: Up to 4 digits with a/am or p/pm suffix
         if (/^\d{1,4}[ap](?:m)?$/i.test(cleanInput)) {
-            // Extract the digits and am/pm part
             const match = cleanInput.match(/^(\d{1,4})([ap](?:m)?)$/i);
             if (match) {
                 const digits = match[1];
-                const ampm = match[2].toLowerCase().startsWith('p')
-                    ? 'pm'
-                    : 'am';
-
-                // Parse the time
-                let hour = 0;
-                let minute = 0;
+                const ampm = match[2].toLowerCase().startsWith('p') ? 'pm' : 'am';
 
                 if (digits.length <= 2) {
                     // Just hours: "1p", "12a", etc.
@@ -102,28 +115,11 @@ export default function TimePicker({ name, label, disabled }: TimePickerProps) {
                     hour = 0;
                 }
 
-                // Round minute to nearest 15
-                minute = Math.round(minute / 15) * 15;
-                if (minute === 60) {
-                    minute = 0;
-                    hour = (hour + 1) % 24;
-                }
-
-                // Find the matching option
-                bestMatchIndex = options.findIndex(
-                    (option: any) =>
-                        option.hour === hour && option.minute === minute
-                );
+                parsed = true;
             }
         }
         // Pattern 2: Up to 4 digits (with or without colon) for military time
-        else if (
-            /^\d{1,4}$/.test(cleanInput) ||
-            /^\d{1,2}:\d{1,2}$/.test(lowerInput)
-        ) {
-            let hour = 0;
-            let minute = 0;
-
+        else if (/^\d{1,4}$/.test(cleanInput) || /^\d{1,2}:\d{1,2}$/.test(lowerInput)) {
             if (lowerInput.includes(':')) {
                 // Format with colon: "16:30", "6:45", etc.
                 const parts = lowerInput.split(':');
@@ -148,23 +144,42 @@ export default function TimePicker({ name, label, disabled }: TimePickerProps) {
                 minute = parseInt(cleanInput.substring(2), 10);
             }
 
-            // Ensure hour is valid (0-23)
-            if (hour >= 0 && hour < 24) {
-                // Round minute to nearest 15
-                minute = Math.round(minute / 15) * 15;
-                if (minute === 60) {
-                    minute = 0;
-                    hour = (hour + 1) % 24;
-                }
+            parsed = true;
+        }
 
-                console.log(`Parsed military time: ${hour}:${minute}`);
+        // Ensure hour and minute are valid
+        if (parsed && (hour < 0 || hour >= 24 || minute < 0 || minute >= 60)) {
+            parsed = false;
+        }
 
-                // Find the matching option
-                bestMatchIndex = options.findIndex(
-                    (option: any) =>
-                        option.hour === hour && option.minute === minute
-                );
-            }
+        return { hour, minute, parsed };
+    };
+
+    // Find matching options based on input value without filtering
+    const findMatchingOptions = (options: any, inputValue: any) => {
+        if (!inputValue)
+            return { matchingOptions: options, bestMatchIndex: -1 };
+
+        // Use the helper function to parse the input
+        const { hour, minute, parsed } = parseTimeInput(inputValue);
+
+        let bestMatchIndex = -1;
+
+        // If parsing was successful, find the closest matching option
+        if (parsed) {
+            // For dropdown display, find the closest 15-minute interval option
+            // This is only for highlighting in the dropdown, not for the actual value
+            const closestMinute = Math.round(minute / 15) * 15;
+            const adjustedHour = closestMinute === 60 ? (hour + 1) % 24 : hour;
+            const adjustedMinute = closestMinute === 60 ? 0 : closestMinute;
+
+            // Find the matching option for display in dropdown
+            bestMatchIndex = options.findIndex(
+                (option: any) =>
+                    option.hour === adjustedHour && option.minute === adjustedMinute
+            );
+
+            console.log(`Parsed time: ${hour}:${minute}, Closest option: ${adjustedHour}:${adjustedMinute}`);
         }
 
         console.log(`Best match index: ${bestMatchIndex}`);
@@ -256,11 +271,27 @@ export default function TimePicker({ name, label, disabled }: TimePickerProps) {
                                               'HH:mm'
                                           ) ===
                                           dayjs(field.value).format('HH:mm')
-                                  )
+                                  ) || {
+                                      // Create a custom option for non-15-minute times
+                                      value: field.value,
+                                      label: dayjs(field.value).format('h:mmA'),
+                                      hour: dayjs(field.value).hour(),
+                                      minute: dayjs(field.value).minute(),
+                                  }
                                 : null
                         }
                         onChange={(_, newValue) => {
+                            console.log('onChange triggered', { newValue });
                             field.onChange(newValue ? newValue.value : null);
+                            // Update the inputValue to match the selected option's label
+                            if (newValue) {
+                                console.log('Setting inputValue in onChange to:', newValue.label);
+                                setInputValue(newValue.label);
+                                // Store the latest selected value in the ref
+                                latestSelectedValueRef.current = newValue.label;
+                            } else {
+                                latestSelectedValueRef.current = null;
+                            }
                         }}
                         blurOnSelect
                         selectOnFocus={false}
@@ -270,7 +301,20 @@ export default function TimePicker({ name, label, disabled }: TimePickerProps) {
                         onClose={() => setIsOpen(false)}
                         inputValue={inputValue}
                         onInputChange={(_, newInputValue) => {
+                            console.log('onInputChange triggered', { 
+                                newInputValue, 
+                                currentInputValue: inputValue,
+                                fieldValue: field.value ? dayjs(field.value).format('h:mmA') : null
+                            });
+
                             setInputValue(newInputValue);
+
+                            // Clear the field value when the user starts typing
+                            // This allows setting a new value without having to click the "X" first
+                            if (newInputValue && field.value) {
+                                console.log('Clearing field value because user started typing');
+                                field.onChange(null);
+                            }
 
                             // Open the dropdown when typing
                             if (newInputValue) {
@@ -299,9 +343,63 @@ export default function TimePicker({ name, label, disabled }: TimePickerProps) {
                             }
                         }}
                         onBlur={(event) => {
-                            // When the component loses focus, select the highlighted option
-                            if (highlightedOption) {
-                                field.onChange(highlightedOption.value);
+                            console.log('onBlur triggered', { 
+                                relatedTarget: event.relatedTarget,
+                                relatedTargetTagName: event.relatedTarget ? event.relatedTarget.tagName : null,
+                                relatedTargetClassName: event.relatedTarget ? event.relatedTarget.className : null,
+                                inputValue,
+                                latestSelectedValue: latestSelectedValueRef.current
+                            });
+
+                            // Skip parsing if the dropdown was just clicked (selection was made)
+                            // This is determined by checking if the related target is a menu item
+                            const isMenuItemClick = event.relatedTarget && 
+                                (event.relatedTarget.closest('.MuiAutocomplete-option') || 
+                                 event.relatedTarget.closest('.MuiMenuItem-root'));
+
+                            console.log('isMenuItemClick:', isMenuItemClick);
+
+                            // If we have a latest selected value from onChange, use that instead of parsing
+                            if (latestSelectedValueRef.current) {
+                                console.log('Using latest selected value from onChange:', latestSelectedValueRef.current);
+                                // We don't need to do anything here as the onChange handler has already set the field value
+                                // Just reset the ref
+                                latestSelectedValueRef.current = null;
+                            } else if (!isMenuItemClick) {
+                                // When the component loses focus (not due to menu item click), parse the input
+                                if (inputValue) {
+                                    // Use the helper function to parse the input
+                                    const { hour, minute, parsed } = parseTimeInput(inputValue);
+                                    console.log('Parsing input in onBlur:', { hour, minute, parsed });
+
+                                    // If parsing was successful, create a custom time value
+                                    if (parsed) {
+                                        const customTime = dayjs().hour(hour).minute(minute).second(0).toDate();
+                                        console.log('Parsed successfully in onBlur, setting field value to:', dayjs(customTime).format('h:mmA'));
+                                        field.onChange(customTime);
+
+                                        // Update the input value to show the formatted time
+                                        const formattedTime = dayjs(customTime).format('h:mmA');
+                                        console.log('Setting inputValue in onBlur to:', formattedTime);
+                                        setInputValue(formattedTime);
+                                    } else if (highlightedOption) {
+                                        // Fallback to highlighted option if parsing failed
+                                        console.log('Parsing failed in onBlur, using highlighted option:', highlightedOption.label);
+                                        field.onChange(highlightedOption.value);
+
+                                        // Update the input value to show the formatted time
+                                        console.log('Setting inputValue in onBlur to highlighted option:', highlightedOption.label);
+                                        setInputValue(highlightedOption.label);
+                                    }
+                                } else if (highlightedOption) {
+                                    // If no input but there's a highlighted option, use that
+                                    console.log('No input in onBlur, using highlighted option:', highlightedOption.label);
+                                    field.onChange(highlightedOption.value);
+
+                                    // Update the input value to show the formatted time
+                                    console.log('Setting inputValue in onBlur to highlighted option (no input):', highlightedOption.label);
+                                    setInputValue(highlightedOption.label);
+                                }
                             }
 
                             // Close the popup when the component loses focus
@@ -311,17 +409,41 @@ export default function TimePicker({ name, label, disabled }: TimePickerProps) {
                             }, 100);
                         }}
                         onKeyDown={(e) => {
-                            // When Enter is pressed, select the highlighted option
-                            if (e.key === 'Enter' && highlightedOption) {
+                            if (e.key === 'Enter') {
                                 e.preventDefault();
-                                field.onChange(highlightedOption.value);
+
+                                // Parse the input to get hour and minute using the helper function
+                                if (inputValue) {
+                                    // Use the helper function to parse the input
+                                    const { hour, minute, parsed } = parseTimeInput(inputValue);
+
+                                    // If parsing was successful, create a custom time value
+                                    if (parsed) {
+                                        const customTime = dayjs().hour(hour).minute(minute).second(0).toDate();
+                                        field.onChange(customTime);
+
+                                        // Update the input value to show the formatted time
+                                        const formattedTime = dayjs(customTime).format('h:mmA');
+                                        setInputValue(formattedTime);
+                                    } else if (highlightedOption) {
+                                        // Fallback to highlighted option if parsing failed
+                                        field.onChange(highlightedOption.value);
+
+                                        // Update the input value to show the formatted time
+                                        setInputValue(highlightedOption.label);
+                                    }
+                                } else if (highlightedOption) {
+                                    // If no input but there's a highlighted option, use that
+                                    field.onChange(highlightedOption.value);
+
+                                    // Update the input value to show the formatted time
+                                    setInputValue(highlightedOption.label);
+                                }
+
                                 // Keep the dropdown open after selection
                                 setTimeout(() => {
                                     if (autocompleteRef.current) {
-                                        const input =
-                                            autocompleteRef.current.querySelector(
-                                                'input'
-                                            );
+                                        const input = autocompleteRef.current.querySelector('input');
                                         if (input) {
                                             input.focus();
                                         }
