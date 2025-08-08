@@ -25,6 +25,7 @@ import { useAuthQuery } from '@/queries/users';
 import { trpc } from '@/lib/trpc/client';
 import { useDialogs } from '@toolpad/core';
 import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
+import ShiftViewDialog from '@/components/calendar/ShiftViewDialog';
 import AddIcon from '@mui/icons-material/Add';
 
 // Create a localizer for the calendar
@@ -72,15 +73,30 @@ export default function Calendar() {
         );
     }, [shifts]);
 
-    // Handle double-clicking on an event (shift)
+    // Handle single-clicking on an event (shift) - opens view dialog for all users
+    const onClickEvent = useCallback(
+        (calEvent: { id: string }) => {
+            const shift = shiftLookup[calEvent.id];
+            if (shift) {
+                dialogs.open(ShiftViewDialog, shift as any);
+            }
+        },
+        [dialogs, shiftLookup]
+    );
+
+    // Handle double-clicking on an event (shift) - opens edit dialog for admins, view dialog for non-admins
     const onDoubleClickEvent = useCallback(
         (calEvent: { id: string }) => {
             const shift = shiftLookup[calEvent.id];
             if (shift) {
-                dialogs.open(ShiftDialog, shift as any);
+                if (isAdmin) {
+                    dialogs.open(ShiftDialog, shift as any);
+                } else {
+                    dialogs.open(ShiftViewDialog, shift as any);
+                }
             }
         },
-        [dialogs, shiftLookup]
+        [dialogs, shiftLookup, isAdmin]
     );
 
     // Handle selecting a slot (for creating new shifts)
@@ -302,6 +318,7 @@ export default function Calendar() {
                         localizer={localizer}
                         events={calendarEvents}
                         startAccessor="start"
+                        onSelectEvent={onClickEvent}
                         onDoubleClickEvent={onDoubleClickEvent}
                         onSelectSlot={onSelectSlot}
                         eventPropGetter={eventPropGetter}
