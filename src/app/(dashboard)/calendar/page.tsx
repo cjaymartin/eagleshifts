@@ -260,20 +260,26 @@ export default function Calendar() {
         allDay: boolean;
         start: Date;
         end: Date;
-    }> =
-        shifts?.map((shift) => {
-            // Use the shift's timezone, or organization's timezone, or default to UTC
-            const shiftTimezone =
-                shift.timezone || businessProfile?.timezone || 'UTC';
+    }> = React.useMemo(() => {
+        return (
+            shifts?.map((shift) => {
+                // Use the shift's timezone, or organization's timezone, or default to UTC
+                const shiftTimezone =
+                    shift.timezone || businessProfile?.timezone || 'UTC';
 
-            return {
-                id: shift.id,
-                title: shift.title,
-                allDay: false,
-                start: dayjs(shift.startTime).tz(shiftTimezone).toDate(),
-                end: dayjs(shift.endTime).tz(shiftTimezone).toDate(),
-            };
-        }) || [];
+                return {
+                    id: shift.id,
+                    title: shift.title,
+                    allDay: false,
+                    start: dayjs(shift.startTime).tz(shiftTimezone).toDate(),
+                    end: dayjs(shift.endTime).tz(shiftTimezone).toDate(),
+                };
+            }) || []
+        );
+    }, [shifts]);
+
+    const [currentView, setCurrentView] = useState('month');
+    const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
 
     // Calendar components
     const components: {
@@ -281,6 +287,8 @@ export default function Calendar() {
     } = {
         timeSlotWrapper: ColoredDateCellWrapper,
     };
+
+    console.log({ calendarEvents });
 
     return (
         <Box>
@@ -301,6 +309,12 @@ export default function Calendar() {
                         endAccessor="end"
                         step={15}
                         timeslots={4}
+                        onView={setCurrentView}
+                        view={currentView}
+                        date={currentDate as any}
+                        onNavigate={(date) => {
+                            setCurrentDate(date);
+                        }}
                     />
                 </Grid>
             </Grid>
