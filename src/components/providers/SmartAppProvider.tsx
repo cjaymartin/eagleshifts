@@ -135,7 +135,18 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
             authentication={authentication}
             session={session}
         >
-            <NotificationsProvider>{children}</NotificationsProvider>
+            <NotificationsProvider
+                slotProps={{
+                    snackbar: {
+                        anchorOrigin: {
+                            vertical: 'bottom',
+                            horizontal: 'left',
+                        },
+                    },
+                }}
+            >
+                {children}
+            </NotificationsProvider>
         </NextAppProvider>
     );
 }

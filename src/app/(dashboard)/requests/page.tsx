@@ -149,11 +149,13 @@ export default function Requests() {
             await deleteOldMutation.mutateAsync();
             notifications.show('Old requests deleted successfully', {
                 severity: 'success',
+                autoHideDuration: 3000,
             });
         } catch (error: any) {
             console.error('Error deleting old requests:', error);
             notifications.show(`Error: ${error.message}`, {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     };
@@ -165,12 +167,14 @@ export default function Requests() {
             if (result.data?.success) {
                 notifications.show(result.data.message, {
                     severity: 'success',
+                    autoHideDuration: 3000,
                 });
             }
         } catch (error: any) {
             console.error('Error seeding requests:', error);
             notifications.show(`Error: ${error.message}`, {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     };

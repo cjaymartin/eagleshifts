@@ -171,10 +171,12 @@ function TeamContent() {
                 await deleteUserMutation.mutateAsync({ memberId });
                 notifications.show('User deleted successfully', {
                     severity: 'success',
+                    autoHideDuration: 3000,
                 });
             } catch (error: any) {
                 notifications.show(`Error deleting user: ${error.message}`, {
                     severity: 'error',
+                    autoHideDuration: 3000,
                 });
             }
         }
@@ -205,6 +207,7 @@ function TeamContent() {
         } catch (error: any) {
             notifications.show(`Error imitating user: ${error.message}`, {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     };
@@ -218,12 +221,14 @@ function TeamContent() {
                 await deleteInvitationMutation.mutateAsync({ invitationId });
                 notifications.show('Invitation deleted successfully', {
                     severity: 'success',
+                    autoHideDuration: 3000,
                 });
             } catch (error: any) {
                 notifications.show(
                     `Error deleting invitation: ${error.message}`,
                     {
                         severity: 'error',
+                        autoHideDuration: 3000,
                     }
                 );
             }
@@ -247,10 +252,12 @@ function TeamContent() {
             });
             notifications.show('Invitation sent successfully', {
                 severity: 'success',
+                autoHideDuration: 3000,
             });
         } catch (error: any) {
             notifications.show(`Error sending invitation: ${error.message}`, {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     };

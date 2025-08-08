@@ -110,7 +110,10 @@ export default function Availability() {
         const isAvailable = event.target.checked;
 
         if (!selectedMemberId) {
-            notifications.show('No member selected', { severity: 'error' });
+            notifications.show('No member selected', {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
             return;
         }
 
@@ -129,6 +132,7 @@ export default function Availability() {
             console.error('Failed to update default availability:', error);
             notifications.show('Failed to update default availability', {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     };

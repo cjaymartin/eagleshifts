@@ -86,6 +86,7 @@ export default function LocationGroupsTab() {
         } catch (error: any) {
             notifications.show(error.message || 'Failed to delete group', {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     };

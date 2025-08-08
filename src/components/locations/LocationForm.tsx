@@ -120,6 +120,7 @@ export default function LocationForm({
             if (!address) {
                 notifications.show('Please enter an address first', {
                     severity: 'warning',
+                    autoHideDuration: 3000,
                 });
                 return;
             }
@@ -147,17 +148,19 @@ export default function LocationForm({
                 setValue('longitude', parseFloat(data[0].lon));
                 notifications.show('Coordinates updated successfully', {
                     severity: 'success',
+                    autoHideDuration: 3000,
                 });
             } else {
                 notifications.show(
                     'Could not find coordinates for this address',
-                    { severity: 'warning' }
+                    { severity: 'warning', autoHideDuration: 3000 }
                 );
             }
         } catch (error) {
             console.error('Error getting coordinates:', error);
             notifications.show('Failed to get coordinates', {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         } finally {
             setIsGuessingAddress(false);
@@ -175,6 +178,7 @@ export default function LocationForm({
             if (!name) {
                 notifications.show('Please enter a location name first', {
                     severity: 'warning',
+                    autoHideDuration: 3000,
                 });
                 return;
             }
@@ -201,15 +205,17 @@ export default function LocationForm({
                 setValue('address', data[0].display_name);
                 notifications.show('Address updated successfully', {
                     severity: 'success',
+                    autoHideDuration: 3000,
                 });
             } else {
                 notifications.show('Could not find address for this name', {
                     severity: 'warning',
+                    autoHideDuration: 3000,
                 });
             }
         } catch (error) {
             console.error('Error getting address:', error);
-            notifications.show('Failed to get address', { severity: 'error' });
+            notifications.show('Failed to get address', { severity: 'error', autoHideDuration: 3000 });
         } finally {
             setIsGuessingAddress(false);
         }
@@ -266,6 +272,7 @@ export default function LocationForm({
             console.error('Error saving location:', error);
             notifications.show(error.message || 'Failed to save location', {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     };

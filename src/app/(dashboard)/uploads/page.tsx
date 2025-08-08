@@ -127,11 +127,13 @@ export default function UploadsPage() {
             await refetchUploads();
             notifications.show(`File deleted successfully`, {
                 severity: 'success',
+                autoHideDuration: 3000,
             });
         } catch (error: any) {
             console.error('Error deleting file:', error);
             notifications.show(`Failed to delete file: ${error.message}`, {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     };
@@ -153,12 +155,13 @@ export default function UploadsPage() {
             await refetchUploads();
             notifications.show(`File permanently deleted`, {
                 severity: 'success',
+                autoHideDuration: 3000,
             });
         } catch (error: any) {
             console.error('Error permanently deleting file:', error);
             notifications.show(
                 `Failed to permanently delete file: ${error.message}`,
-                { severity: 'error' }
+                { severity: 'error', autoHideDuration: 3000 }
             );
         }
     };

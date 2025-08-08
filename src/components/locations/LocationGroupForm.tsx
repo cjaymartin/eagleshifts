@@ -63,7 +63,7 @@ export default function LocationGroupForm({
 
     // Fetch group data if editing
     const { data: locationGroups } = useLocationGroupsQuery();
-    const group = locationGroups?.find(g => g.id === groupId);
+    const group = locationGroups?.find((g) => g.id === groupId);
 
     // Mutations for creating and updating location groups
     const createMutation = useLocationGroupCreateMutation();
@@ -127,6 +127,7 @@ export default function LocationGroupForm({
             console.error('Error saving group:', error);
             notifications.show(error.message || 'Failed to save group', {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     };
@@ -163,18 +164,30 @@ export default function LocationGroupForm({
                             rules={{ required: 'Color is required' }}
                             render={({ field }) => (
                                 <>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            flexWrap: 'wrap',
+                                            gap: 1,
+                                            mb: 2,
+                                        }}
+                                    >
                                         {PREDEFINED_COLORS.map((color) => (
                                             <Box
                                                 key={color}
-                                                onClick={() => field.onChange(color)}
+                                                onClick={() =>
+                                                    field.onChange(color)
+                                                }
                                                 sx={{
                                                     width: 36,
                                                     height: 36,
                                                     backgroundColor: color,
                                                     borderRadius: '50%',
                                                     cursor: 'pointer',
-                                                    border: field.value === color ? '2px solid black' : 'none',
+                                                    border:
+                                                        field.value === color
+                                                            ? '2px solid black'
+                                                            : 'none',
                                                     '&:hover': {
                                                         opacity: 0.8,
                                                     },
@@ -198,14 +211,19 @@ export default function LocationGroupForm({
 
                                     {/* Color preview */}
                                     <Box sx={{ mt: 2 }}>
-                                        <Typography variant="subtitle2" gutterBottom>
+                                        <Typography
+                                            variant="subtitle2"
+                                            gutterBottom
+                                        >
                                             Preview
                                         </Typography>
                                         <Box
                                             sx={{
                                                 p: 2,
                                                 backgroundColor: field.value,
-                                                color: getTextColor(field.value),
+                                                color: getTextColor(
+                                                    field.value
+                                                ),
                                                 borderRadius: 1,
                                                 textAlign: 'center',
                                             }}
@@ -219,7 +237,11 @@ export default function LocationGroupForm({
                     </Box>
 
                     {/* Form Actions */}
-                    <Stack direction="row" spacing={2} justifyContent="flex-end">
+                    <Stack
+                        direction="row"
+                        spacing={2}
+                        justifyContent="flex-end"
+                    >
                         {onCancel && (
                             <Button
                                 variant="outlined"
@@ -238,8 +260,8 @@ export default function LocationGroupForm({
                             {isSubmitting
                                 ? 'Saving...'
                                 : groupId
-                                ? 'Update Group'
-                                : 'Create Group'}
+                                  ? 'Update Group'
+                                  : 'Create Group'}
                         </Button>
                     </Stack>
                 </Stack>

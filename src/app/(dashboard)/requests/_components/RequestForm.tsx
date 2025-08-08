@@ -135,6 +135,7 @@ export default function RequestForm(props: RequestFormProps) {
             console.error('Error creating request:', error);
             notifications.show('Failed to submit request', {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     }
@@ -144,6 +145,7 @@ export default function RequestForm(props: RequestFormProps) {
             if (!requestId) {
                 notifications.show('Request ID is required for updates', {
                     severity: 'error',
+                    autoHideDuration: 3000,
                 });
                 return;
             }
@@ -170,6 +172,7 @@ export default function RequestForm(props: RequestFormProps) {
             console.error('Error updating request:', error);
             notifications.show('Failed to update request', {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     }

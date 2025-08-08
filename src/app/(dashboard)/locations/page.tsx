@@ -132,6 +132,7 @@ export default function LocationsPage() {
         } catch (error: any) {
             notifications.show(error.message || 'Failed to delete location', {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     };

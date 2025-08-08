@@ -71,12 +71,13 @@ export default function ShiftUploads({ shiftId, readOnly }: ShiftUploadsProps) {
             await refetchUploads();
             notifications.show(`${groupName} uploaded successfully`, {
                 severity: 'success',
+                autoHideDuration: 3000,
             });
         } catch (error: any) {
             console.error('Error uploading file:', error);
             notifications.show(
                 `Failed to upload ${groupName}: ${error.message}`,
-                { severity: 'error' }
+                { severity: 'error', autoHideDuration: 3000 }
             );
         } finally {
             setUploading((prev) => ({ ...prev, [uploadGroupId]: false }));
@@ -94,11 +95,13 @@ export default function ShiftUploads({ shiftId, readOnly }: ShiftUploadsProps) {
             await refetchUploads();
             notifications.show(`File deleted successfully`, {
                 severity: 'success',
+                autoHideDuration: 3000,
             });
         } catch (error: any) {
             console.error('Error deleting file:', error);
             notifications.show(`Failed to delete file: ${error.message}`, {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     };
@@ -123,7 +126,7 @@ export default function ShiftUploads({ shiftId, readOnly }: ShiftUploadsProps) {
             {isLoading ? (
                 <CircularProgress size={24} />
             ) : (
-                <Box 
+                <Box
                     sx={{
                         display: 'flex',
                         flexWrap: 'wrap',
@@ -141,7 +144,7 @@ export default function ShiftUploads({ shiftId, readOnly }: ShiftUploadsProps) {
                                 lg: 'calc(25% - 16px)',
                             },
                             maxWidth: '100%',
-                        }
+                        },
                     }}
                 >
                     {uploadData?.map(({ group, upload }) => (
@@ -175,7 +178,7 @@ export default function ShiftUploads({ shiftId, readOnly }: ShiftUploadsProps) {
                                             {upload.fileName}
                                         </Typography>
 
-                                        <FilePreviewButton 
+                                        <FilePreviewButton
                                             uploadId={upload.id}
                                         />
                                         <IconButton

@@ -158,6 +158,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             if (!availabilityData.memberId) {
                 notifications.show('Member ID is required', {
                     severity: 'error',
+                    autoHideDuration: 3000,
                 });
                 return;
             }
@@ -177,6 +178,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             console.error('Error creating availability:', error);
             notifications.show('Failed to create availability', {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     }
@@ -186,6 +188,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             if (!availabilityId) {
                 notifications.show('Availability ID is required for updates', {
                     severity: 'error',
+                    autoHideDuration: 3000,
                 });
                 return;
             }
@@ -214,6 +217,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             console.error('Error updating availability:', error);
             notifications.show('Failed to update availability', {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     }
@@ -223,6 +227,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             if (!availabilityId) {
                 notifications.show('Availability ID is required for deletion', {
                     severity: 'error',
+                    autoHideDuration: 3000,
                 });
                 return;
             }
@@ -242,6 +247,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             console.error('Error deleting availability:', error);
             notifications.show('Failed to delete availability', {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     }

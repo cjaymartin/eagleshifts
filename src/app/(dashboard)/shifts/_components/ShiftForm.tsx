@@ -264,7 +264,7 @@ export default function ShiftForm(props: ShiftFormProps) {
             }
         } catch (error: any) {
             console.error('Error creating shift:', error);
-            notifications.show('Failed to create shift', { severity: 'error' });
+            notifications.show('Failed to create shift', { severity: 'error', autoHideDuration: 3000 });
         }
     }
 
@@ -273,6 +273,7 @@ export default function ShiftForm(props: ShiftFormProps) {
             if (!shiftId) {
                 notifications.show('Shift ID is required for updates', {
                     severity: 'error',
+                    autoHideDuration: 3000,
                 });
                 return;
             }
@@ -338,7 +339,7 @@ export default function ShiftForm(props: ShiftFormProps) {
             }
         } catch (error: any) {
             console.error('Error updating shift:', error);
-            notifications.show('Failed to update shift', { severity: 'error' });
+            notifications.show('Failed to update shift', { severity: 'error', autoHideDuration: 3000 });
         }
     }
 

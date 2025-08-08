@@ -166,6 +166,7 @@ export default function TeamForm(props: TeamFormProps) {
         if (!user?.id) {
             notifications.show('Member ID is required for updates', {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
             return;
         }
@@ -186,11 +187,13 @@ export default function TeamForm(props: TeamFormProps) {
 
             notifications.show('Member updated successfully', {
                 severity: 'success',
+                autoHideDuration: 3000,
             });
             handleClose();
         } catch (error: any) {
             notifications.show(`Error updating member: ${error.message}`, {
                 severity: 'error',
+                autoHideDuration: 3000,
             });
         }
     };
@@ -309,6 +312,7 @@ export default function TeamForm(props: TeamFormProps) {
                                                             {
                                                                 severity:
                                                                     'warning',
+                                                                autoHideDuration: 3000,
                                                             }
                                                         );
                                                         // Prevent checking if email is empty
