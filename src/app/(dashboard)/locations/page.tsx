@@ -245,7 +245,7 @@ export default function LocationsPage() {
                                                     <TableCell>
                                                         {location.address}
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell width={200}>
                                                         {location.group ? (
                                                             <Box
                                                                 component="span"
@@ -274,7 +274,7 @@ export default function LocationsPage() {
                                                             '-'
                                                         )}
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell width={134}>
                                                         <IconButton
                                                             onClick={() =>
                                                                 handleViewLocation(
