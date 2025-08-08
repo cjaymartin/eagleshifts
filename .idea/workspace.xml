@@ -5,10 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d58e61e2-8c55-42b2-878e-5572cbd53eb3" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/components/form/FormDatePicker.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftAssignmentTool.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(dashboard)/shifts/_components/ShiftForm.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

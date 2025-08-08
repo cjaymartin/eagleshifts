@@ -13,7 +13,8 @@ import {
     Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { DatePicker, TimePicker } from '@mui/x-date-pickers';
+import { DatePicker } from '@mui/x-date-pickers';
+import TimePicker from '@/components/form/TimePicker';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -541,55 +542,15 @@ export default function ShiftForm(props: ShiftFormProps) {
                         {/*        />*/}
                         {/*    )}*/}
                         {/*/>*/}
-                        <Controller
+                        <TimePicker
                             name="startTime"
-                            control={control}
-                            render={({ field }) => (
-                                <TimePicker
-                                    disabled={!isAdmin}
-                                    label="Start Time"
-                                    value={
-                                        field.value ? dayjs(field.value) : null
-                                    }
-                                    onChange={(date) =>
-                                        field.onChange(
-                                            date ? date.toDate() : null
-                                        )
-                                    }
-                                    slotProps={{
-                                        textField: {
-                                            error: !!errors.startTime,
-                                            helperText: errors.startTime
-                                                ?.message as any,
-                                        },
-                                    }}
-                                />
-                            )}
+                            label="Start Time"
+                            disabled={!isAdmin}
                         />
-                        <Controller
+                        <TimePicker
                             name="endTime"
-                            control={control}
-                            render={({ field }) => (
-                                <TimePicker
-                                    disabled={!isAdmin}
-                                    label="End Time"
-                                    value={
-                                        field.value ? dayjs(field.value) : null
-                                    }
-                                    onChange={(date) =>
-                                        field.onChange(
-                                            date ? date.toDate() : null
-                                        )
-                                    }
-                                    slotProps={{
-                                        textField: {
-                                            error: !!errors.endTime,
-                                            helperText: errors.endTime
-                                                ?.message as any,
-                                        },
-                                    }}
-                                />
-                            )}
+                            label="End Time"
+                            disabled={!isAdmin}
                         />
                         <Grid container spacing={2} alignItems="center">
                             <Grid>
