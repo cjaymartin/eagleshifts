@@ -100,17 +100,17 @@ model TwoFactor {
 model Organization {
   id String @id
 
-  name         String
-  slug         String?
-  logo         String?
-  createdAt    DateTime             @default(dbgenerated("LOCALTIMESTAMP")) @db.Timestamp(6)
-  metadata     String?
-  members      Member[]
-  invitations  Invitation[]
-  Shift        Shift[]
-  profile      OrganizationProfile?
-  uploadGroups UploadGroup[]
-  locations    Location[]
+  name           String
+  slug           String?
+  logo           String?
+  createdAt      DateTime             @default(dbgenerated("LOCALTIMESTAMP")) @db.Timestamp(6)
+  metadata       String?
+  members        Member[]
+  invitations    Invitation[]
+  Shift          Shift[]
+  profile        OrganizationProfile?
+  uploadGroups   UploadGroup[]
+  locations      Location[]
   locationGroups LocationGroup[]
 
   logEntries LogEntry[]
@@ -198,17 +198,19 @@ model Shift {
   id             String @id @default(cuid())
   organizationId String
 
-  title        String
+  title          String
   legacyLocation String?
-  locationId   String?
-  startTime    DateTime
-  endTime      DateTime
-  slots        Int
-  notes        String?
-  adminNotes   String?
-  timezone     String   @default("America/New_York")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  locationId     String?
+  startTime      DateTime
+  endTime        DateTime
+  slots          Int
+  notes          String?
+  adminNotes     String?
+  timezone       String   @default("America/New_York")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  isCancelled Boolean @default(false)
 
   // Relationships
   organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -333,37 +335,37 @@ model Upload {
 }
 
 model LocationGroup {
-  id             String     @id @default(cuid())
+  id             String   @id @default(cuid())
   organizationId String
   name           String
   color          String
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relationships
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  locations      Location[]
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locations    Location[]
 
   @@unique([organizationId, name])
   @@map("location_group")
 }
 
 model Location {
-  id             String       @id @default(cuid())
+  id             String   @id @default(cuid())
   organizationId String
   name           String
   address        String
   latitude       Float
   longitude      Float
   groupId        String?
-  tags           String?      // Stored as JSON array
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  tags           String? // Stored as JSON array
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relationships
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  group          LocationGroup? @relation(fields: [groupId], references: [id])
-  shifts         Shift[]
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  group        LocationGroup? @relation(fields: [groupId], references: [id])
+  shifts       Shift[]
 
   @@unique([organizationId, name])
   @@map("location")
