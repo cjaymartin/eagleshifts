@@ -27,6 +27,7 @@ import { useDialogs } from '@toolpad/core';
 import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
 import ShiftViewDialog from '@/components/calendar/ShiftViewDialog';
 import AddIcon from '@mui/icons-material/Add';
+import CalendarAgenda from '@/app/(dashboard)/_components/CalendarAgenda';
 
 // Create a localizer for the calendar
 const localizer = luxonLocalizer(DateTime);
@@ -347,6 +348,12 @@ export default function Calendar() {
                         endAccessor="end"
                         step={15}
                         timeslots={4}
+                        views={{
+                            month: true,
+                            week: true,
+                            day: true,
+                            agenda: CalendarAgenda,
+                        }}
                         onView={setCurrentView}
                         view={currentView as any}
                         date={currentDate as any}
