@@ -444,6 +444,7 @@ export default function Calendar() {
             <Grid container direction="row" maxWidth="xl">
                 <Grid sx={{ width: '60vw', height: 700 }}>
                     <BigCalendar
+                        onShowMore={() => setCurrentView('agenda')}
                         components={components as any}
                         localizer={localizer}
                         events={calendarEvents}
