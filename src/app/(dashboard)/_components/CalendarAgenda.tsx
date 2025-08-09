@@ -178,17 +178,23 @@ function Agenda({
                 );
 
             return (
-                <tr
-                    key={dayKey + '_' + idx}
-                    className={userProps.className}
-                    style={userProps.style}
-                >
+                <tr key={dayKey + '_' + idx} className={userProps.className}>
                     {first}
-                    <td className="rbc-agenda-time-cell">
-                        {timeRangeLabel(day, event)}
+                    <td
+                        className="rbc-agenda-time-cell"
+                        style={userProps.style}
+                    >
+                        {(userProps as any).innerStyle ? (
+                            <div style={(userProps as any).innerStyle}>
+                                {timeRangeLabel(day, event)}
+                            </div>
+                        ) : (
+                            timeRangeLabel(day, event)
+                        )}
                     </td>
                     <td
-                        className="rbc-agenda-event-cell"
+                        style={{ ...userProps.style, width: '40%' }}
+                        className={`rbc-agenda-event-cell ${(userProps as any).className || ''}`}
                         onClick={(e) =>
                             onSelectEvent && onSelectEvent(event, e)
                         }
@@ -196,7 +202,50 @@ function Agenda({
                             onDoubleClickEvent && onDoubleClickEvent(event, e)
                         }
                     >
-                        {Event ? <Event event={event} title={title} /> : title}
+                        {(userProps as any).innerStyle ? (
+                            <div style={(userProps as any).innerStyle}>
+                                {Event ? (
+                                    <Event event={event} title={title} />
+                                ) : (
+                                    title
+                                )}
+                            </div>
+                        ) : Event ? (
+                            <Event event={event} title={title} />
+                        ) : (
+                            title
+                        )}
+                    </td>
+                    <td
+                        style={{
+                            ...userProps.style,
+                            textWrap: 'nowrap',
+                            overflow: 'hidden',
+                            width: '60%',
+                        }}
+                        className={`rbc-agenda-location-cell ${(userProps as any).className || ''}`}
+                        onClick={(e) =>
+                            onSelectEvent && onSelectEvent(event, e)
+                        }
+                        onDoubleClick={(e) =>
+                            onDoubleClickEvent && onDoubleClickEvent(event, e)
+                        }
+                    >
+                        {event.location && (
+                            <>
+                                {(userProps as any).innerStyle ? (
+                                    <div style={(userProps as any).innerStyle}>
+                                        {event.location.name} --{' '}
+                                        {event.location.address}
+                                    </div>
+                                ) : (
+                                    <>
+                                        {event.location.name} --{' '}
+                                        {event.location.address}
+                                    </>
+                                )}
+                            </>
+                        )}
                     </td>
                 </tr>
             );
@@ -308,7 +357,18 @@ function Agenda({
                                 <th className="rbc-header" ref={timeColRef}>
                                     {messages.time}
                                 </th>
-                                <th className="rbc-header">{messages.event}</th>
+                                <th
+                                    className="rbc-header"
+                                    style={{ width: '40%' }}
+                                >
+                                    {messages.event}
+                                </th>
+                                <th
+                                    className="rbc-header"
+                                    style={{ width: '60%' }}
+                                >
+                                    Location
+                                </th>
                             </tr>
                         </thead>
                     </table>

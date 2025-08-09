@@ -61,6 +61,10 @@ export default function Calendar() {
     // Filters state
     const [filters, setFilters] = useState<ShiftFilterSchema>();
 
+    // View state
+    const [currentView, setCurrentView] = useState('month');
+    const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
+
     // Fetch shifts data using the same query as the shifts page, but include location and group data
     const { data: shifts } = trpc.shifts.list.useQuery({
         ...(filters as any),
@@ -224,27 +228,124 @@ export default function Calendar() {
                   : defaultPartialColor;
 
             // Lighten the color for open shifts
-            const openShiftResult = hasGroupColor
-                ? lightenColor(baseColor, 0.3) // Lighten by 30%
-                : { color: baseColor, originalColor: baseColor };
+            const openShiftResult = lightenColor(baseColor, 0.3);
             const openShiftColor = openShiftResult.color;
             const openShiftBorderColor = openShiftResult.originalColor;
 
+            console.log({ openShiftColor, openShiftBorderColor });
+
             // Use a darker tone when selected
-            const selectedResult = hasGroupColor
-                ? lightenColor(baseColor, -0.2) // Darken by 20%
-                : {
-                      color: isFull ? '#005500' : '#006666',
-                      originalColor: baseColor,
-                  };
+            const selectedResult = lightenColor(baseColor, -0.2);
             const selectedColor = selectedResult.color;
             const selectedBorderColor = selectedResult.originalColor;
+
+            // For agenda view, create much more muted colors
+            const agendaViewResult = hasGroupColor
+                ? lightenColor(baseColor, 0.7) // Lighten by 70% for very muted background
+                : {
+                      color: isFull ? '#e0f0e0' : '#e0f0f0',
+                      originalColor: baseColor,
+                  };
+            const agendaBackgroundColor = agendaViewResult.color;
 
             // Determine text colors based on background colors
             const baseTextColor = getTextColor(baseColor);
             const openShiftTextColor = getTextColor(openShiftColor);
             const selectedTextColor = getTextColor(selectedColor);
+            const agendaTextColor = getTextColor(agendaBackgroundColor);
 
+            // Apply different styles for agenda view
+            if (currentView === 'agenda') {
+                // Standard border color for table cells
+                const standardBorderColor = '#e0e0e0'; // Light grey border for table cells
+
+                return {
+                    ...(!isSelected &&
+                        isFull && {
+                            style: {
+                                backgroundColor: agendaBackgroundColor,
+                                color: agendaTextColor,
+                                borderWidth: '1px',
+                                borderStyle: 'solid',
+                                borderColor: standardBorderColor, // Standard border color for table cells
+                                padding: '0px', // Remove padding to make room for the inner div
+                            },
+                            className: 'agenda-event-wrapper',
+                            innerStyle: {
+                                border: `2px solid ${baseColor}`,
+                                padding: '3px 7px',
+                                height: '100%',
+                                display: 'block',
+                                boxSizing: 'border-box',
+                                backgroundColor: baseColor,
+                                color: baseTextColor,
+                            },
+                        }),
+                    ...(!isSelected &&
+                        !isFull && {
+                            style: {
+                                backgroundColor: agendaBackgroundColor,
+                                color: agendaTextColor,
+                                borderWidth: '1px',
+                                borderStyle: 'solid',
+                                borderColor: standardBorderColor, // Standard border color for table cells
+                                padding: '0px', // Remove padding to make room for the inner div
+                            },
+                            className: 'agenda-event-wrapper',
+                            innerStyle: {
+                                border: `1px solid ${openShiftBorderColor}`,
+                                padding: '4px 8px',
+                                height: '100%',
+                                display: 'block',
+                                boxSizing: 'border-box',
+                                backgroundColor: agendaBackgroundColor,
+                            },
+                        }),
+                    ...(isSelected &&
+                        isFull && {
+                            style: {
+                                backgroundColor: agendaBackgroundColor,
+                                color: agendaTextColor,
+                                borderWidth: '1px',
+                                borderStyle: 'solid',
+                                borderColor: standardBorderColor, // Standard border color for table cells
+                                padding: '0px', // Remove padding to make room for the inner div
+                            },
+                            className: 'agenda-event-wrapper',
+                            innerStyle: {
+                                border: `3px solid ${baseColor}`,
+                                padding: '2px 6px',
+                                height: '100%',
+                                display: 'block',
+                                boxSizing: 'border-box',
+                                backgroundColor: baseColor,
+                                color: selectedTextColor,
+                            },
+                        }),
+                    ...(isSelected &&
+                        !isFull && {
+                            style: {
+                                backgroundColor: agendaBackgroundColor,
+                                color: agendaTextColor,
+                                borderWidth: '1px',
+                                borderStyle: 'solid',
+                                borderColor: standardBorderColor, // Standard border color for table cells
+                                padding: '0px', // Remove padding to make room for the inner div
+                            },
+                            className: 'agenda-event-wrapper',
+                            innerStyle: {
+                                border: `2px solid ${openShiftBorderColor}`,
+                                padding: '3px 7px',
+                                height: '100%',
+                                display: 'block',
+                                boxSizing: 'border-box',
+                                backgroundColor: agendaBackgroundColor,
+                            },
+                        }),
+                };
+            }
+
+            // Standard styles for other views
             return {
                 ...(!isSelected &&
                     isFull && {
@@ -288,7 +389,7 @@ export default function Calendar() {
                     }),
             };
         },
-        [shiftLookup]
+        [shiftLookup, currentView]
     );
 
     // Transform shifts data for the calendar
@@ -298,6 +399,11 @@ export default function Calendar() {
         allDay: boolean;
         start: Date;
         end: Date;
+        location: {
+            id: string;
+            name: string;
+            address: string;
+        };
     }> = React.useMemo(() => {
         return (
             shifts?.map((shift) => {
@@ -311,13 +417,15 @@ export default function Calendar() {
                     allDay: false,
                     start: dayjs(shift.startTime).tz(shiftTimezone).toDate(),
                     end: dayjs(shift.endTime).tz(shiftTimezone).toDate(),
+                    location: {
+                        id: shift?.location?.id,
+                        name: shift.location?.name,
+                        address: shift.location?.address,
+                    },
                 };
             }) || []
         );
     }, [shifts]);
-
-    const [currentView, setCurrentView] = useState('month');
-    const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
 
     // Calendar components
     const components: {
