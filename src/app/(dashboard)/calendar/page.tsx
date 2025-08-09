@@ -63,6 +63,7 @@ export default function Calendar() {
     // Fetch shifts data using the same query as the shifts page, but include location and group data
     const { data: shifts } = trpc.shifts.list.useQuery({
         ...(filters as any),
+        isCancelled: false,
         includeLocationGroup: true,
     });
 

@@ -169,6 +169,7 @@ export const shiftsRouter = router({
                         .enum(['unfilled', 'filled', 'mine', 'any'])
                         .optional(),
                     includeLocationGroup: z.boolean().optional(),
+                    isCancelled: z.boolean().optional(),
                 })
                 .optional()
         )
@@ -285,6 +286,9 @@ export const shiftsRouter = router({
                             outcome: 'assigned',
                         },
                     };
+                }
+                if (input.isCancelled !== undefined) {
+                    where.isCancelled = input.isCancelled;
                 }
             }
 

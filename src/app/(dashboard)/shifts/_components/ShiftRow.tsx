@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { IconButton, TableCell } from '@mui/material';
+import { Chip, IconButton, TableCell } from '@mui/material';
 import dayjs from 'dayjs';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -66,7 +66,17 @@ export function ShiftRow(props: ShiftRowProps) {
     return (
         <React.Fragment>
             {/*<CardMedia component="img" src={props.featuredImage} />*/}
-            <TableCell>{shift.title}</TableCell>
+            <TableCell>
+                {shift.title}
+                {shift.isCancelled && (
+                    <Chip
+                        label="Cancelled"
+                        variant="outlined"
+                        color="warning"
+                        sx={{ ml: 2 }}
+                    />
+                )}
+            </TableCell>
             <TableCell sx={{ maxWidth: 300 }}>
                 {shift.location?.name || shift.legacyLocation || ''}
                 {shift.location?.address && (
