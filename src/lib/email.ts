@@ -287,6 +287,132 @@ type InvitationEmailData = {
     };
 };
 
+// Send notification about shift cancellation
+export async function sendShiftCancellationEmail({
+    userEmail,
+    shiftTitle,
+    shiftLocation,
+    shiftAddress,
+    shiftDate,
+    shiftStartTime,
+    shiftEndTime,
+    isCancelled,
+}: {
+    userEmail: string;
+    shiftTitle: string;
+    shiftLocation: string;
+    shiftAddress?: string;
+    shiftDate: Date;
+    shiftStartTime: Date;
+    shiftEndTime: Date;
+    isCancelled: boolean;
+}) {
+    const formattedDate = dayjs(shiftDate).format('YYYY-MM-DD');
+    const formattedStartTime = formatTimeValue(shiftStartTime);
+    const formattedEndTime = formatTimeValue(shiftEndTime);
+
+    const locationText = shiftAddress 
+        ? `${shiftLocation} (${shiftAddress})` 
+        : shiftLocation;
+
+    const subject = isCancelled 
+        ? 'Shift Cancelled' 
+        : 'Shift Reactivated';
+
+    // Plain text version with proper formatting
+    const text = isCancelled
+        ? `A shift you were assigned to has been cancelled.
+
+Shift Details:
+-------------
+Shift: ${shiftTitle}
+Date: ${formattedDate}
+Time: ${formattedStartTime} - ${formattedEndTime}
+Location: ${locationText}
+
+Please contact your administrator if you have any questions.`
+        : `A previously cancelled shift you were assigned to has been reactivated.
+
+Shift Details:
+-------------
+Shift: ${shiftTitle}
+Date: ${formattedDate}
+Time: ${formattedStartTime} - ${formattedEndTime}
+Location: ${locationText}
+
+Please contact your administrator if you have any questions.`;
+
+    // HTML version with styling
+    const html = isCancelled
+        ? `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+            <h2 style="color: #d32f2f; margin-bottom: 20px;">Shift Cancelled</h2>
+            <p style="font-size: 16px; line-height: 1.5;">A shift you were assigned to has been <strong>cancelled</strong>.</p>
+
+            <div style="background-color: #f5f5f5; border-left: 4px solid #d32f2f; padding: 15px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #333;">Shift Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; width: 100px;">Shift:</td>
+                        <td style="padding: 8px 0;">${shiftTitle}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">Date:</td>
+                        <td style="padding: 8px 0;">${formattedDate}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">Time:</td>
+                        <td style="padding: 8px 0;">${formattedStartTime} - ${formattedEndTime}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">Location:</td>
+                        <td style="padding: 8px 0;">${locationText}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <p style="font-size: 14px; color: #666; margin-top: 30px;">Please contact your administrator if you have any questions.</p>
+        </div>
+        `
+        : `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+            <h2 style="color: #2e7d32; margin-bottom: 20px;">Shift Reactivated</h2>
+            <p style="font-size: 16px; line-height: 1.5;">A previously cancelled shift you were assigned to has been <strong>reactivated</strong>.</p>
+
+            <div style="background-color: #f5f5f5; border-left: 4px solid #2e7d32; padding: 15px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #333;">Shift Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; width: 100px;">Shift:</td>
+                        <td style="padding: 8px 0;">${shiftTitle}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">Date:</td>
+                        <td style="padding: 8px 0;">${formattedDate}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">Time:</td>
+                        <td style="padding: 8px 0;">${formattedStartTime} - ${formattedEndTime}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">Location:</td>
+                        <td style="padding: 8px 0;">${locationText}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <p style="font-size: 14px; color: #666; margin-top: 30px;">Please contact your administrator if you have any questions.</p>
+        </div>
+        `;
+
+    return sendEmail({
+        to: userEmail,
+        subject,
+        text,
+        html,
+    });
+}
+
 export async function sendInvitationEmail(
     data: InvitationEmailData
 ): Promise<void> {

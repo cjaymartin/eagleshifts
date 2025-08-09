@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Box,
     Button,
@@ -35,12 +35,14 @@ import { AppRouter } from '@/api/trpc/[trpc]';
 import ShiftAssignmentTool from '@/app/(dashboard)/shifts/_components/ShiftAssignmentTool';
 import ShiftUploads from '@/app/(dashboard)/shifts/_components/ShiftUploads';
 import {
+    useShiftCancelMutation,
     useShiftCreateMutation,
     useShiftUpdateMutation,
 } from '@/queries/shifts';
 import LocationAutocomplete from '@/components/form/LocationAutocomplete';
 import LocationViewDialog from '@/components/locations/LocationViewDialog';
 import LocationForm from '@/components/locations/LocationForm';
+import { reset } from 'next/dist/lib/picocolors';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
@@ -70,6 +72,11 @@ export default function ShiftForm(props: ShiftFormProps) {
     const { reset: handleClose } = useShiftDialogHelpers();
     const { shiftId, shift, isNew: propsIsNew, onClose } = props;
     const notifications = useNotifications();
+
+    const [isCancelled, setIsCancelled] = useState(shift?.isCancelled);
+    useEffect(() => {
+        setIsCancelled(shift?.isCancelled);
+    }, [shift?.isCancelled]);
 
     const defaultValues = {
         id: '',
@@ -149,6 +156,7 @@ export default function ShiftForm(props: ShiftFormProps) {
         defaultValues: transformedShift as any,
     });
     const {
+        reset,
         control,
         handleSubmit,
         formState: { errors, isSubmitting },
@@ -185,6 +193,7 @@ export default function ShiftForm(props: ShiftFormProps) {
     // Get mutations for creating and updating shifts
     const createMutation = useShiftCreateMutation();
     const updateMutation = useShiftUpdateMutation();
+    const setCancelledMutations = useShiftCancelMutation();
 
     // Form submission handlers
     async function onNewFormSubmit(formData: any) {
@@ -264,7 +273,37 @@ export default function ShiftForm(props: ShiftFormProps) {
             }
         } catch (error: any) {
             console.error('Error creating shift:', error);
-            notifications.show('Failed to create shift', { severity: 'error', autoHideDuration: 3000 });
+            notifications.show('Failed to create shift', {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
+        }
+    }
+
+    async function handleCancelShiftButtonClicked() {
+        if (!shift) return;
+
+        const shouldCancel = !isCancelled;
+
+        const confirmed = await dialogs.confirm(
+            'Are you sure? Anyone assigned to this shift will be notified!',
+            {
+                okText: 'Yes',
+                cancelText: 'Cancel',
+            }
+        );
+
+        if (confirmed) {
+            await setCancelledMutations.mutateAsync({
+                id: shift.id,
+                isCancelled: shouldCancel,
+                shouldNotify: true,
+            });
+            notifications.show('Shift cancellation updated successfully', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
+            setIsCancelled(shouldCancel);
         }
     }
 
@@ -339,7 +378,10 @@ export default function ShiftForm(props: ShiftFormProps) {
             }
         } catch (error: any) {
             console.error('Error updating shift:', error);
-            notifications.show('Failed to update shift', { severity: 'error', autoHideDuration: 3000 });
+            notifications.show('Failed to update shift', {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
         }
     }
 
@@ -642,6 +684,19 @@ export default function ShiftForm(props: ShiftFormProps) {
                         )}
 
                         <Stack direction="row" spacing={2}>
+                            {isAdmin && !isNew && (
+                                <Button
+                                    variant="contained"
+                                    type="button"
+                                    color="secondary"
+                                    disabled={isSubmitting}
+                                    onClick={handleCancelShiftButtonClicked}
+                                >
+                                    {isCancelled
+                                        ? 'Un-Cancel Shift'
+                                        : 'Cancel Shift'}
+                                </Button>
+                            )}
                             {isAdmin && (
                                 <Button
                                     variant="contained"
@@ -661,7 +716,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 onClick={onClose}
                                 disabled={isSubmitting}
                             >
-                                {isAdmin ? 'Cancel' : 'Close'}
+                                Close
                             </Button>
                         </Stack>
                     </Stack>

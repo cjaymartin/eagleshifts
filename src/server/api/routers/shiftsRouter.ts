@@ -13,6 +13,7 @@ import {
     LogEntityType,
     logShiftCancellation,
 } from '@/lib/logging';
+import { sendShiftCancellationEmail } from '@/lib/email';
 
 // Extend dayjs with UTC and timezone plugins
 dayjs.extend(utc);
@@ -1168,9 +1169,11 @@ export const shiftsRouter = router({
             z.object({
                 id: z.string(),
                 isCancelled: z.boolean().optional(),
+                shouldNotify: z.boolean().optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
+            // Fetch the original shift with assignments and location details
             const originalShift = await ctx.prisma.shift.findFirst({
                 where: {
                     id: input.id,
@@ -1178,6 +1181,7 @@ export const shiftsRouter = router({
                 },
                 include: {
                     shiftAssignments: true,
+                    location: true,
                 },
             });
 
@@ -1216,6 +1220,52 @@ export const shiftsRouter = router({
                     isCancelled: updatedShift.isCancelled,
                 }
             );
+
+            // Send email notifications if shouldNotify is true
+            if (
+                input.shouldNotify &&
+                originalShift.shiftAssignments.length > 0
+            ) {
+                // Get location information
+                const locationName =
+                    originalShift.location?.name ||
+                    originalShift.legacyLocation ||
+                    'No location specified';
+                const locationAddress = originalShift.location?.address;
+
+                // For each assignment, check if the member is activated and send email
+                for (const assignment of originalShift.shiftAssignments) {
+                    if (assignment.outcome === 'assigned') {
+                        // Get member details to check if activated and get email
+                        const member = await ctx.prisma.member.findUnique({
+                            where: { id: assignment.memberId },
+                            include: { user: true },
+                        });
+
+                        // Only send email if member is activated and has an email
+                        if (
+                            member &&
+                            member.isActivated &&
+                            member.user?.email
+                        ) {
+                            await sendShiftCancellationEmail({
+                                userEmail: member.user.email,
+                                shiftTitle: originalShift.title,
+                                shiftLocation: locationName,
+                                shiftAddress: locationAddress,
+                                shiftDate: originalShift.startTime,
+                                shiftStartTime: originalShift.startTime,
+                                shiftEndTime: originalShift.endTime,
+                                isCancelled: isCancelled,
+                            });
+
+                            console.log(
+                                `Sent shift ${isCancelled ? 'cancellation' : 'reactivation'} email to ${member.user.email}`
+                            );
+                        }
+                    }
+                }
+            }
         }),
 
     delete: adminProcedure

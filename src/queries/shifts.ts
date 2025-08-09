@@ -47,6 +47,15 @@ export function useShiftUpdateMutation() {
     });
 }
 
+export function useShiftCancelMutation() {
+    const utils = trpc.useUtils();
+    return trpc.shifts.setCancelled.useMutation({
+        onSuccess() {
+            void utils.shifts.invalidate();
+        },
+    });
+}
+
 export function useShiftDeleteMutation() {
     const utils = trpc.useUtils();
     return trpc.shifts.delete.useMutation({
