@@ -13,8 +13,8 @@ This workflow automatically runs tests when:
 #### What it does:
 1. Checks out the repository code
 2. Sets up Node.js v22.x (matching the version in package.json)
-3. Installs dependencies using `npm ci`
-4. Runs tests using `npm test`
+3. Installs dependencies using `yarn install --frozen-lockfile`
+4. Runs tests using `yarn test`
 5. Uploads test results as artifacts (if available)
 
 #### Viewing Test Results
