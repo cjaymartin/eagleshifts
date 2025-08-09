@@ -83,7 +83,7 @@ export default function ShiftViewDialog({
             };
 
             onClose();
-            dialogs.open(ShiftDialog, duplicatedShift);
+            dialogs.open(ShiftDialog, duplicatedShift as any);
         }
     };
 

@@ -6,16 +6,16 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { useBusinessProfileQuery } from '@/queries/team';
+import { utcToOrgTimezone } from '@/utils/dateUtils';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 import {
     Calendar as BigCalendar,
-    luxonLocalizer,
+    dayjsLocalizer,
     Views,
 } from 'react-big-calendar';
-import { DateTime, Settings } from 'luxon';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import {
     ShiftFilters,
@@ -30,8 +30,7 @@ import AddIcon from '@mui/icons-material/Add';
 import CalendarAgenda from '@/app/(dashboard)/_components/CalendarAgenda';
 
 // Create a localizer for the calendar
-const localizer = luxonLocalizer(DateTime);
-Settings.defaultZone = 'UTC'; // Set default timezone to UTC
+const localizer = dayjsLocalizer(dayjs);
 
 // Colored wrapper for date cells
 const ColoredDateCellWrapper: React.FC<{ children: React.ReactElement }> = ({
@@ -422,8 +421,14 @@ export default function Calendar() {
                     id: shift.id,
                     title: shift.title,
                     allDay: false,
-                    start: dayjs(shift.startTime).tz(shiftTimezone).toDate(),
-                    end: dayjs(shift.endTime).tz(shiftTimezone).toDate(),
+                    start: utcToOrgTimezone(shift.startTime, { 
+                        organizationTimezone: shiftTimezone, 
+                        fallbackTimezone: 'America/New_York' 
+                    }),
+                    end: utcToOrgTimezone(shift.endTime, { 
+                        organizationTimezone: shiftTimezone, 
+                        fallbackTimezone: 'America/New_York' 
+                    }),
                     location: {
                         id: shift?.location?.id,
                         name: shift.location?.name,

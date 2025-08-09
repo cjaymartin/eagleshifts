@@ -19,6 +19,7 @@ import TimePicker from '@/components/form/TimePicker';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { combineDateTime } from '@/utils/dateUtils';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { useNotifications, useDialogs } from '@toolpad/core';
@@ -227,25 +228,18 @@ export default function ShiftForm(props: ShiftFormProps) {
 
             // Create datetime strings by combining the date with the time
             // We need to work with the local time directly to avoid double timezone conversion
-            const startLocalTime = dayjs(formData.date)
-                .hour(dayjs(formData.startTime).hour())
-                .minute(dayjs(formData.startTime).minute())
-                .second(dayjs(formData.startTime).second())
-                .tz(timezone, true); // true keeps the local time and just changes the timezone
+            // Use centralized date utility to combine date and time, convert to UTC
+            const startTimeISO = combineDateTime(
+                formData.date,
+                formData.startTime,
+                { organizationTimezone: timezone, fallbackTimezone: 'America/New_York' }
+            );
 
-            const endLocalTime = dayjs(formData.date)
-                .hour(dayjs(formData.endTime).hour())
-                .minute(dayjs(formData.endTime).minute())
-                .second(dayjs(formData.endTime).second())
-                .tz(timezone, true); // true keeps the local time and just changes the timezone
-
-            // Create ISO strings with timezone information instead of UTC
-            const startTimeLocalISO = startLocalTime.format();
-            const endTimeLocalISO = endLocalTime.format();
-
-            // These iso times should be in UTC
-            const startTimeISO = endLocalTime.toISOString();
-            const endTimeISO = endLocalTime.toISOString();
+            const endTimeISO = combineDateTime(
+                formData.date,
+                formData.endTime,
+                { organizationTimezone: timezone, fallbackTimezone: 'America/New_York' }
+            );
 
             // Format data for API - note that we're not including the date field
             const shiftData = {
@@ -339,20 +333,18 @@ export default function ShiftForm(props: ShiftFormProps) {
             const timezone =
                 shift?.timezone || businessProfile?.timezone || 'UTC';
 
-            const startLocalTime = dayjs(formData.date)
-                .hour(dayjs(formData.startTime).hour())
-                .minute(dayjs(formData.startTime).minute())
-                .second(dayjs(formData.startTime).second())
-                .tz(timezone, true); // true keeps the local time and just changes the timezone
+            // Use centralized date utility to combine date and time, convert to UTC
+            const startTimeISO = combineDateTime(
+                formData.date,
+                formData.startTime,
+                { organizationTimezone: timezone, fallbackTimezone: 'America/New_York' }
+            );
 
-            const endLocalTime = dayjs(formData.date)
-                .hour(dayjs(formData.endTime).hour())
-                .minute(dayjs(formData.endTime).minute())
-                .second(dayjs(formData.endTime).second())
-                .tz(timezone, true); // true keeps the local time and just changes the timezone
-
-            const startTimeISO = startLocalTime.format();
-            const endTimeISO = endLocalTime.format();
+            const endTimeISO = combineDateTime(
+                formData.date,
+                formData.endTime,
+                { organizationTimezone: timezone, fallbackTimezone: 'America/New_York' }
+            );
 
             const shiftData = {
                 id: shiftId,

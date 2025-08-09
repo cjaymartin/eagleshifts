@@ -67,7 +67,7 @@ export function ShiftRow(props: ShiftRowProps) {
             isCancelled: false, // Don't duplicate cancelled status
         };
 
-        dialogs.open(ShiftDialog, duplicatedShift);
+        dialogs.open(ShiftDialog, duplicatedShift as any);
     }
 
     const { mutate: deleteShift } = useShiftDeleteMutation();
