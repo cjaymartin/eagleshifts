@@ -5,6 +5,7 @@ export enum LogActionType {
     LOGIN = 'LOGIN',
     SHIFT_CREATE = 'SHIFT_CREATE',
     SHIFT_UPDATE = 'SHIFT_UPDATE',
+    SHIFT_CANCEL = 'SHIFT_CANCEL',
     SHIFT_DELETE = 'SHIFT_DELETE',
     SHIFT_ASSIGNMENT_CREATE = 'SHIFT_ASSIGNMENT_CREATE',
     SHIFT_ASSIGNMENT_UPDATE = 'SHIFT_ASSIGNMENT_UPDATE',
@@ -140,6 +141,30 @@ export async function logShiftUpdate(
         entityId: shiftId,
         entityType: LogEntityType.SHIFT,
         description: `Updated shift: ${shiftTitle}`,
+        metadata: {
+            before: beforeState,
+            after: afterState,
+        },
+    });
+}
+
+export async function logShiftCancellation(
+    prisma: PrismaClient,
+    organizationId: string,
+    userId: string,
+    shiftId: string,
+    shiftTitle: string,
+    beforeState: Record<string, any>,
+    afterState: Record<string, any>
+) {
+    return createLog({
+        prisma,
+        organizationId,
+        userId,
+        actionType: LogActionType.SHIFT_CANCEL,
+        entityId: shiftId,
+        entityType: LogEntityType.SHIFT,
+        description: `Updated shift cancellation status: ${shiftTitle}`,
         metadata: {
             before: beforeState,
             after: afterState,

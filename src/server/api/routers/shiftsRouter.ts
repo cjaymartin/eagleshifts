@@ -5,7 +5,14 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { TRPCError } from '@trpc/server';
-import { logShiftCreate, logShiftUpdate, logShiftDelete, logShiftAssignmentCreate, LogEntityType } from '@/lib/logging';
+import {
+    logShiftCreate,
+    logShiftUpdate,
+    logShiftDelete,
+    logShiftAssignmentCreate,
+    LogEntityType,
+    logShiftCancellation,
+} from '@/lib/logging';
 
 // Extend dayjs with UTC and timezone plugins
 dayjs.extend(utc);
@@ -187,7 +194,7 @@ export const shiftsRouter = router({
                             legacyLocation: {
                                 contains: input.location,
                                 mode: 'insensitive',
-                            }
+                            },
                         },
                         {
                             // Support new location relationship
@@ -195,9 +202,9 @@ export const shiftsRouter = router({
                                 name: {
                                     contains: input.location,
                                     mode: 'insensitive',
-                                }
-                            }
-                        }
+                                },
+                            },
+                        },
                     ];
 
                 if (input.startDate || input.endDate) {
@@ -286,11 +293,14 @@ export const shiftsRouter = router({
                 include: {
                     shiftAssignments: true,
                     shiftRequests: true,
-                    location: input?.includeLocationGroup !== false ? {
-                        include: {
-                            group: true,
-                        },
-                    } : undefined,
+                    location:
+                        input?.includeLocationGroup !== false
+                            ? {
+                                  include: {
+                                      group: true,
+                                  },
+                              }
+                            : undefined,
                 },
                 orderBy: { startTime: 'asc' },
             });
@@ -371,7 +381,10 @@ export const shiftsRouter = router({
                         shift.startTime,
                         shift.timezone
                     ),
-                    endTime: convertUtcToTimezone(shift.endTime, shift.timezone),
+                    endTime: convertUtcToTimezone(
+                        shift.endTime,
+                        shift.timezone
+                    ),
                 };
 
                 return result;
@@ -546,7 +559,9 @@ export const shiftsRouter = router({
                     organizationId: ctx.user.organizationId,
                     title: input.title,
                     locationId: input.locationId,
-                    legacyLocation: input.locationId ? undefined : input.legacyLocation,
+                    legacyLocation: input.locationId
+                        ? undefined
+                        : input.legacyLocation,
                     startTime: convertToTimezone(
                         input.startTime,
                         input.timezone
@@ -576,7 +591,13 @@ export const shiftsRouter = router({
                 ctx.user.id,
                 shift.id,
                 shift.title,
-                { shift: { ...shift, startTime: shift.startTime.toISOString(), endTime: shift.endTime.toISOString() } }
+                {
+                    shift: {
+                        ...shift,
+                        startTime: shift.startTime.toISOString(),
+                        endTime: shift.endTime.toISOString(),
+                    },
+                }
             );
 
             // If assignments are provided, create them
@@ -685,12 +706,17 @@ export const shiftsRouter = router({
                                 // Log the assignment creation
                                 try {
                                     // Get member name for logging
-                                    const member = await ctx.prisma.member.findUnique({
-                                        where: { id: assignment.memberId },
-                                        include: { user: true },
-                                    });
+                                    const member =
+                                        await ctx.prisma.member.findUnique({
+                                            where: { id: assignment.memberId },
+                                            include: { user: true },
+                                        });
 
-                                    const memberName = member?.name || member?.user?.name || member?.user?.email || 'Unknown User';
+                                    const memberName =
+                                        member?.name ||
+                                        member?.user?.name ||
+                                        member?.user?.email ||
+                                        'Unknown User';
 
                                     await logShiftAssignmentCreate(
                                         ctx.prisma,
@@ -701,10 +727,16 @@ export const shiftsRouter = router({
                                         createdAssignment.memberId,
                                         shift.title,
                                         memberName,
-                                        { outcome: createdAssignment.outcome, reason: createdAssignment.reason }
+                                        {
+                                            outcome: createdAssignment.outcome,
+                                            reason: createdAssignment.reason,
+                                        }
                                     );
                                 } catch (logError) {
-                                    console.error('Error logging assignment creation:', logError);
+                                    console.error(
+                                        'Error logging assignment creation:',
+                                        logError
+                                    );
                                 }
                             } catch (err) {
                                 console.error(
@@ -794,7 +826,7 @@ export const shiftsRouter = router({
                 // Get the original shift for logging the before state
                 const originalShift = await ctx.prisma.shift.findUnique({
                     where: { id },
-                    include: { 
+                    include: {
                         shiftAssignments: true,
                         location: {
                             include: {
@@ -819,7 +851,9 @@ export const shiftsRouter = router({
                     data: {
                         title: data.title,
                         locationId: data.locationId,
-                        legacyLocation: data.locationId ? undefined : data.legacyLocation,
+                        legacyLocation: data.locationId
+                            ? undefined
+                            : data.legacyLocation,
                         startTime: convertToTimezone(
                             data.startTime,
                             data.timezone
@@ -847,25 +881,27 @@ export const shiftsRouter = router({
                     ctx.user.id,
                     shift.id,
                     shift.title,
-                    { 
-                        ...originalShift, 
-                        startTime: originalShift.startTime.toISOString(), 
+                    {
+                        ...originalShift,
+                        startTime: originalShift.startTime.toISOString(),
                         endTime: originalShift.endTime.toISOString(),
-                        shiftAssignments: originalShift.shiftAssignments.map(a => ({
-                            ...a,
-                            createdAt: a.createdAt.toISOString(),
-                            updatedAt: a.updatedAt.toISOString()
-                        }))
+                        shiftAssignments: originalShift.shiftAssignments.map(
+                            (a) => ({
+                                ...a,
+                                createdAt: a.createdAt.toISOString(),
+                                updatedAt: a.updatedAt.toISOString(),
+                            })
+                        ),
                     },
-                    { 
-                        ...shift, 
-                        startTime: shift.startTime.toISOString(), 
+                    {
+                        ...shift,
+                        startTime: shift.startTime.toISOString(),
                         endTime: shift.endTime.toISOString(),
-                        shiftAssignments: shift.shiftAssignments.map(a => ({
+                        shiftAssignments: shift.shiftAssignments.map((a) => ({
                             ...a,
                             createdAt: a.createdAt.toISOString(),
-                            updatedAt: a.updatedAt.toISOString()
-                        }))
+                            updatedAt: a.updatedAt.toISOString(),
+                        })),
                     }
                 );
 
@@ -993,12 +1029,19 @@ export const shiftsRouter = router({
                                     // Log the assignment creation
                                     try {
                                         // Get member name for logging
-                                        const member = await ctx.prisma.member.findUnique({
-                                            where: { id: assignment.memberId },
-                                            include: { user: true },
-                                        });
+                                        const member =
+                                            await ctx.prisma.member.findUnique({
+                                                where: {
+                                                    id: assignment.memberId,
+                                                },
+                                                include: { user: true },
+                                            });
 
-                                        const memberName = member?.name || member?.user?.name || member?.user?.email || 'Unknown User';
+                                        const memberName =
+                                            member?.name ||
+                                            member?.user?.name ||
+                                            member?.user?.email ||
+                                            'Unknown User';
 
                                         await logShiftAssignmentCreate(
                                             ctx.prisma,
@@ -1009,10 +1052,17 @@ export const shiftsRouter = router({
                                             createdAssignment.memberId,
                                             data.title, // shift title
                                             memberName,
-                                            { outcome: createdAssignment.outcome, reason: createdAssignment.reason }
+                                            {
+                                                outcome:
+                                                    createdAssignment.outcome,
+                                                reason: createdAssignment.reason,
+                                            }
                                         );
                                     } catch (logError) {
-                                        console.error('Error logging assignment creation:', logError);
+                                        console.error(
+                                            'Error logging assignment creation:',
+                                            logError
+                                        );
                                     }
                                 } catch (err) {
                                     console.error(
@@ -1059,7 +1109,7 @@ export const shiftsRouter = router({
                 if (data.assignments) {
                     const updatedShift = await ctx.prisma.shift.findUnique({
                         where: { id },
-                        include: { 
+                        include: {
                             shiftAssignments: true,
                             location: {
                                 include: {
@@ -1113,6 +1163,60 @@ export const shiftsRouter = router({
                 });
             }
         }),
+    setCancelled: adminProcedure
+        .input(
+            z.object({
+                id: z.string(),
+                isCancelled: z.boolean().optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const originalShift = await ctx.prisma.shift.findFirst({
+                where: {
+                    id: input.id,
+                    organizationId: ctx.user.organizationId,
+                },
+                include: {
+                    shiftAssignments: true,
+                },
+            });
+
+            if (!originalShift) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Shift not found',
+                });
+            }
+
+            const isCancelled =
+                input.isCancelled === undefined ? true : input.isCancelled;
+
+            const updatedShift = await ctx.prisma.shift.update({
+                where: {
+                    id: input.id,
+                    organizationId: ctx.user.organizationId,
+                },
+                data: {
+                    isCancelled,
+                },
+            });
+
+            await logShiftCancellation(
+                ctx.prisma,
+                ctx.user.organizationId,
+                ctx.user.id,
+                updatedShift.id,
+                updatedShift.title,
+                {
+                    id: originalShift.id,
+                    isCancelled: originalShift.isCancelled,
+                },
+                {
+                    id: updatedShift.id,
+                    isCancelled: updatedShift.isCancelled,
+                }
+            );
+        }),
 
     delete: adminProcedure
         .input(z.object({ id: z.string() }))
@@ -1158,15 +1262,17 @@ export const shiftsRouter = router({
                     ctx.user.id,
                     shiftToDelete.id,
                     shiftToDelete.title,
-                    { 
-                        ...shiftToDelete, 
-                        startTime: shiftToDelete.startTime.toISOString(), 
+                    {
+                        ...shiftToDelete,
+                        startTime: shiftToDelete.startTime.toISOString(),
                         endTime: shiftToDelete.endTime.toISOString(),
-                        shiftAssignments: shiftToDelete.shiftAssignments.map(a => ({
-                            ...a,
-                            createdAt: a.createdAt.toISOString(),
-                            updatedAt: a.updatedAt.toISOString()
-                        }))
+                        shiftAssignments: shiftToDelete.shiftAssignments.map(
+                            (a) => ({
+                                ...a,
+                                createdAt: a.createdAt.toISOString(),
+                                updatedAt: a.updatedAt.toISOString(),
+                            })
+                        ),
                     }
                 );
 
