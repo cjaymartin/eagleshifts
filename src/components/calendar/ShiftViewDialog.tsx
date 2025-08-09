@@ -126,7 +126,7 @@ export default function ShiftViewDialog({
     return (
         <Dialog
             open={open}
-            onClose={onClose}
+            onClose={onClose as any}
             maxWidth="sm"
             fullWidth
             PaperProps={{
@@ -146,7 +146,7 @@ export default function ShiftViewDialog({
                     <IconButton
                         edge="end"
                         color="inherit"
-                        onClick={onClose}
+                        onClick={onClose as any}
                         aria-label="close"
                     >
                         <CloseIcon />
@@ -240,7 +240,8 @@ export default function ShiftViewDialog({
                                         // Try to get user name from different sources
                                         const userName =
                                             // First try to get from assignment.member.user.name (if available)
-                                            assignment.member?.user?.name ||
+                                            (assignment as any).member?.user
+                                                ?.name ||
                                             // Then try to get from userLookup using memberId
                                             (userLookup &&
                                                 assignment.memberId &&
@@ -341,7 +342,7 @@ export default function ShiftViewDialog({
                     </Button>
                 )}
 
-                <Button variant="outlined" onClick={onClose}>
+                <Button variant="outlined" onClick={onClose as any}>
                     Close
                 </Button>
             </DialogActions>
