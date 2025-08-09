@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+    Alert,
     Box,
     Button,
     Container,
@@ -415,6 +416,12 @@ export default function ShiftForm(props: ShiftFormProps) {
         <FormProvider {...methods}>
             <Container>
                 <form onSubmit={onSubmit}>
+                    {isCancelled && (
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                            This shift has been cancelled.
+                        </Alert>
+                    )}
+
                     <Stack spacing={2}>
                         {!isAdmin && isAssigned && (
                             <Container>
