@@ -18,7 +18,8 @@ export function utcToOrgTimezone(
   options: DateTimeConversionOptions
 ): Date {
   const tz = options.organizationTimezone || options.fallbackTimezone || 'UTC';
-  const result = dayjs(utcDate).tz(tz).toDate();
+  // Explicitly parse the date as UTC first, then convert to the target timezone
+  const result = dayjs(utcDate).utc().tz(tz).toDate();
 
   // Store the original UTC string for round-trip preservation during DST transitions
   if (typeof utcDate === 'string') {
