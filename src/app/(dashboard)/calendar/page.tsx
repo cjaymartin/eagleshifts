@@ -137,7 +137,14 @@ export default function Calendar() {
             if (!isAdmin) return;
 
             if (action === 'doubleClick') {
-                dialogs.open(ShiftDialog, null);
+                // Create a new shift object with the selected date information
+                const newShift = {
+                    startTime: start,
+                    endTime: end,
+                    date: start,
+                    isNew: true,
+                };
+                dialogs.open(ShiftDialog, newShift as any);
             }
         },
         [dialogs, isAdmin]
@@ -400,9 +407,9 @@ export default function Calendar() {
         start: Date;
         end: Date;
         location: {
-            id: string;
-            name: string;
-            address: string;
+            id: string | undefined | null;
+            name: string | undefined | null;
+            address: string | undefined | null;
         };
     }> = React.useMemo(() => {
         return (

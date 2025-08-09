@@ -118,20 +118,26 @@ export default function ShiftForm(props: ShiftFormProps) {
                         .startOf('day')
                         .toDate()
                   : null,
-              startTime: shift.startTime
-                  ? dayjs(shift.startTime)
-                        .tz(
-                            shift.timezone || businessProfile?.timezone || 'UTC'
-                        )
-                        .toDate()
-                  : null,
-              endTime: shift.endTime
-                  ? dayjs(shift.endTime)
-                        .tz(
-                            shift.timezone || businessProfile?.timezone || 'UTC'
-                        )
-                        .toDate()
-                  : null,
+              startTime:
+                  !propsIsNew && shift.startTime
+                      ? dayjs(shift.startTime)
+                            .tz(
+                                shift.timezone ||
+                                    businessProfile?.timezone ||
+                                    'UTC'
+                            )
+                            .toDate()
+                      : null,
+              endTime:
+                  !propsIsNew && shift.endTime
+                      ? dayjs(shift.endTime)
+                            .tz(
+                                shift.timezone ||
+                                    businessProfile?.timezone ||
+                                    'UTC'
+                            )
+                            .toDate()
+                      : null,
               // Handle location fields
               locationId: shift.locationId || null,
               legacyLocation: shift.locationId
@@ -147,11 +153,6 @@ export default function ShiftForm(props: ShiftFormProps) {
                   }) || [],
           }
         : defaultValues;
-
-    console.log('ShiftForm before useForm', {
-        transformedShift,
-        timestamp: new Date().toISOString(),
-    });
 
     const methods = useForm({
         defaultValues: transformedShift as any,
@@ -186,8 +187,10 @@ export default function ShiftForm(props: ShiftFormProps) {
     const user = session?.user;
     const memberId = user?.memberId;
 
-    // Determine if this is a new shift based on props or shiftId
-    const isNew = propsIsNew ?? !shiftId;
+    // Determine if this is a new shift based on props, shiftId, or shift.id
+    const isNew = propsIsNew ?? (!shiftId && !shift?.id);
+
+    console.log({ isNew, propsIsNew, shiftId, bah: shift?.id });
     const role = user?.role || 'member';
     const isAdmin = ['admin', 'owner'].includes(role);
 

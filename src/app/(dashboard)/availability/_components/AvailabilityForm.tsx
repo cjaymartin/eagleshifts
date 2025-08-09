@@ -67,10 +67,14 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
         ? {
               ...availability,
               startDate: availability.startDate
-                  ? dayjs.utc(availability.startDate, 'YYYY-MM-DD').toDate()
+                  ? (availability.startDate as any) instanceof Date
+                      ? availability.startDate
+                      : dayjs.utc(availability.startDate, 'YYYY-MM-DD').toDate()
                   : null,
               endDate: availability.endDate
-                  ? dayjs.utc(availability.endDate, 'YYYY-MM-DD').toDate()
+                  ? (availability.endDate as any) instanceof Date
+                      ? availability.endDate
+                      : dayjs.utc(availability.endDate, 'YYYY-MM-DD').toDate()
                   : null,
           }
         : defaultValues;
@@ -112,8 +116,8 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
     const { data: session } = useAuthQuery();
     const user = session?.user;
 
-    // Determine if this is a new availability entry based on props or availabilityId
-    const isNew = propsIsNew ?? !availabilityId;
+    // Determine if this is a new availability entry based on props, availabilityId, or availability.id
+    const isNew = propsIsNew ?? (!availabilityId && !availability?.id);
     const role = user?.role || 'member';
     const isAdmin = ['admin', 'owner'].includes(role);
 
@@ -252,7 +256,9 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
         }
     }
 
-    const onSubmit = handleSubmit(isNew ? onNewFormSubmit : onUpdateFormSubmit);
+    const onSubmit = handleSubmit(
+        (isNew ? onNewFormSubmit : onUpdateFormSubmit) as any
+    );
 
     return (
         <Container>
