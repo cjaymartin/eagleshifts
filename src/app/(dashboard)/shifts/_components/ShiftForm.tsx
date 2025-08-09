@@ -59,6 +59,7 @@ const useShiftDialogHelpers = () => ({
 // Type for ShiftForm props
 type ShiftFormProps = {
     isNew?: boolean;
+    isDuplicate?: boolean;
     shiftId?: string;
     shift?: inferRouterOutputs<AppRouter>['shifts']['byId'] | null;
     onClose?: () => void;
@@ -71,7 +72,7 @@ export default function ShiftForm(props: ShiftFormProps) {
     });
 
     const { reset: handleClose } = useShiftDialogHelpers();
-    const { shiftId, shift, isNew: propsIsNew, onClose } = props;
+    const { shiftId, shift, isNew: propsIsNew, isDuplicate: propsDuplicate, onClose } = props;
     const notifications = useNotifications();
 
     const [isCancelled, setIsCancelled] = useState(shift?.isCancelled);
@@ -119,7 +120,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                         .toDate()
                   : null,
               startTime:
-                  !propsIsNew && shift.startTime
+                  (!propsIsNew || propsDuplicate) && shift.startTime
                       ? dayjs(shift.startTime)
                             .tz(
                                 shift.timezone ||
@@ -129,7 +130,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                             .toDate()
                       : null,
               endTime:
-                  !propsIsNew && shift.endTime
+                  (!propsIsNew || propsDuplicate) && shift.endTime
                       ? dayjs(shift.endTime)
                             .tz(
                                 shift.timezone ||

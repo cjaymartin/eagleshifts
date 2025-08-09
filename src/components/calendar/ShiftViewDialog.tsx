@@ -69,6 +69,24 @@ export default function ShiftViewDialog({
         }
     };
 
+    // Handle duplicating a shift
+    const handleDuplicate = () => {
+        if (payload) {
+            // Create a new shift object with the necessary fields from the current shift
+            const duplicatedShift = {
+                ...payload,
+                id: undefined, // Remove ID to create a new shift
+                shiftAssignments: [], // Don't duplicate people assigned
+                isNew: true, // Mark as a new shift
+                isDuplicate: true, // Mark as a duplicated shift to preserve time values
+                isCancelled: false, // Don't duplicate cancelled status
+            };
+
+            onClose();
+            dialogs.open(ShiftDialog, duplicatedShift);
+        }
+    };
+
     // Handle requesting a shift (for non-admins)
     const handleRequestShift = () => {
         // In a real implementation, this would create a shift request
@@ -326,8 +344,21 @@ export default function ShiftViewDialog({
                         startIcon={<EditIcon />}
                         variant="contained"
                         onClick={handleEdit}
+                        sx={{ mr: 1 }}
                     >
                         Edit
+                    </Button>
+                )}
+
+                {/* Show Duplicate Shift button for admins */}
+                {isAdmin && (
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={handleDuplicate}
+                        sx={{ mr: 1 }}
+                    >
+                        Duplicate Shift
                     </Button>
                 )}
 
