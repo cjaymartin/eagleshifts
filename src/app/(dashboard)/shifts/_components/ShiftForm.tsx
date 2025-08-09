@@ -413,322 +413,325 @@ export default function ShiftForm(props: ShiftFormProps) {
     }
 
     return (
-        <FormProvider {...methods}>
-            <Container>
-                <form onSubmit={onSubmit}>
-                    {isCancelled && (
-                        <Alert severity="warning" sx={{ mb: 2 }}>
-                            This shift has been cancelled.
-                        </Alert>
-                    )}
-
-                    <Stack spacing={2}>
-                        {!isAdmin && isAssigned && (
-                            <Container>
-                                You are assigned to this shift!
-                            </Container>
+        <>
+            <FormProvider {...methods}>
+                <Container>
+                    <form onSubmit={onSubmit}>
+                        {isCancelled && (
+                            <Alert severity="warning" sx={{ mb: 2 }}>
+                                This shift has been cancelled.
+                            </Alert>
                         )}
-                        {!isAdmin &&
-                            !isAssigned &&
-                            hasAvailableSlots &&
-                            hasRequests && (
+
+                        <Stack spacing={2}>
+                            {!isAdmin && isAssigned && (
                                 <Container>
-                                    You have already requested to be considered
-                                    for this shift.
+                                    You are assigned to this shift!
                                 </Container>
                             )}
-                        {!isAdmin &&
-                            !isAssigned &&
-                            hasAvailableSlots &&
-                            !hasRequests && (
-                                <Container>
-                                    <Button onClick={handleShiftRequest}>
-                                        <AssignmentIcon />
-                                        Click here to request this shift!
-                                    </Button>
-                                </Container>
-                            )}
-                        <Controller
-                            name="title"
-                            control={control}
-                            render={({ field }) => (
-                                <TextField
-                                    {...field}
-                                    disabled={!isAdmin}
-                                    label="Title"
-                                    variant="outlined"
-                                    error={!!errors.title}
-                                    helperText={errors.title?.message as any}
-                                />
-                            )}
-                        />
-                        {/* Location Autocomplete */}
-                        <Controller
-                            name="locationId"
-                            control={control}
-                            render={({ field }) => {
-                                console.log(
-                                    'ShiftForm LocationAutocomplete Controller render',
-                                    {
-                                        fieldValue: field.value,
-                                        timestamp: new Date().toISOString(),
-                                        fieldRef: field,
-                                    }
-                                );
-
-                                return (
-                                    <LocationAutocomplete
-                                        value={field.value}
-                                        onChange={(locationId) => {
-                                            console.log(
-                                                'ShiftForm LocationAutocomplete onChange',
-                                                {
-                                                    locationId,
-                                                    timestamp:
-                                                        new Date().toISOString(),
-                                                }
-                                            );
-                                            field.onChange(locationId);
-                                            // Clear legacy location when a location is selected
-                                            if (locationId) {
-                                                setValue('legacyLocation', '');
-                                            }
-                                        }}
-                                        disabled={!isAdmin}
-                                        onCreateNew={() =>
-                                            setIsLocationFormOpen(true)
-                                        }
-                                        onViewLocation={(locationId) => {
-                                            setViewLocationId(locationId);
-                                            setIsLocationViewOpen(true);
-                                        }}
-                                    />
-                                );
-                            }}
-                        />
-
-                        {/* Location View Dialog */}
-                        <LocationViewDialog
-                            locationId={viewLocationId}
-                            open={isLocationViewOpen}
-                            onClose={() => setIsLocationViewOpen(false)}
-                        />
-
-                        {/* Location Form Dialog */}
-                        {isLocationFormOpen && (
-                            <Dialog
-                                fullWidth={true}
-                                maxWidth="md"
-                                open={isLocationFormOpen}
-                                onClose={() => setIsLocationFormOpen(false)}
-                            >
-                                <DialogTitle>
-                                    <Box display="flex" alignItems="center">
-                                        <Box flexGrow={1}>
-                                            Create New Location
-                                        </Box>
-                                        <Box>
-                                            <IconButton
-                                                onClick={() =>
-                                                    setIsLocationFormOpen(false)
-                                                }
-                                            >
-                                                <CloseIcon />
-                                            </IconButton>
-                                        </Box>
-                                    </Box>
-                                </DialogTitle>
-                                <DialogContent>
-                                    <LocationForm
-                                        onSubmit={(data: any) => {
-                                            // Close only the location form dialog
-                                            setIsLocationFormOpen(false);
-
-                                            // If we have the ID of the newly created location, select it
-                                            if (data.id) {
-                                                // Wait for the location query to be invalidated and refetched
-                                                // This ensures the new location is available in the dropdown
-                                                setTimeout(() => {
-                                                    // Set the locationId field to the newly created location's ID
-                                                    setValue(
-                                                        'locationId',
-                                                        data.id
-                                                    );
-                                                }, 100);
-                                            }
-                                        }}
-                                        onCancel={() =>
-                                            setIsLocationFormOpen(false)
-                                        }
-                                    />
-                                </DialogContent>
-                            </Dialog>
-                        )}
-                        <FormDatePicker
-                            name="date"
-                            label="Date"
-                            disabled={!isAdmin}
-                        />
-                        {/*<Controller*/}
-                        {/*    name="date"*/}
-                        {/*    control={control}*/}
-                        {/*    render={({ field }) => (*/}
-                        {/*        <DatePicker*/}
-                        {/*            {...field}*/}
-                        {/*            disabled={!isAdmin}*/}
-                        {/*            label="Date"*/}
-                        {/*            value={*/}
-                        {/*                field.value ? dayjs.utc(field.value) : null*/}
-                        {/*            }*/}
-                        {/*            onChange={(date) =>*/}
-                        {/*                field.onChange(date ? date.toDate() : null)*/}
-                        {/*            }*/}
-                        {/*            slotProps={{*/}
-                        {/*                textField: {*/}
-                        {/*                    error: !!errors.date,*/}
-                        {/*                    helperText: errors.date?.message as any,*/}
-                        {/*                },*/}
-                        {/*            }}*/}
-                        {/*        />*/}
-                        {/*    )}*/}
-                        {/*/>*/}
-                        <TimePicker
-                            name="startTime"
-                            label="Start Time"
-                            disabled={!isAdmin}
-                        />
-                        <TimePicker
-                            name="endTime"
-                            label="End Time"
-                            disabled={!isAdmin}
-                        />
-                        <Grid container spacing={2} alignItems="center">
-                            <Grid>
-                                <Typography variant="h6">
-                                    {assignments?.length || 0}
-                                </Typography>
-                            </Grid>
-                            <Grid>
-                                <Typography variant="body1">of</Typography>
-                            </Grid>
-                            <Grid>
-                                <Controller
-                                    name="slots"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <TextField
-                                            {...field}
-                                            disabled={!isAdmin}
-                                            label="Slots"
-                                            variant="outlined"
-                                            type="number"
-                                            error={!!errors.slots}
-                                            helperText={
-                                                errors.slots?.message as any
-                                            }
-                                            inputProps={{ min: 1 }}
-                                        />
-                                    )}
-                                />
-                            </Grid>
-                        </Grid>
-
-                        <Controller
-                            name="assignments"
-                            control={control}
-                            render={({ field }) => (
-                                <ShiftAssignmentTool
-                                    {...field}
-                                    shift={shift as any}
-                                    control={control}
-                                    readOnly={!isAdmin}
-                                />
-                            )}
-                        />
-
-                        {/* Uploads section */}
-                        {shiftId && (
-                            <ShiftUploads
-                                shiftId={shiftId}
-                                readOnly={!isAdmin && !isAssigned}
-                            />
-                        )}
-
-                        <Controller
-                            name="notes"
-                            control={control}
-                            render={({ field }) => (
-                                <TextField
-                                    {...field}
-                                    multiline
-                                    rows={3}
-                                    disabled={!isAdmin}
-                                    label="Notes"
-                                    variant="outlined"
-                                    error={!!errors.notes}
-                                    helperText={errors.notes?.message as any}
-                                />
-                            )}
-                        />
-                        {isAdmin && (
+                            {!isAdmin &&
+                                !isAssigned &&
+                                hasAvailableSlots &&
+                                hasRequests && (
+                                    <Container>
+                                        You have already requested to be
+                                        considered for this shift.
+                                    </Container>
+                                )}
+                            {!isAdmin &&
+                                !isAssigned &&
+                                hasAvailableSlots &&
+                                !hasRequests && (
+                                    <Container>
+                                        <Button onClick={handleShiftRequest}>
+                                            <AssignmentIcon />
+                                            Click here to request this shift!
+                                        </Button>
+                                    </Container>
+                                )}
                             <Controller
-                                name="adminNotes"
+                                name="title"
+                                control={control}
+                                render={({ field }) => (
+                                    <TextField
+                                        {...field}
+                                        disabled={!isAdmin}
+                                        label="Title"
+                                        variant="outlined"
+                                        error={!!errors.title}
+                                        helperText={
+                                            errors.title?.message as any
+                                        }
+                                    />
+                                )}
+                            />
+                            {/* Location Autocomplete */}
+                            <Controller
+                                name="locationId"
+                                control={control}
+                                render={({ field }) => {
+                                    console.log(
+                                        'ShiftForm LocationAutocomplete Controller render',
+                                        {
+                                            fieldValue: field.value,
+                                            timestamp: new Date().toISOString(),
+                                            fieldRef: field,
+                                        }
+                                    );
+
+                                    return (
+                                        <LocationAutocomplete
+                                            value={field.value}
+                                            onChange={(locationId) => {
+                                                console.log(
+                                                    'ShiftForm LocationAutocomplete onChange',
+                                                    {
+                                                        locationId,
+                                                        timestamp:
+                                                            new Date().toISOString(),
+                                                    }
+                                                );
+                                                field.onChange(locationId);
+                                                // Clear legacy location when a location is selected
+                                                if (locationId) {
+                                                    setValue(
+                                                        'legacyLocation',
+                                                        ''
+                                                    );
+                                                }
+                                            }}
+                                            disabled={!isAdmin}
+                                            onCreateNew={() =>
+                                                setIsLocationFormOpen(true)
+                                            }
+                                            onViewLocation={(locationId) => {
+                                                setViewLocationId(locationId);
+                                                setIsLocationViewOpen(true);
+                                            }}
+                                        />
+                                    );
+                                }}
+                            />
+
+                            {/* Location View Dialog */}
+                            <LocationViewDialog
+                                locationId={viewLocationId}
+                                open={isLocationViewOpen}
+                                onClose={() => setIsLocationViewOpen(false)}
+                            />
+
+                            <FormDatePicker
+                                name="date"
+                                label="Date"
+                                disabled={!isAdmin}
+                            />
+                            {/*<Controller*/}
+                            {/*    name="date"*/}
+                            {/*    control={control}*/}
+                            {/*    render={({ field }) => (*/}
+                            {/*        <DatePicker*/}
+                            {/*            {...field}*/}
+                            {/*            disabled={!isAdmin}*/}
+                            {/*            label="Date"*/}
+                            {/*            value={*/}
+                            {/*                field.value ? dayjs.utc(field.value) : null*/}
+                            {/*            }*/}
+                            {/*            onChange={(date) =>*/}
+                            {/*                field.onChange(date ? date.toDate() : null)*/}
+                            {/*            }*/}
+                            {/*            slotProps={{*/}
+                            {/*                textField: {*/}
+                            {/*                    error: !!errors.date,*/}
+                            {/*                    helperText: errors.date?.message as any,*/}
+                            {/*                },*/}
+                            {/*            }}*/}
+                            {/*        />*/}
+                            {/*    )}*/}
+                            {/*/>*/}
+                            <TimePicker
+                                name="startTime"
+                                label="Start Time"
+                                disabled={!isAdmin}
+                            />
+                            <TimePicker
+                                name="endTime"
+                                label="End Time"
+                                disabled={!isAdmin}
+                            />
+                            <Grid container spacing={2} alignItems="center">
+                                <Grid>
+                                    <Typography variant="h6">
+                                        {assignments?.length || 0}
+                                    </Typography>
+                                </Grid>
+                                <Grid>
+                                    <Typography variant="body1">of</Typography>
+                                </Grid>
+                                <Grid>
+                                    <Controller
+                                        name="slots"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <TextField
+                                                {...field}
+                                                disabled={!isAdmin}
+                                                label="Slots"
+                                                variant="outlined"
+                                                type="number"
+                                                error={!!errors.slots}
+                                                helperText={
+                                                    errors.slots?.message as any
+                                                }
+                                                inputProps={{ min: 1 }}
+                                            />
+                                        )}
+                                    />
+                                </Grid>
+                            </Grid>
+
+                            <Controller
+                                name="assignments"
+                                control={control}
+                                render={({ field }) => (
+                                    <ShiftAssignmentTool
+                                        {...field}
+                                        shift={shift as any}
+                                        control={control}
+                                        readOnly={!isAdmin}
+                                    />
+                                )}
+                            />
+
+                            {/* Uploads section */}
+                            {shiftId && (
+                                <ShiftUploads
+                                    shiftId={shiftId}
+                                    readOnly={!isAdmin && !isAssigned}
+                                />
+                            )}
+
+                            <Controller
+                                name="notes"
                                 control={control}
                                 render={({ field }) => (
                                     <TextField
                                         {...field}
                                         multiline
                                         rows={3}
-                                        label="Admin Notes"
+                                        disabled={!isAdmin}
+                                        label="Notes"
                                         variant="outlined"
-                                        error={!!errors.adminNotes}
+                                        error={!!errors.notes}
                                         helperText={
-                                            errors.adminNotes?.message as any
+                                            errors.notes?.message as any
                                         }
                                     />
                                 )}
                             />
-                        )}
-
-                        <Stack direction="row" spacing={2}>
-                            {isAdmin && !isNew && (
-                                <Button
-                                    variant="contained"
-                                    type="button"
-                                    color="secondary"
-                                    disabled={isSubmitting}
-                                    onClick={handleCancelShiftButtonClicked}
-                                >
-                                    {isCancelled
-                                        ? 'Un-Cancel Shift'
-                                        : 'Cancel Shift'}
-                                </Button>
-                            )}
                             {isAdmin && (
+                                <Controller
+                                    name="adminNotes"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            multiline
+                                            rows={3}
+                                            label="Admin Notes"
+                                            variant="outlined"
+                                            error={!!errors.adminNotes}
+                                            helperText={
+                                                errors.adminNotes
+                                                    ?.message as any
+                                            }
+                                        />
+                                    )}
+                                />
+                            )}
+
+                            <Stack direction="row" spacing={2}>
+                                {isAdmin && !isNew && (
+                                    <Button
+                                        variant="contained"
+                                        type="button"
+                                        color="secondary"
+                                        disabled={isSubmitting}
+                                        onClick={handleCancelShiftButtonClicked}
+                                    >
+                                        {isCancelled
+                                            ? 'Un-Cancel Shift'
+                                            : 'Cancel Shift'}
+                                    </Button>
+                                )}
+                                {isAdmin && (
+                                    <Button
+                                        variant="contained"
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting
+                                            ? 'Saving...'
+                                            : isNew
+                                              ? 'Create'
+                                              : 'Update'}
+                                    </Button>
+                                )}
                                 <Button
                                     variant="contained"
-                                    type="submit"
+                                    color="secondary"
+                                    onClick={onClose}
                                     disabled={isSubmitting}
                                 >
-                                    {isSubmitting
-                                        ? 'Saving...'
-                                        : isNew
-                                          ? 'Create'
-                                          : 'Update'}
+                                    Close
                                 </Button>
-                            )}
-                            <Button
-                                variant="contained"
-                                color="secondary"
-                                onClick={onClose}
-                                disabled={isSubmitting}
-                            >
-                                Close
-                            </Button>
+                            </Stack>
                         </Stack>
-                    </Stack>
-                </form>
-            </Container>
-        </FormProvider>
+                    </form>
+                </Container>
+            </FormProvider>
+            {/* Location Form Dialog */}
+            {isLocationFormOpen && (
+                <Dialog
+                    fullWidth={true}
+                    maxWidth="md"
+                    open={isLocationFormOpen}
+                    onClose={() => setIsLocationFormOpen(false)}
+                >
+                    <DialogTitle>
+                        <Box display="flex" alignItems="center">
+                            <Box flexGrow={1}>Create New Location</Box>
+                            <Box>
+                                <IconButton
+                                    onClick={() => setIsLocationFormOpen(false)}
+                                >
+                                    <CloseIcon />
+                                </IconButton>
+                            </Box>
+                        </Box>
+                    </DialogTitle>
+                    <DialogContent>
+                        <LocationForm
+                            onSubmit={(data: any) => {
+                                // Close only the location form dialog
+                                setIsLocationFormOpen(false);
+
+                                // If we have the ID of the newly created location, select it
+                                if (data.id) {
+                                    // Wait for the location query to be invalidated and refetched
+                                    // This ensures the new location is available in the dropdown
+                                    setTimeout(() => {
+                                        // Set the locationId field to the newly created location's ID
+                                        setValue('locationId', data.id, {
+                                            shouldValidate: false,
+                                        });
+                                    }, 100);
+                                }
+                            }}
+                            onCancel={() => setIsLocationFormOpen(false)}
+                        />
+                    </DialogContent>
+                </Dialog>
+            )}
+        </>
     );
 }
