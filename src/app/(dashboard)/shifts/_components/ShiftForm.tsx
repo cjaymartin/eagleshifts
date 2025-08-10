@@ -231,13 +231,13 @@ export default function ShiftForm(props: ShiftFormProps) {
             // Use centralized date utility to combine date and time, convert to UTC
             const startTimeISO = combineDateTime(
                 formData.date,
-                formData.startTime,
+                dayjs(formData.startTime).format('h:mmA'),
                 { organizationTimezone: timezone, fallbackTimezone: 'America/New_York' }
             );
 
             const endTimeISO = combineDateTime(
                 formData.date,
-                formData.endTime,
+                dayjs(formData.endTime).format('h:mmA'),
                 { organizationTimezone: timezone, fallbackTimezone: 'America/New_York' }
             );
 
@@ -336,13 +336,13 @@ export default function ShiftForm(props: ShiftFormProps) {
             // Use centralized date utility to combine date and time, convert to UTC
             const startTimeISO = combineDateTime(
                 formData.date,
-                formData.startTime,
+                dayjs(formData.startTime).format('h:mmA'),
                 { organizationTimezone: timezone, fallbackTimezone: 'America/New_York' }
             );
 
             const endTimeISO = combineDateTime(
                 formData.date,
-                formData.endTime,
+                dayjs(formData.endTime).format('h:mmA'),
                 { organizationTimezone: timezone, fallbackTimezone: 'America/New_York' }
             );
 

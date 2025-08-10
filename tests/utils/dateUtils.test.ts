@@ -110,8 +110,8 @@ describe('dateUtils', () => {
       const testStartTime = new Date('2024-01-15T09:00:00');
       const testEndTime = new Date('2024-01-15T17:00:00');
 
-      const startTimeISO = combineDateTime(testDate, testStartTime, options);
-      const endTimeISO = combineDateTime(testDate, testEndTime, options);
+      const startTimeISO = combineDateTime(testDate, dayjs(testStartTime).format('h:mmA'), options);
+      const endTimeISO = combineDateTime(testDate, dayjs(testEndTime).format('h:mmA'), options);
 
       // Start and end times should be different
       expect(startTimeISO).not.toBe(endTimeISO);
@@ -129,8 +129,8 @@ describe('dateUtils', () => {
       const testStartTime = new Date('2024-01-15T09:00:00');
       const testEndTime = new Date('2024-01-15T17:00:00');
 
-      const startTimeISO = combineDateTime(testDate, testStartTime, options);
-      const endTimeISO = combineDateTime(testDate, testEndTime, options);
+      const startTimeISO = combineDateTime(testDate, dayjs(testStartTime).format('h:mmA'), options);
+      const endTimeISO = combineDateTime(testDate, dayjs(testEndTime).format('h:mmA'), options);
 
       // This test ensures the critical bug is fixed - start and end should be different
       expect(startTimeISO).not.toBe(endTimeISO);
@@ -151,8 +151,8 @@ describe('dateUtils', () => {
       const nyOptions = { organizationTimezone: 'America/New_York', fallbackTimezone: 'UTC' };
       const laOptions = { organizationTimezone: 'America/Los_Angeles', fallbackTimezone: 'UTC' };
 
-      const nyTimeISO = combineDateTime(testDate, testTime, nyOptions);
-      const laTimeISO = combineDateTime(testDate, testTime, laOptions);
+      const nyTimeISO = combineDateTime(testDate, dayjs(testTime).format('h:mmA'), nyOptions);
+      const laTimeISO = combineDateTime(testDate, dayjs(testTime).format('h:mmA'), laOptions);
 
       // LA is 3 hours behind NY, so LA time should be 3 hours later in UTC
       const nyUTC = new Date(nyTimeISO);
@@ -175,7 +175,7 @@ describe('dateUtils', () => {
       const loadedTime = utcToOrgTimezone(originalUTC, options);
 
       // Simulate saving back to database (convert back to UTC)
-      const savedUTC = combineDateTime(loadedTime, loadedTime, options);
+      const savedUTC = combineDateTime(loadedTime, dayjs(loadedTime).format('h:mmA'), options);
 
       // Round-trip should preserve the original time
       expect(savedUTC).toBe(originalUTC);
@@ -189,7 +189,7 @@ describe('dateUtils', () => {
       // Perform multiple round-trips
       for (let i = 0; i < 5; i++) {
         const loadedTime = utcToOrgTimezone(currentUTC, options);
-        currentUTC = combineDateTime(loadedTime, loadedTime, options);
+        currentUTC = combineDateTime(loadedTime, dayjs(loadedTime).format('h:mmA'), options);
       }
 
       expect(currentUTC).toBe(originalUTC);
@@ -206,7 +206,7 @@ describe('dateUtils', () => {
       const testDate = new Date('2024-01-15');
       const midnightTime = new Date('2024-01-15T00:00:00');
 
-      const result = combineDateTime(testDate, midnightTime, options);
+      const result = combineDateTime(testDate, dayjs(midnightTime).format('h:mmA'), options);
 
       expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 
@@ -218,7 +218,7 @@ describe('dateUtils', () => {
       const testDate = new Date('2024-01-15');
       const endOfDayTime = new Date('2024-01-15T23:59:59');
 
-      const result = combineDateTime(testDate, endOfDayTime, options);
+      const result = combineDateTime(testDate, dayjs(endOfDayTime).format('h:mm:ssA'), options);
 
       const utcDate = new Date(result);
       // 11:59 PM EST = 4:59 AM UTC next day
@@ -232,14 +232,14 @@ describe('dateUtils', () => {
       const springDate = new Date('2024-03-10');
       const springTime = new Date('2024-03-10T02:30:00');
 
-      const springResult = combineDateTime(springDate, springTime, options);
+      const springResult = combineDateTime(springDate, dayjs(springTime).format('h:mmA'), options);
       expect(springResult).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 
       // Fall back: November 3, 2024 (2 AM becomes 1 AM)
       const fallDate = new Date('2024-11-03');
       const fallTime = new Date('2024-11-03T01:30:00');
 
-      const fallResult = combineDateTime(fallDate, fallTime, options);
+      const fallResult = combineDateTime(fallDate, dayjs(fallTime).format('h:mmA'), options);
       expect(fallResult).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     });
 
@@ -256,7 +256,7 @@ describe('dateUtils', () => {
 
       timezones.forEach(tz => {
         const options = { organizationTimezone: tz, fallbackTimezone: 'UTC' };
-        const result = combineDateTime(testDate, testTime, options);
+        const result = combineDateTime(testDate, dayjs(testTime).format('h:mmA'), options);
 
         expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
         expect(isValidTimezone(tz)).toBe(true);
@@ -273,7 +273,7 @@ describe('dateUtils', () => {
 
       // Test with invalid date - dayjs throws RangeError for invalid dates
       const invalidDate = new Date('invalid');
-      expect(() => combineDateTime(invalidDate, new Date(), options)).toThrow();
+      expect(() => combineDateTime(invalidDate, "12:00PM", options)).toThrow();
     });
 
     it('should throw error for invalid timezone', () => {
@@ -286,7 +286,7 @@ describe('dateUtils', () => {
       };
 
       // Should throw error for invalid timezone
-      expect(() => combineDateTime(testDate, testTime, options)).toThrow();
+      expect(() => combineDateTime(testDate, dayjs(testTime).format('h:mmA'), options)).toThrow();
     });
   });
 });

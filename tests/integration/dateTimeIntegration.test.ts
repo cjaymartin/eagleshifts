@@ -31,8 +31,8 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
       const startTime = new Date('2024-01-15T20:00:00'); // 8 PM
       const endTime = new Date('2024-01-15T23:59:00');   // 11:59 PM
 
-      const startTimeISO = combineDateTime(testDate, startTime, nyOptions);
-      const endTimeISO = combineDateTime(testDate, endTime, nyOptions);
+      const startTimeISO = combineDateTime(testDate, dayjs(startTime).format('h:mmA'), nyOptions);
+      const endTimeISO = combineDateTime(testDate, dayjs(endTime).format('h:mmA'), nyOptions);
 
       // Convert back to display times
       const displayStart = utcToOrgTimezone(startTimeISO, nyOptions);
@@ -49,8 +49,8 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
       const startTime = new Date('2024-01-15T22:00:00'); // 10 PM
       const endTime = new Date('2024-01-15T23:59:59');   // 11:59:59 PM (same day)
 
-      const startTimeISO = combineDateTime(testDate, startTime, nyOptions);
-      const endTimeISO = combineDateTime(testDate, endTime, nyOptions);
+      const startTimeISO = combineDateTime(testDate, dayjs(startTime).format('h:mmA'), nyOptions);
+      const endTimeISO = combineDateTime(testDate, dayjs(endTime).format('h:mmA'), nyOptions);
 
       // Should handle midnight boundary correctly
       expect(startTimeISO).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
@@ -73,8 +73,8 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
 
       // Simulate form processing (combining date and time)
       const formDate = loadedStart; // Use start date as form date
-      const savedStartUTC = combineDateTime(formDate, loadedStart, nyOptions);
-      const savedEndUTC = combineDateTime(formDate, loadedEnd, nyOptions);
+      const savedStartUTC = combineDateTime(formDate, dayjs(loadedStart).format('h:mmA'), nyOptions);
+      const savedEndUTC = combineDateTime(formDate, dayjs(loadedEnd).format('h:mmA'), nyOptions);
 
       // Should preserve original UTC times
       expect(savedStartUTC).toBe(originalStartUTC);
@@ -89,7 +89,7 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
       // Perform 10 conversion cycles
       for (let i = 0; i < 10; i++) {
         const loaded = utcToOrgTimezone(currentUTC, nyOptions);
-        currentUTC = combineDateTime(loaded, loaded, nyOptions);
+        currentUTC = combineDateTime(loaded, dayjs(loaded).format('h:mmA'), nyOptions);
       }
 
       // Should not drift from original time
@@ -104,8 +104,8 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
       const startTime = new Date('2024-01-15T23:30:00'); // 11:30 PM
       const endTime = new Date('2024-01-16T01:30:00');   // 1:30 AM next day
 
-      const startTimeISO = combineDateTime(startDate, startTime, nyOptions);
-      const endTimeISO = combineDateTime(endDate, endTime, nyOptions);
+      const startTimeISO = combineDateTime(startDate, dayjs(startTime).format('h:mmA'), nyOptions);
+      const endTimeISO = combineDateTime(endDate, dayjs(endTime).format('h:mmA'), nyOptions);
 
       // Verify times are in correct order
       expect(new Date(endTimeISO).getTime()).toBeGreaterThan(new Date(startTimeISO).getTime());
@@ -121,10 +121,10 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
       const midnightTime = new Date('2024-01-15T00:00:00');
 
       // Test in NY timezone
-      const nyMidnightUTC = combineDateTime(testDate, midnightTime, nyOptions);
+      const nyMidnightUTC = combineDateTime(testDate, dayjs(midnightTime).format('h:mmA'), nyOptions);
 
       // Test in LA timezone  
-      const laMidnightUTC = combineDateTime(testDate, midnightTime, laOptions);
+      const laMidnightUTC = combineDateTime(testDate, dayjs(midnightTime).format('h:mmA'), laOptions);
 
       // LA midnight should be 3 hours later than NY midnight
       const timeDiff = new Date(laMidnightUTC).getTime() - new Date(nyMidnightUTC).getTime();
@@ -139,8 +139,8 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
       const beforeTransition = new Date('2024-03-10T01:30:00'); // 1:30 AM
       const afterTransition = new Date('2024-03-10T03:30:00');  // 3:30 AM (2:30 AM doesn't exist)
 
-      const startTimeISO = combineDateTime(springDate, beforeTransition, nyOptions);
-      const endTimeISO = combineDateTime(springDate, afterTransition, nyOptions);
+      const startTimeISO = combineDateTime(springDate, dayjs(beforeTransition).format('h:mmA'), nyOptions);
+      const endTimeISO = combineDateTime(springDate, dayjs(afterTransition).format('h:mmA'), nyOptions);
 
       // Should handle DST transition correctly
       expect(startTimeISO).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
@@ -156,8 +156,8 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
       const beforeTransition = new Date('2024-11-03T01:30:00'); // 1:30 AM (first occurrence)
       const afterTransition = new Date('2024-11-03T02:30:00');  // 2:30 AM
 
-      const startTimeISO = combineDateTime(fallDate, beforeTransition, nyOptions);
-      const endTimeISO = combineDateTime(fallDate, afterTransition, nyOptions);
+      const startTimeISO = combineDateTime(fallDate, dayjs(beforeTransition).format('h:mmA'), nyOptions);
+      const endTimeISO = combineDateTime(fallDate, dayjs(afterTransition).format('h:mmA'), nyOptions);
 
       // Should handle DST transition correctly
       expect(startTimeISO).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
@@ -173,7 +173,7 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
 
       // Perform load-save cycle
       const loaded = utcToOrgTimezone(dstTransitionUTC, nyOptions);
-      const saved = combineDateTime(loaded, loaded, nyOptions);
+      const saved = combineDateTime(loaded, dayjs(loaded).format('h:mmA'), nyOptions);
 
       // Should preserve original time
       expect(saved).toBe(dstTransitionUTC);
@@ -197,7 +197,7 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
 
         for (let i = 0; i < 5; i++) {
           const loaded = utcToOrgTimezone(currentUTC, nyOptions);
-          currentUTC = combineDateTime(loaded, loaded, nyOptions);
+          currentUTC = combineDateTime(loaded, dayjs(loaded).format('h:mm:ssA'), nyOptions);
         }
 
         expect(currentUTC).toBe(originalUTC);
@@ -209,11 +209,21 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
 
       // Test NY timezone round-trip
       const nyLoaded = utcToOrgTimezone(originalUTC, nyOptions);
-      const nySaved = combineDateTime(nyLoaded, nyLoaded, nyOptions);
+      console.log('NY loaded:', nyLoaded);
+      console.log('NY loaded has _originalUTC:', !!(nyLoaded as any)._originalUTC);
+      console.log('NY loaded _originalUTC:', (nyLoaded as any)._originalUTC);
+      console.log('NY formatted time:', dayjs(nyLoaded).format('h:mm:ssA'));
+      const nySaved = combineDateTime(nyLoaded, dayjs(nyLoaded).format('h:mm:ssA'), nyOptions);
+      console.log('NY saved:', nySaved);
 
       // Test LA timezone round-trip
       const laLoaded = utcToOrgTimezone(originalUTC, laOptions);
-      const laSaved = combineDateTime(laLoaded, laLoaded, laOptions);
+      console.log('LA loaded:', laLoaded);
+      console.log('LA loaded has _originalUTC:', !!(laLoaded as any)._originalUTC);
+      console.log('LA loaded _originalUTC:', (laLoaded as any)._originalUTC);
+      console.log('LA formatted time:', dayjs(laLoaded).format('h:mm:ssA'));
+      const laSaved = combineDateTime(laLoaded, dayjs(laLoaded).format('h:mm:ssA'), laOptions);
+      console.log('LA saved:', laSaved);
 
       // Both should preserve original UTC time
       expect(nySaved).toBe(originalUTC);
@@ -227,8 +237,8 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
       const startTime = new Date('2024-01-15T09:00:00');
       const endTime = new Date('2024-01-15T17:00:00');
 
-      const startTimeISO = combineDateTime(testDate, startTime, nyOptions);
-      const endTimeISO = combineDateTime(testDate, endTime, nyOptions);
+      const startTimeISO = combineDateTime(testDate, dayjs(startTime).format('h:mmA'), nyOptions);
+      const endTimeISO = combineDateTime(testDate, dayjs(endTime).format('h:mmA'), nyOptions);
 
       // Critical: Start and end times must be different
       expect(startTimeISO).not.toBe(endTimeISO);
@@ -242,8 +252,8 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
       const testTime = new Date('2024-01-15T12:00:00');
 
       // Both create and update should use combineDateTime (not .format())
-      const createResult = combineDateTime(testDate, testTime, nyOptions);
-      const updateResult = combineDateTime(testDate, testTime, nyOptions);
+      const createResult = combineDateTime(testDate, dayjs(testTime).format('h:mmA'), nyOptions);
+      const updateResult = combineDateTime(testDate, dayjs(testTime).format('h:mmA'), nyOptions);
 
       // Should produce identical results
       expect(createResult).toBe(updateResult);
@@ -291,7 +301,7 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
       };
 
       // Should throw error for invalid timezone
-      expect(() => combineDateTime(testDate, testTime, invalidOptions)).toThrow();
+      expect(() => combineDateTime(testDate, dayjs(testTime).format('h:mmA'), invalidOptions)).toThrow();
     });
   });
 
@@ -305,7 +315,7 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
         const hour = i % 24; // Hours 0-23
         const testDate = new Date(`2024-01-${day.toString().padStart(2, '0')}`);
         const testTime = new Date(`2024-01-15T${hour.toString().padStart(2, '0')}:00:00`);
-        combineDateTime(testDate, testTime, nyOptions);
+        combineDateTime(testDate, dayjs(testTime).format('h:mmA'), nyOptions);
       }
 
       const endTime = Date.now();
@@ -324,7 +334,7 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
       ];
 
       edgeCases.forEach(({ date, time }) => {
-        const result = combineDateTime(date, time, nyOptions);
+        const result = combineDateTime(date, dayjs(time).format('h:mmA'), nyOptions);
         expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
       });
     });
