@@ -14,8 +14,9 @@ This workflow automatically runs tests when:
 1. Checks out the repository code
 2. Sets up Node.js v22.x (matching the version in package.json)
 3. Installs dependencies using `yarn install --frozen-lockfile`
-4. Runs tests using `yarn test`
-5. Uploads test results as artifacts (if available)
+4. Installs timezone data (`tzdata` package) to ensure tests that rely on timezone information run correctly
+5. Runs tests using `yarn test`
+6. Uploads test results as artifacts (if available)
 
 #### Viewing Test Results
 After the workflow runs, you can view test results by:
