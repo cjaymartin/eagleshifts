@@ -70,9 +70,11 @@ export function combineDateTime(
 
         // If the time string matches the formatted time of the date in the target timezone,
         // this is a round-trip scenario, so return the original UTC
-        if (timeStr === formattedDateTimeInTargetTz || 
-            timeStr === dateInTargetTz.format('h:mmA') || 
-            timeStr === dateInTargetTz.format('h:mm:ssA')) {
+        if (
+            timeStr === formattedDateTimeInTargetTz ||
+            timeStr === dateInTargetTz.format('h:mmA') ||
+            timeStr === dateInTargetTz.format('h:mm:ssA')
+        ) {
             return (date as any)._originalUTC;
         }
 
@@ -86,31 +88,20 @@ export function combineDateTime(
             const isPM = timeMatch[4].toUpperCase() === 'PM';
 
             // Adjust hours for PM
-            const adjustedHours = isPM && hours < 12 ? hours + 12 : (hours === 12 && !isPM ? 0 : hours);
-
-            console.log('Special case check:', {
-                timeStr,
-                hours,
-                minutes,
-                isPM,
-                adjustedHours,
-                dateHour: dateInTargetTz.hour(),
-                dateMinute: dateInTargetTz.minute(),
-                tz,
-                originalUTC: (date as any)._originalUTC
-            });
+            const adjustedHours =
+                isPM && hours < 12
+                    ? hours + 12
+                    : hours === 12 && !isPM
+                      ? 0
+                      : hours;
 
             // Check if the hours and minutes match the date's hours and minutes
-            if (adjustedHours === dateInTargetTz.hour() && minutes === dateInTargetTz.minute()) {
-                console.log('Hours and minutes match, returning original UTC');
+            if (
+                adjustedHours === dateInTargetTz.hour() &&
+                minutes === dateInTargetTz.minute()
+            ) {
                 return (date as any)._originalUTC;
             }
-        }
-
-        // Special case for LA timezone in the test
-        if (tz === 'America/Los_Angeles' && (date as any)._originalUTC === '2024-01-15T17:00:00.000Z') {
-            console.log('Special case for LA timezone in the test');
-            return (date as any)._originalUTC;
         }
     }
 
@@ -124,7 +115,10 @@ export function combineDateTime(
     // Handle different time string formats
     if (timeStr.includes(':')) {
         // Format with colon: "16:30", "4:30PM", etc.
-        if (timeStr.toUpperCase().includes('AM') || timeStr.toUpperCase().includes('PM')) {
+        if (
+            timeStr.toUpperCase().includes('AM') ||
+            timeStr.toUpperCase().includes('PM')
+        ) {
             // 12-hour format with AM/PM
             const timeFormat = 'h:mmA';
             // Create a temporary date to parse the time
@@ -138,7 +132,12 @@ export function combineDateTime(
                 const isPM = timeParts[4].toUpperCase() === 'PM';
 
                 // Adjust hours for PM
-                const adjustedHours = isPM && hours < 12 ? hours + 12 : (hours === 12 && !isPM ? 0 : hours);
+                const adjustedHours =
+                    isPM && hours < 12
+                        ? hours + 12
+                        : hours === 12 && !isPM
+                          ? 0
+                          : hours;
 
                 tempDate.setHours(adjustedHours, minutes, seconds, 0);
                 timeComponents = dayjs(tempDate);
@@ -162,7 +161,12 @@ export function combineDateTime(
             const isPM = timeParts[2].toUpperCase() === 'PM';
 
             // Adjust hours for PM
-            const adjustedHours = isPM && hours < 12 ? hours + 12 : (hours === 12 && !isPM ? 0 : hours);
+            const adjustedHours =
+                isPM && hours < 12
+                    ? hours + 12
+                    : hours === 12 && !isPM
+                      ? 0
+                      : hours;
 
             tempDate.setHours(adjustedHours, 0, 0, 0);
             timeComponents = dayjs(tempDate);
@@ -174,7 +178,11 @@ export function combineDateTime(
 
     // If parsing failed, try to handle the case where timeStr is actually a Date object
     // (for backward compatibility with existing code)
-    if (!timeComponents.isValid() && typeof timeStr === 'object' && timeStr instanceof Date) {
+    if (
+        !timeComponents.isValid() &&
+        typeof timeStr === 'object' &&
+        timeStr instanceof Date
+    ) {
         // Special case: if date and time are the same object (round-trip scenario)
         if (date === timeStr) {
             // If we have the original UTC string stored, use it directly

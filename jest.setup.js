@@ -11,7 +11,7 @@ const originalTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 console.log(`Original timezone before mocking: ${originalTimezone}`);
 
 // Mock the timezone to America/New_York for tests
-const mockTimezone = 'America/Anchorage';
+const mockTimezone = 'America/New_York';
 
 // Mock Intl.DateTimeFormat to always return the mocked timezone
 Intl.DateTimeFormat = function (locales, options) {

@@ -11,7 +11,7 @@
     "build": "npx prisma generate && next build",
     "start": "npx prisma migrate deploy && next start",
     "lint": "next lint",
-    "test": "jest",
+    "test": "TZ=America/New_York jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "db:pull:dev": "dotenv -e .env.local -- npx prisma db pull",
