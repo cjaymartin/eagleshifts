@@ -63,7 +63,7 @@ export function combineDateTime(
     // Special case: if date and timeStr are the same object (round-trip scenario)
     if (
         typeof timeStr === 'object' &&
-        timeStr instanceof Date &&
+        (timeStr as any) instanceof Date &&
         date === timeStr
     ) {
         // Use dayjs to handle the timezone conversion properly
@@ -77,7 +77,7 @@ export function combineDateTime(
     let militaryTime: string;
 
     // Handle the case where timeStr is a Date object (for backward compatibility)
-    if (typeof timeStr === 'object' && timeStr instanceof Date) {
+    if (typeof timeStr === 'object' && (timeStr as any) instanceof Date) {
         militaryTime = dayjs(timeStr).format('HH:mm');
     } else {
         // Check if the time string is in the expected format
