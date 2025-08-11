@@ -14,15 +14,15 @@ console.log(`Original timezone before mocking: ${originalTimezone}`);
 const mockTimezone = 'America/New_York';
 
 // Mock Intl.DateTimeFormat to always return the mocked timezone
-Intl.DateTimeFormat = function (locales, options) {
-    if (options && options.timeZone) {
-        console.log(`DateTimeFormat requested timezone: ${options.timeZone}`);
-    }
-    return new originalDateTimeFormat(locales, {
-        ...options,
-        timeZone: mockTimezone,
-    });
-};
+// Intl.DateTimeFormat = function (locales, options) {
+//     if (options && options.timeZone) {
+//         console.log(`DateTimeFormat requested timezone: ${options.timeZone}`);
+//     }
+//     return new originalDateTimeFormat(locales, {
+//         ...options,
+//         timeZone: mockTimezone,
+//     });
+// };
 
 // Ensure DateTimeFormat.prototype methods work
 Intl.DateTimeFormat.prototype = originalDateTimeFormat.prototype;
