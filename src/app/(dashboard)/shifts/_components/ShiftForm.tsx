@@ -15,10 +15,11 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { DatePicker } from '@mui/x-date-pickers';
-import TimePicker from '@/components/form/TimePicker';
+import { MobileTimePicker } from '@mui/x-date-pickers/MobileTimePicker';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { combineDateTime } from '@/utils/dateUtils';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { useNotifications, useDialogs } from '@toolpad/core';
@@ -59,6 +60,7 @@ const useShiftDialogHelpers = () => ({
 // Type for ShiftForm props
 type ShiftFormProps = {
     isNew?: boolean;
+    isDuplicate?: boolean;
     shiftId?: string;
     shift?: inferRouterOutputs<AppRouter>['shifts']['byId'] | null;
     onClose?: () => void;
@@ -71,7 +73,13 @@ export default function ShiftForm(props: ShiftFormProps) {
     });
 
     const { reset: handleClose } = useShiftDialogHelpers();
-    const { shiftId, shift, isNew: propsIsNew, onClose } = props;
+    const {
+        shiftId,
+        shift,
+        isNew: propsIsNew,
+        isDuplicate: propsDuplicate,
+        onClose,
+    } = props;
     const notifications = useNotifications();
 
     const [isCancelled, setIsCancelled] = useState(shift?.isCancelled);
@@ -119,7 +127,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                         .toDate()
                   : null,
               startTime:
-                  !propsIsNew && shift.startTime
+                  (!propsIsNew || propsDuplicate) && shift.startTime
                       ? dayjs(shift.startTime)
                             .tz(
                                 shift.timezone ||
@@ -129,7 +137,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                             .toDate()
                       : null,
               endTime:
-                  !propsIsNew && shift.endTime
+                  (!propsIsNew || propsDuplicate) && shift.endTime
                       ? dayjs(shift.endTime)
                             .tz(
                                 shift.timezone ||
@@ -226,25 +234,24 @@ export default function ShiftForm(props: ShiftFormProps) {
 
             // Create datetime strings by combining the date with the time
             // We need to work with the local time directly to avoid double timezone conversion
-            const startLocalTime = dayjs(formData.date)
-                .hour(dayjs(formData.startTime).hour())
-                .minute(dayjs(formData.startTime).minute())
-                .second(dayjs(formData.startTime).second())
-                .tz(timezone, true); // true keeps the local time and just changes the timezone
+            // Use centralized date utility to combine date and time, convert to UTC
+            const startTimeISO = combineDateTime(
+                formData.date,
+                dayjs(formData.startTime).format('HH:mm'),
+                {
+                    organizationTimezone: timezone,
+                    fallbackTimezone: 'America/New_York',
+                }
+            );
 
-            const endLocalTime = dayjs(formData.date)
-                .hour(dayjs(formData.endTime).hour())
-                .minute(dayjs(formData.endTime).minute())
-                .second(dayjs(formData.endTime).second())
-                .tz(timezone, true); // true keeps the local time and just changes the timezone
-
-            // Create ISO strings with timezone information instead of UTC
-            const startTimeLocalISO = startLocalTime.format();
-            const endTimeLocalISO = endLocalTime.format();
-
-            // These iso times should be in UTC
-            const startTimeISO = endLocalTime.toISOString();
-            const endTimeISO = endLocalTime.toISOString();
+            const endTimeISO = combineDateTime(
+                formData.date,
+                dayjs(formData.endTime).format('HH:mm'),
+                {
+                    organizationTimezone: timezone,
+                    fallbackTimezone: 'America/New_York',
+                }
+            );
 
             // Format data for API - note that we're not including the date field
             const shiftData = {
@@ -338,20 +345,24 @@ export default function ShiftForm(props: ShiftFormProps) {
             const timezone =
                 shift?.timezone || businessProfile?.timezone || 'UTC';
 
-            const startLocalTime = dayjs(formData.date)
-                .hour(dayjs(formData.startTime).hour())
-                .minute(dayjs(formData.startTime).minute())
-                .second(dayjs(formData.startTime).second())
-                .tz(timezone, true); // true keeps the local time and just changes the timezone
+            // Use centralized date utility to combine date and time, convert to UTC
+            const startTimeISO = combineDateTime(
+                formData.date,
+                dayjs(formData.startTime).format('HH:mm'),
+                {
+                    organizationTimezone: timezone,
+                    fallbackTimezone: 'America/New_York',
+                }
+            );
 
-            const endLocalTime = dayjs(formData.date)
-                .hour(dayjs(formData.endTime).hour())
-                .minute(dayjs(formData.endTime).minute())
-                .second(dayjs(formData.endTime).second())
-                .tz(timezone, true); // true keeps the local time and just changes the timezone
-
-            const startTimeISO = startLocalTime.format();
-            const endTimeISO = endLocalTime.format();
+            const endTimeISO = combineDateTime(
+                formData.date,
+                dayjs(formData.endTime).format('HH:mm'),
+                {
+                    organizationTimezone: timezone,
+                    fallbackTimezone: 'America/New_York',
+                }
+            );
 
             const shiftData = {
                 id: shiftId,
@@ -551,15 +562,67 @@ export default function ShiftForm(props: ShiftFormProps) {
                             {/*        />*/}
                             {/*    )}*/}
                             {/*/>*/}
-                            <TimePicker
+                            <Controller
                                 name="startTime"
-                                label="Start Time"
-                                disabled={!isAdmin}
+                                control={control}
+                                render={({ field }) => (
+                                    <MobileTimePicker
+                                        disabled={!isAdmin}
+                                        label="Start Time"
+                                        value={
+                                            field.value
+                                                ? dayjs(field.value).tz(
+                                                      shift?.timezone ||
+                                                          businessProfile?.timezone ||
+                                                          'UTC'
+                                                  )
+                                                : null
+                                        }
+                                        onChange={(date) =>
+                                            field.onChange(
+                                                date ? date.toDate() : null
+                                            )
+                                        }
+                                        slotProps={{
+                                            textField: {
+                                                error: !!errors.startTime,
+                                                helperText: errors.startTime
+                                                    ?.message as any,
+                                            },
+                                        }}
+                                    />
+                                )}
                             />
-                            <TimePicker
+                            <Controller
                                 name="endTime"
-                                label="End Time"
-                                disabled={!isAdmin}
+                                control={control}
+                                render={({ field }) => (
+                                    <MobileTimePicker
+                                        {...field}
+                                        label="End Time"
+                                        disabled={!isAdmin}
+                                        // Ensure value is a valid dayjs object or null
+                                        value={
+                                            field.value
+                                                ? dayjs(field.value)
+                                                : null
+                                        }
+                                        onChange={(date) =>
+                                            // Pass a standard JS Date object or null back to the form
+                                            field.onChange(
+                                                date ? date.toDate() : null
+                                            )
+                                        }
+                                        // Set to mobile view mode
+                                        slotProps={{
+                                            textField: {
+                                                error: !!errors.endTime,
+                                                helperText: errors.endTime
+                                                    ?.message as any,
+                                            },
+                                        }}
+                                    />
+                                )}
                             />
                             <Grid container spacing={2} alignItems="center">
                                 <Grid>

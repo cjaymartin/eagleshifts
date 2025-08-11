@@ -25,6 +25,7 @@ export default function ShiftDialog({
     //const [form] = useDialogForm();
 
     const isNew = !payload || (payload as any)?.isNew; //dialog?.new;
+    const isDuplicate = (payload as any)?.isDuplicate;
     //const open = dialog?.open && dialog?.type === 'shift';
 
     function handleClose() {
@@ -54,6 +55,7 @@ export default function ShiftDialog({
                 <Container sx={{ background: 'white', marginTop: 1 }}>
                     <ShiftForm
                         isNew={!!isNew}
+                        isDuplicate={!!isDuplicate}
                         shiftId={payload?.id}
                         shift={payload}
                         onClose={handleClose as any}

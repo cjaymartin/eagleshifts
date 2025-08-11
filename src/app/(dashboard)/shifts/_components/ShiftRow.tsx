@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Chip, IconButton, TableCell } from '@mui/material';
+import { Chip, IconButton, TableCell, Tooltip } from '@mui/material';
 import dayjs from 'dayjs';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useAuthQuery } from '@/queries/users';
 import { useDialogs } from '@toolpad/core';
 import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
@@ -53,6 +54,20 @@ export function ShiftRow(props: ShiftRowProps) {
 
     function handleEdit() {
         dialogs.open(ShiftDialog, shift);
+    }
+
+    function handleDuplicate() {
+        // Create a new shift object with the necessary fields from the current shift
+        const duplicatedShift = {
+            ...shift,
+            id: undefined, // Remove ID to create a new shift
+            shiftAssignments: [], // Don't duplicate people assigned
+            isNew: true, // Mark as a new shift
+            isDuplicate: true, // Mark as a duplicated shift to preserve time values
+            isCancelled: false, // Don't duplicate cancelled status
+        };
+
+        dialogs.open(ShiftDialog, duplicatedShift as any);
     }
 
     const { mutate: deleteShift } = useShiftDeleteMutation();
@@ -105,14 +120,25 @@ export function ShiftRow(props: ShiftRowProps) {
             <TableCell>
                 {filledSlots} / {shift.slots}
             </TableCell>
-            <TableCell>
-                <IconButton onClick={handleEdit}>
-                    <EditIcon />
-                </IconButton>
-                {isAdmin && (
-                    <IconButton onClick={handleDelete}>
-                        <DeleteIcon />
+            <TableCell sx={{ minWidth: 152 }}>
+                <Tooltip title="Edit">
+                    <IconButton onClick={handleEdit}>
+                        <EditIcon />
                     </IconButton>
+                </Tooltip>
+                {isAdmin && (
+                    <Tooltip title="Duplicate">
+                        <IconButton onClick={handleDuplicate} color="secondary">
+                            <ContentCopyIcon />
+                        </IconButton>
+                    </Tooltip>
+                )}
+                {isAdmin && (
+                    <Tooltip title="Delete">
+                        <IconButton onClick={handleDelete}>
+                            <DeleteIcon />
+                        </IconButton>
+                    </Tooltip>
                 )}
             </TableCell>
         </React.Fragment>
