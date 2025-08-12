@@ -55,7 +55,7 @@ export default function MultitenantAppTitle() {
                     <Alert
                         severity="info"
                         color="warning"
-                        sx={{ borderRadius: 3, wordWrap: 'none', overflow: '' }}
+                        sx={{ borderRadius: 3, wordWrap: 'none' }}
                     >
                         Imitating User!
                     </Alert>
