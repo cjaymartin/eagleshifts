@@ -6,7 +6,7 @@ import { NotificationsProvider } from '@toolpad/core';
 import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
 import { branding } from '@/config/branding';
-import { useAuthQuery } from '@/queries/users';
+import { useAuthQuery, useIsImitatingQuery } from '@/queries/users';
 import theme from '@/lib/DefaultTheme';
 import {
     CalendarToday,
@@ -19,6 +19,7 @@ import {
     History,
     LocationOn,
 } from '@mui/icons-material';
+import { useCookies } from 'next-client-cookies';
 
 type SmartAppProviderProps = {
     children: React.ReactNode;
@@ -31,6 +32,9 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
     >([]);
     const pathname = usePathname();
     const { data: session, isPending } = useAuthQuery();
+    const { data: isImitating } = useIsImitatingQuery();
+
+    console.log({ isImitating });
 
     useEffect(() => {
         // Get user role from session
@@ -117,7 +121,11 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
             window.location.href = '/auth/login';
         },
         signOut: async () => {
-            window.location.href = '/auth/logout';
+            if (isImitating) {
+                window.location.href = '/api/auth/stop-imitating';
+            } else {
+                window.location.href = '/auth/logout';
+            }
         },
     };
 

@@ -1,6 +1,13 @@
 'use client';
 
-import { Divider, MenuItem, MenuList, Stack, Typography } from '@mui/material';
+import {
+    Chip,
+    Divider,
+    MenuItem,
+    MenuList,
+    Stack,
+    Typography,
+} from '@mui/material';
 import {
     Account,
     AccountPopoverFooter,
@@ -8,12 +15,13 @@ import {
     SignOutButton,
 } from '@toolpad/core';
 import OrgHeader from '@/app/(dashboard)/_components/OrgHeader';
-import { useAuthQuery } from '@/queries/users';
+import { useAuthQuery, useIsImitatingQuery } from '@/queries/users';
 
 export default function DashboardToolbarActions() {
     const { data: session } = useAuthQuery();
     const role = session?.user?.role || 'member';
     const isAdminOrOwner = ['admin', 'owner'].includes(role);
+    const { data: isImitating } = useIsImitatingQuery();
 
     const CustomPopoverContent = () => (
         <Stack direction="column">
@@ -56,7 +64,17 @@ export default function DashboardToolbarActions() {
             {/* This will render the default Account footer with sign out button */}
             {/*<AccountFooter />*/}
             <AccountPopoverFooter>
-                <SignOutButton />
+                <Stack direction="column">
+                    {isImitating && (
+                        <Chip
+                            variant="outlined"
+                            color="info"
+                            label="Sign out to return to your account."
+                            sx={{ mb: 1, mt: 2 }}
+                        />
+                    )}
+                    <SignOutButton />
+                </Stack>
             </AccountPopoverFooter>
         </Stack>
     );

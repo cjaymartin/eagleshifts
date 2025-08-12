@@ -104,8 +104,29 @@ export const imitate = () => {
                     const session =
                         await ctx.context.internalAdapter.createSession(
                             targetUser.userId,
-                            ctx
+                            ctx,
+                            true,
+                            {
+                                impersonatedBy: ctx.context.session.user.id,
+                                expiresAt: new Date(
+                                    Date.now() + 60 * 60 * 1000
+                                ), // 1 hour from now
+                            }
                         );
+
+                    await prisma.session.update({
+                        where: { id: session.id },
+                        data: { impersonatedBy: ctx.context.session.user.id },
+                    });
+
+                    console.log('GOGOGOGOG');
+                    console.log({
+                        session,
+                        impersonatedBy: ctx.context.session.user.id,
+                    });
+
+                    //set the cookie to match the current session cookie
+
                     await setSessionCookie(ctx, {
                         session,
                         user,
@@ -113,11 +134,108 @@ export const imitate = () => {
                     throw ctx.redirect(callbackURL);
                 }
             ),
+            stopImitatingEndpoint: createAuthEndpoint(
+                '/stop-imitating',
+                {
+                    method: 'GET',
+                    requireHeaders: true,
+                    metadata: {},
+                    use: [sessionMiddleware],
+                },
+                async (ctx) => {
+                    const { session: currentSession } = ctx?.context?.session;
+
+                    if (!currentSession) {
+                        throw new Error('Unauthorized');
+                    }
+
+                    const sessionObj = await prisma.session.findUnique({
+                        where: { id: currentSession.id },
+                    });
+
+                    console.log({ sessionObj, currentSession });
+
+                    if (!sessionObj?.impersonatedBy) {
+                        throw new Error('You are not imitating anyone');
+                    }
+
+                    // Find the original user (admin who initiated the imitation)
+                    const originalUser = await prisma.user.findUnique({
+                        where: { id: sessionObj.impersonatedBy },
+                    });
+
+                    if (!originalUser) {
+                        throw new Error('Failed to find original user');
+                    }
+
+                    // Find the admin's original session
+                    const adminSession = await prisma.session.findFirst({
+                        where: {
+                            userId: originalUser.id,
+                            // Only find active sessions
+                            expiresAt: {
+                                gt: new Date(),
+                            },
+                        },
+                        orderBy: {
+                            createdAt: 'desc',
+                        },
+                    });
+
+                    if (!adminSession) {
+                        throw new Error('Failed to find admin session');
+                    }
+
+                    // Delete the current imitation session
+                    await prisma.session.delete({
+                        where: { id: currentSession.id },
+                    });
+
+                    // Set the admin's session cookie
+                    await setSessionCookie(ctx, {
+                        session: adminSession,
+                        user: originalUser,
+                    });
+
+                    // Redirect to home page
+                    throw ctx.redirect('/');
+                }
+            ),
+            isImitatingEndpoint: createAuthEndpoint(
+                '/is-imitating',
+                {
+                    method: 'POST',
+                    query: z.any(),
+                    //requireHeaders: true,
+                    metadata: {},
+                    use: [sessionMiddleware],
+                },
+                async (ctx) => {
+                    const { session: currentSession } = ctx?.context?.session;
+
+                    if (!currentSession) {
+                        throw new Error('Unauthorized');
+                    }
+
+                    const sessionObj = await prisma.session.findUnique({
+                        where: { id: currentSession.id },
+                    });
+
+                    // Return true if the user is imitating someone, false otherwise
+                    return ctx.json({
+                        isImitating: !!sessionObj?.impersonatedBy,
+                    });
+                }
+            ),
         },
         rateLimit: [
             {
                 pathMatcher(path: any) {
-                    return path.startsWith('/imitate');
+                    return (
+                        path.startsWith('/imitate') ||
+                        path.startsWith('/stop-imitating') ||
+                        path.startsWith('/is-imitating')
+                    );
                 },
                 window: 60,
                 max: 5,
