@@ -119,7 +119,6 @@ export const imitate = () => {
                         data: { impersonatedBy: ctx.context.session.user.id },
                     });
 
-                    console.log('GOGOGOGOG');
                     console.log({
                         session,
                         impersonatedBy: ctx.context.session.user.id,
