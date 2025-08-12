@@ -19,7 +19,6 @@ import {
     History,
     LocationOn,
 } from '@mui/icons-material';
-import { useCookies } from 'next-client-cookies';
 
 type SmartAppProviderProps = {
     children: React.ReactNode;
