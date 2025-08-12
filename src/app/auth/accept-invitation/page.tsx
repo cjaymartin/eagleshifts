@@ -26,7 +26,6 @@ export default function AcceptInvitationPage() {
         // Ensure we're logged out before processing the invitation
         async function logoutAndContinue() {
             try {
-                // Sign out the current user if any
                 await signOut();
 
                 // Also manually clear the cookie to be extra sure
@@ -76,10 +75,19 @@ export default function AcceptInvitationPage() {
                 // Set the login-organization-slug cookie to the organization's slug
                 if (result.organization && result.organization.slug) {
                     // Set as a plain cookie without SameSite or expiration
-                    cookieStore.set('login-organization-slug', result.organization.slug);
-                    console.log('Set login-organization-slug to:', result.organization.slug);
+                    cookieStore.set(
+                        'login-organization-slug',
+                        result.organization.slug
+                    );
+                    console.log(
+                        'Set login-organization-slug to:',
+                        result.organization.slug
+                    );
                 } else {
-                    console.error('Organization slug not found in invitation result:', result.organization);
+                    console.error(
+                        'Organization slug not found in invitation result:',
+                        result.organization
+                    );
                 }
 
                 // Use window.location.href for a full page reload to ensure cookies are available

@@ -2,7 +2,6 @@ import { trpc } from '@/lib/trpc/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getQueryKey } from '@trpc/react-query';
 import { authClient } from '@/lib/auth-client';
-
 export function useAuthQuery() {
     return trpc.session.get.index.useQuery();
 }
@@ -175,6 +174,33 @@ export function useRejectInvitationMutation() {
         onSuccess: () => {
             // Invalidate the invitation list query
             queryClient.invalidateQueries({ queryKey: ['invitations'] });
+        },
+    });
+}
+
+export function useIsImitatingQuery() {
+    return useQuery({
+        queryKey: ['isImitating'],
+        queryFn: async () => {
+            try {
+                const response = await fetch('/api/auth/is-imitating', {
+                    method: 'POST',
+                    // headers: {
+                    //     'Content-Type': 'application/json',
+                    // },
+                    credentials: 'include', // Include cookies in the request
+                });
+
+                if (!response.ok) {
+                    return false;
+                }
+
+                const data = await response.json();
+                return data.isImitating;
+            } catch (error) {
+                console.error('Error checking imitation status:', error);
+                return false;
+            }
         },
     });
 }

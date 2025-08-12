@@ -6,7 +6,7 @@ import { NotificationsProvider } from '@toolpad/core';
 import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
 import { branding } from '@/config/branding';
-import { useAuthQuery } from '@/queries/users';
+import { useAuthQuery, useIsImitatingQuery } from '@/queries/users';
 import theme from '@/lib/DefaultTheme';
 import {
     CalendarToday,
@@ -31,6 +31,8 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
     >([]);
     const pathname = usePathname();
     const { data: session, isPending } = useAuthQuery();
+    const { data: isImitating } = useIsImitatingQuery();
+
 
     useEffect(() => {
         // Get user role from session
@@ -117,7 +119,11 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
             window.location.href = '/auth/login';
         },
         signOut: async () => {
-            window.location.href = '/auth/logout';
+            if (isImitating) {
+                window.location.href = '/api/auth/stop-imitating';
+            } else {
+                window.location.href = '/auth/logout';
+            }
         },
     };
 

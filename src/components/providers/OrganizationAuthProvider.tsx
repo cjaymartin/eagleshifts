@@ -105,7 +105,6 @@ export default async function OrganizationAuthProvider({
             return children;
         }
 
-        // Sign out the user
         await auth.api.signOut({
             headers: await headers(),
         });
