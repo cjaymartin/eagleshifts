@@ -215,6 +215,10 @@ export default function ShiftForm(props: ShiftFormProps) {
                 setError('title', { message: 'Title is required' });
                 return;
             }
+            if (!formData.locationId) {
+                setError('locationId', { message: 'Location is required' });
+                return;
+            }
             if (!formData.date) {
                 setError('date', { message: 'Date is required' });
                 return;
@@ -225,6 +229,11 @@ export default function ShiftForm(props: ShiftFormProps) {
             }
             if (!formData.endTime) {
                 setError('endTime', { message: 'End time is required' });
+                return;
+            }
+            console.log({ formData });
+            if (!formData.slots) {
+                setError('slots', { message: 'Slots is required' });
                 return;
             }
 
@@ -515,6 +524,8 @@ export default function ShiftForm(props: ShiftFormProps) {
                                                 }
                                             }}
                                             disabled={!isAdmin}
+                                            error={!!errors.locationId}
+                                            helperText={errors.locationId?.message as any}
                                             onCreateNew={() =>
                                                 setIsLocationFormOpen(true)
                                             }

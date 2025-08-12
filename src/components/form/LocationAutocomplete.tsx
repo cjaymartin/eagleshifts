@@ -37,6 +37,8 @@ export type LocationAutocompleteProps = Omit<
     disabled?: boolean;
     onCreateNew?: () => void;
     onViewLocation?: (locationId: string) => void;
+    error?: boolean;
+    helperText?: React.ReactNode;
 };
 
 // Counter to track render calls
@@ -55,6 +57,8 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
         disabled,
         onCreateNew,
         onViewLocation,
+        error,
+        helperText,
         ...acProps
     } = props;
     const [inputValue, setInputValue] = useState('');
@@ -249,6 +253,8 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
                         {...params}
                         label="Location"
                         placeholder="Search for a location"
+                        error={error}
+                        helperText={helperText}
                         slotProps={{
                             input: {
                                 ...params.InputProps,
