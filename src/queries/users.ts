@@ -190,7 +190,6 @@ export function useIsImitatingQuery() {
                     // },
                     credentials: 'include', // Include cookies in the request
                 });
-                console.log({ response });
 
                 if (!response.ok) {
                     return false;
