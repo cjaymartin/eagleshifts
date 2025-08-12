@@ -152,7 +152,6 @@ export const imitate = () => {
                         where: { id: currentSession.id },
                     });
 
-                    console.log({ sessionObj, currentSession });
 
                     if (!sessionObj?.impersonatedBy) {
                         throw new Error('You are not imitating anyone');
