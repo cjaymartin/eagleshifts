@@ -19,7 +19,6 @@ export async function POST(request: NextRequest) {
 
         const { session: currentSession } = session;
 
-        console.log({ currentSession });
         if (!currentSession?.id) {
             return NextResponse.json(
                 {
@@ -37,7 +36,6 @@ export async function POST(request: NextRequest) {
         });
 
         console.log({ sessionObj });
-
         const impersonatedBy = sessionObj?.impersonatedBy;
 
         // Check if the user is currently imitating someone

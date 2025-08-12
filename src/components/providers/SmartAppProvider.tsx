@@ -34,7 +34,6 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
     const { data: session, isPending } = useAuthQuery();
     const { data: isImitating } = useIsImitatingQuery();
 
-    console.log({ isImitating });
 
     useEffect(() => {
         // Get user role from session

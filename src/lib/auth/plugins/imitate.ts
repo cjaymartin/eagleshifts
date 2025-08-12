@@ -123,7 +123,6 @@ export const imitate = () => {
                         session,
                         impersonatedBy: ctx.context.session.user.id,
                     });
-
                     //set the cookie to match the current session cookie
 
                     await setSessionCookie(ctx, {
