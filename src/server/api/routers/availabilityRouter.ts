@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { router, adminProcedure, memberProcedure, userProcedure } from '@/server/trpc';
+import {
+    router,
+    adminProcedure,
+    memberProcedure,
+    userProcedure,
+} from '@/server/trpc';
 import { Prisma, User } from '@/generated/prisma';
 import { TRPCError } from '@trpc/server';
 import dayjs from 'dayjs';
@@ -37,7 +42,8 @@ export const availabilityRouter = router({
             const where: Prisma.AvailabilityWhereInput = {};
 
             // For non-admin users, only show their own availability
-            const isAdmin = ctx.user.role === 'admin' || ctx.user.role === 'owner';
+            const isAdmin =
+                ctx.user.role === 'admin' || ctx.user.role === 'owner';
             if (!isAdmin) {
                 // Ensure we have the user's memberId
                 if (!ctx.user.memberId) {
@@ -119,6 +125,7 @@ export const availabilityRouter = router({
 
                 return {
                     ...member.user, // Include user details
+                    id: member.id,
                     role: member.role,
                     isAvailable: hasCoverage
                         ? member.availabilities.every(
@@ -169,7 +176,11 @@ export const availabilityRouter = router({
         )
         .mutation(async ({ ctx, input }) => {
             // Check if the user is creating availability for themselves
-            if (!ctx.isMemberData(input.memberId) && ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+            if (
+                !ctx.isMemberData(input.memberId) &&
+                ctx.user.role !== 'admin' &&
+                ctx.user.role !== 'owner'
+            ) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message: 'You can only create availability for yourself',
@@ -210,10 +221,11 @@ export const availabilityRouter = router({
             const { id, ...updateData } = input;
 
             // Check if the availability record belongs to the user
-            const existingAvailability = await ctx.prisma.availability.findUnique({
-                where: { id },
-                select: { memberId: true },
-            });
+            const existingAvailability =
+                await ctx.prisma.availability.findUnique({
+                    where: { id },
+                    select: { memberId: true },
+                });
 
             if (!existingAvailability) {
                 throw new TRPCError({
@@ -223,7 +235,11 @@ export const availabilityRouter = router({
             }
 
             // Check if the user is updating their own availability
-            if (!ctx.isMemberData(existingAvailability.memberId) && ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+            if (
+                !ctx.isMemberData(existingAvailability.memberId) &&
+                ctx.user.role !== 'admin' &&
+                ctx.user.role !== 'owner'
+            ) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message: 'You can only update your own availability',
@@ -261,10 +277,11 @@ export const availabilityRouter = router({
         )
         .mutation(async ({ ctx, input }) => {
             // Check if the availability record belongs to the user
-            const existingAvailability = await ctx.prisma.availability.findUnique({
-                where: { id: input.id },
-                select: { memberId: true },
-            });
+            const existingAvailability =
+                await ctx.prisma.availability.findUnique({
+                    where: { id: input.id },
+                    select: { memberId: true },
+                });
 
             if (!existingAvailability) {
                 throw new TRPCError({
@@ -274,7 +291,11 @@ export const availabilityRouter = router({
             }
 
             // Check if the user is deleting their own availability
-            if (!ctx.isMemberData(existingAvailability.memberId) && ctx.user.role !== 'admin' && ctx.user.role !== 'owner') {
+            if (
+                !ctx.isMemberData(existingAvailability.memberId) &&
+                ctx.user.role !== 'admin' &&
+                ctx.user.role !== 'owner'
+            ) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message: 'You can only delete your own availability',

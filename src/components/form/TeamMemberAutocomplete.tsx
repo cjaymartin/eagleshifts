@@ -58,6 +58,7 @@ export default function TeamMemberAutocomplete(
 
     const { data: userAvailabilityListLookup } =
         useAvailabilityByDateLookupQuery(date);
+    console.log({ userAvailabilityListLookup });
 
     const excludeLookup = useMemo(() => {
         const lookup: Record<string, boolean> = {};
@@ -72,10 +73,10 @@ export default function TeamMemberAutocomplete(
         if (!teamUsers || !userLookup) return [];
 
         // Flatten all members from all users
-        const allMembers = teamUsers.flatMap(user => 
-            (user.members || []).map(member => ({
+        const allMembers = teamUsers.flatMap((user) =>
+            (user.members || []).map((member) => ({
                 ...member,
-                user
+                user,
             }))
         );
 
@@ -83,7 +84,8 @@ export default function TeamMemberAutocomplete(
             .filter((member) => !excludeLookup[member.id])
             .map((member) => {
                 const isAvailable =
-                    userAvailabilityListLookup?.[member.id]?.isAvailable ?? true;
+                    userAvailabilityListLookup?.[member.id]?.isAvailable ??
+                    false;
                 return {
                     ...member,
                     label: member.name || member.user.name,

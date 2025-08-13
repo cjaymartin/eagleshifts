@@ -55,6 +55,8 @@ export function useAvailabilityByDateLookupQuery(date: Date) {
         'query'
     );
 
+    console.log({ availability });
+
     return useQuery({
         queryKey: [...baseQuerykey, 'lookup'],
         queryFn: () => {
