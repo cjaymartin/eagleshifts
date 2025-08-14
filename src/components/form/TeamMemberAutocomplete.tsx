@@ -74,7 +74,9 @@ export default function TeamMemberAutocomplete(
     const isValidDate = date instanceof Date && !isNaN(date.getTime());
     const { data: memberShifts } = trpc.shifts.list.useQuery(
         {
-            startDate: isValidDate ? date.toISOString().split('T')[0] : undefined,
+            startDate: isValidDate
+                ? date.toISOString().split('T')[0]
+                : undefined,
             endDate: isValidDate ? date.toISOString().split('T')[0] : undefined,
         },
         {
@@ -197,7 +199,7 @@ export default function TeamMemberAutocomplete(
                         Typ = TentativeTextTypography;
                         availIcon = (
                             <ListItemIcon key={props.key + '-icon'}>
-                                <Event color="tentative" />
+                                <Event color={'tentative' as any} />
                             </ListItemIcon>
                         );
                         break;
