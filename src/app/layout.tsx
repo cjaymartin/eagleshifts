@@ -40,9 +40,6 @@ export default function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    console.log('THEME THEME THEME');
-    console.log({ theme });
-
     return (
         <html lang="en" className={roboto.variable} suppressHydrationWarning>
             {/*<CssBaseline />*/}

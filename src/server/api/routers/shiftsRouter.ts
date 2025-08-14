@@ -175,6 +175,7 @@ export const shiftsRouter = router({
         )
         .query(async ({ ctx, input }) => {
             // Check if user is admin or member
+            console.log('SHIFTLIST');
             const isAdmin =
                 ctx.user.role === 'admin' || ctx.user.role === 'owner';
 
@@ -290,6 +291,11 @@ export const shiftsRouter = router({
                 if (input.isCancelled !== undefined) {
                     where.isCancelled = input.isCancelled;
                 }
+                console.log({ isAdmin, where, isCancelled: where.isCancelled });
+            }
+
+            if (!isAdmin) {
+                where.isCancelled = false;
             }
 
             // Get filtered shifts
@@ -1178,6 +1184,7 @@ export const shiftsRouter = router({
         )
         .mutation(async ({ ctx, input }) => {
             // Fetch the original shift with assignments and location details
+
             const originalShift = await ctx.prisma.shift.findFirst({
                 where: {
                     id: input.id,
