@@ -11,7 +11,7 @@ import {
 //import { useTeamUsers } from '../../../store/TeamUser';
 //import useUserAvailabilityList from '../../hooks/useUserAvailabilityList';
 import React, { useCallback, useMemo } from 'react';
-import { EventAvailable, EventBusy } from '@mui/icons-material';
+import { EventAvailable, EventBusy, Event } from '@mui/icons-material';
 import { useTeamUsersLookupQuery, useTeamUsersQuery } from '@/queries/users';
 import { trpc } from '@/lib/trpc/client';
 import {
@@ -37,6 +37,15 @@ const UnavailableTextTypography = styled(Typography)(({ theme }) => {
     };
 });
 
+const TentativeTextTypography = styled(Typography)(({ theme }) => {
+    return {
+        color: 'grey[600]', // Between available (700) and unavailable (400)
+        '& .MuiSvgIcon-root': {
+            color: 'grey[600]',
+        },
+    };
+});
+
 export type TeamMemberAutocompleteProps = Omit<
     React.ComponentProps<typeof Autocomplete>,
     'onChange' | 'options' | 'renderInput' | 'renderOption'
@@ -58,7 +67,39 @@ export default function TeamMemberAutocomplete(
 
     const { data: userAvailabilityListLookup } =
         useAvailabilityByDateLookupQuery(date);
-    console.log({ userAvailabilityListLookup });
+
+    // Query to check if members have shifts on the same day
+    console.log({ date });
+    // Check if date is valid before using it
+    const isValidDate = date instanceof Date && !isNaN(date.getTime());
+    const { data: memberShifts } = trpc.shifts.list.useQuery(
+        {
+            startDate: isValidDate ? date.toISOString().split('T')[0] : undefined,
+            endDate: isValidDate ? date.toISOString().split('T')[0] : undefined,
+        },
+        {
+            enabled: !!date && isValidDate,
+        }
+    );
+
+    // Create a lookup to check if a member has shifts on the same day
+    const memberShiftsLookup = useMemo(() => {
+        const lookup: Record<string, boolean> = {};
+        if (!memberShifts) return lookup;
+
+        // Check all shift assignments
+        memberShifts.forEach((shift) => {
+            if (shift.shiftAssignments) {
+                shift.shiftAssignments.forEach((assignment) => {
+                    if (assignment.memberId) {
+                        lookup[assignment.memberId] = true;
+                    }
+                });
+            }
+        });
+
+        return lookup;
+    }, [memberShifts]);
 
     const excludeLookup = useMemo(() => {
         const lookup: Record<string, boolean> = {};
@@ -86,13 +127,35 @@ export default function TeamMemberAutocomplete(
                 const isAvailable =
                     userAvailabilityListLookup?.[member.id]?.isAvailable ??
                     false;
+
+                // Check if member has shifts on the same day
+                const hasShifts = memberShiftsLookup[member.id] || false;
+
+                // Determine availability status:
+                // - available: isAvailable is true and no shifts
+                // - tentative: isAvailable is true but has shifts
+                // - unavailable: isAvailable is false
+                const availabilityStatus = isAvailable
+                    ? hasShifts
+                        ? 'tentative'
+                        : 'available'
+                    : 'unavailable';
+
                 return {
                     ...member,
                     label: member.name || member.user.name,
                     isAvailable,
+                    hasShifts,
+                    availabilityStatus,
                 };
             });
-    }, [excludeLookup, teamUsers, userAvailabilityListLookup, userLookup]);
+    }, [
+        excludeLookup,
+        teamUsers,
+        userAvailabilityListLookup,
+        userLookup,
+        memberShiftsLookup,
+    ]);
 
     //const userAvailabilityList = useUserAvailabilityList(props.date); //.filter(x => !excludeLookup[props.id]);
     //const userOptions = rawUserOptions.filter((x) => !excludeLookup[x.id]);
@@ -115,26 +178,49 @@ export default function TeamMemberAutocomplete(
             renderOption={(props, rawOption, state) => {
                 const option = rawOption as (typeof memberOptions)[0];
 
-                const memberAvailable = option.isAvailable;
-                const Typ = memberAvailable
-                    ? AvailableTextTypography
-                    : UnavailableTextTypography;
-                const availIcon = memberAvailable ? (
-                    <ListItemIcon key={props.key + '-icon'}>
-                        <EventAvailable color="available" />
-                    </ListItemIcon>
-                ) : (
-                    <ListItemIcon>
-                        <EventBusy
-                            key={props.key + '-icon'}
-                            color="unavailable"
-                        />
-                    </ListItemIcon>
-                );
+                // Determine typography and icon based on availability status
+                let Typ;
+                let availIcon;
+
+                console.log({ option });
+
+                switch (option.availabilityStatus) {
+                    case 'available':
+                        Typ = AvailableTextTypography;
+                        availIcon = (
+                            <ListItemIcon key={props.key + '-icon'}>
+                                <EventAvailable color="available" />
+                            </ListItemIcon>
+                        );
+                        break;
+                    case 'tentative':
+                        Typ = TentativeTextTypography;
+                        availIcon = (
+                            <ListItemIcon key={props.key + '-icon'}>
+                                <Event color="tentative" />
+                            </ListItemIcon>
+                        );
+                        break;
+                    case 'unavailable':
+                    default:
+                        Typ = UnavailableTextTypography;
+                        availIcon = (
+                            <ListItemIcon key={props.key + '-icon'}>
+                                <EventBusy
+                                    key={props.key + '-icon'}
+                                    color="unavailable"
+                                />
+                            </ListItemIcon>
+                        );
+                        break;
+                }
                 return (
                     <MenuItem {...props} key={props.key} value={option.id}>
                         {availIcon}
-                        <ListItemText key={props.key + '-text'}>
+                        <ListItemText
+                            key={props.key + '-text'}
+                            color={option.availabilityStatus}
+                        >
                             <Typ>{option.label}</Typ>
                         </ListItemText>
                     </MenuItem>

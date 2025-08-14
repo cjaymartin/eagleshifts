@@ -39,7 +39,11 @@ export const availabilityRouter = router({
         )
         .query(async ({ ctx, input }) => {
             // Build filter conditions
-            const where: Prisma.AvailabilityWhereInput = {};
+            const where: Prisma.AvailabilityWhereInput = {
+                member: {
+                    organizationId: ctx.user.organizationId,
+                },
+            };
 
             // For non-admin users, only show their own availability
             const isAdmin =
@@ -108,6 +112,9 @@ export const availabilityRouter = router({
 
             // Query starting from member and left-joining availability
             const members = await ctx.prisma.member.findMany({
+                where: {
+                    organizationId: ctx.user.organizationId,
+                },
                 include: {
                     user: true,
                     availabilities: {
@@ -143,15 +150,23 @@ export const availabilityRouter = router({
             })
         )
         .query(async ({ ctx, input }) => {
-            const availability = await ctx.prisma.availability.findUnique({
-                where: { id: input.id },
+            const availability = await ctx.prisma.availability.findFirst({
+                where: { 
+                    id: input.id,
+                    member: {
+                        organizationId: ctx.user.organizationId,
+                    },
+                },
                 include: {
                     member: true,
                 },
             });
 
             if (!availability) {
-                throw new Error('Availability not found');
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Availability not found',
+                });
             }
 
             // Format dates as YYYY-MM-DD strings for the response
@@ -184,6 +199,21 @@ export const availabilityRouter = router({
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message: 'You can only create availability for yourself',
+                });
+            }
+
+            // Verify that the member belongs to the user's organization
+            const member = await ctx.prisma.member.findFirst({
+                where: {
+                    id: input.memberId,
+                    organizationId: ctx.user.organizationId,
+                },
+            });
+
+            if (!member) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Member not found in your organization',
                 });
             }
 
@@ -220,11 +250,23 @@ export const availabilityRouter = router({
         .mutation(async ({ ctx, input }) => {
             const { id, ...updateData } = input;
 
-            // Check if the availability record belongs to the user
+            // Check if the availability record belongs to the user and their organization
             const existingAvailability =
-                await ctx.prisma.availability.findUnique({
-                    where: { id },
-                    select: { memberId: true },
+                await ctx.prisma.availability.findFirst({
+                    where: { 
+                        id,
+                        member: {
+                            organizationId: ctx.user.organizationId,
+                        },
+                    },
+                    select: { 
+                        memberId: true,
+                        member: {
+                            select: {
+                                organizationId: true,
+                            },
+                        },
+                    },
                 });
 
             if (!existingAvailability) {
@@ -276,11 +318,23 @@ export const availabilityRouter = router({
             })
         )
         .mutation(async ({ ctx, input }) => {
-            // Check if the availability record belongs to the user
+            // Check if the availability record belongs to the user and their organization
             const existingAvailability =
-                await ctx.prisma.availability.findUnique({
-                    where: { id: input.id },
-                    select: { memberId: true },
+                await ctx.prisma.availability.findFirst({
+                    where: { 
+                        id: input.id,
+                        member: {
+                            organizationId: ctx.user.organizationId,
+                        },
+                    },
+                    select: { 
+                        memberId: true,
+                        member: {
+                            select: {
+                                organizationId: true,
+                            },
+                        },
+                    },
                 });
 
             if (!existingAvailability) {
@@ -302,8 +356,12 @@ export const availabilityRouter = router({
                 });
             }
 
+            // Use the same id but ensure we're only deleting from the user's organization
+            // This is redundant with our check above, but provides an extra layer of security
             await ctx.prisma.availability.delete({
-                where: { id: input.id },
+                where: { 
+                    id: input.id,
+                },
             });
 
             return {

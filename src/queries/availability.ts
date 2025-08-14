@@ -43,11 +43,20 @@ export function useAvailabilityGetQuery(id: string) {
 // Get availabilities by date
 export function useAvailabilityByDate(date: Date) {
     console.log('useAvailabilityByDate', date);
-    return trpc.availability.byDate.useQuery({ date });
+    // Check if date is valid
+    const isValidDate = date instanceof Date && !isNaN(date.getTime());
+    return trpc.availability.byDate.useQuery(
+        { date },
+        {
+            enabled: isValidDate,
+        }
+    );
 }
 
 // Transform availability data into a lookup object
 export function useAvailabilityByDateLookupQuery(date: Date) {
+    // Check if date is valid
+    const isValidDate = date instanceof Date && !isNaN(date.getTime());
     const { data: availability } = useAvailabilityByDate(date);
     const baseQuerykey = getQueryKey(
         trpc.availability.byDate,
@@ -70,7 +79,7 @@ export function useAvailabilityByDateLookupQuery(date: Date) {
                 ) || {}
             );
         },
-        enabled: !!date,
+        enabled: !!date && isValidDate,
     });
 }
 
