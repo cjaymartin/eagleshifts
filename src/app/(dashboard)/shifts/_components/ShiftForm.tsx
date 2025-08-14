@@ -14,7 +14,6 @@ import {
     Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { DatePicker } from '@mui/x-date-pickers';
 import { MobileTimePicker } from '@mui/x-date-pickers/MobileTimePicker';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -525,7 +524,10 @@ export default function ShiftForm(props: ShiftFormProps) {
                                             }}
                                             disabled={!isAdmin}
                                             error={!!errors.locationId}
-                                            helperText={errors.locationId?.message as any}
+                                            helperText={
+                                                errors.locationId
+                                                    ?.message as any
+                                            }
                                             onCreateNew={() =>
                                                 setIsLocationFormOpen(true)
                                             }
