@@ -17,6 +17,7 @@
     "db:pull:dev": "dotenv -e .env.local -- npx prisma db pull",
     "db:push:dev": "dotenv -e .env.local -- npx prisma db push",
     "db:migrate:dev": "dotenv -e .env.local -- npx prisma migrate dev",
+    "db:migrate:dev:resolve": "dotenv -e .env.local -- npx prisma migrate resolve --applied",
     "db:migrate:dev:deploy": "dotenv -e .env.local -- npx prisma migrate deploy",
     "db:migrate:deploy": "npx prisma migrate deploy",
     "db:migrate:status": "npx prisma migrate status",
