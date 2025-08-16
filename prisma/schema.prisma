@@ -225,9 +225,12 @@ model Shift {
 }
 
 model Availability {
-  id          String   @id @default(cuid())
-  startDate   DateTime
-  endDate     DateTime
+  id        String   @id @default(cuid())
+  startDate DateTime
+  endDate   DateTime
+  startTime Int?
+  endTime   Int?
+
   desc        String
   isAvailable Boolean
   createdAt   DateTime @default(now())

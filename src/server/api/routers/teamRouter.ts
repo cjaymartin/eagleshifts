@@ -328,6 +328,7 @@ export const teamRouter = router({
             },
             include: {
                 user: true,
+                settings: true,
             },
         });
 
@@ -337,6 +338,7 @@ export const teamRouter = router({
                 message: 'Member not found',
             });
         }
+
 
         return {
             displayName: member.name || member.user.name,
@@ -375,6 +377,7 @@ export const teamRouter = router({
                     phoneNumber: input.phoneNumber,
                 },
             });
+
 
             // Return the updated profile with the original email (which cannot be changed)
             return {
