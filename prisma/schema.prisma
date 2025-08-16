@@ -169,9 +169,6 @@ model MemberSettings {
   id     String @id
   member Member @relation(fields: [id], references: [id], onDelete: Cascade)
 
-  // Time and other Settings
-  timezone String? @db.VarChar(255)
-
   // Notification settings
   notifyMeBeforeShift     Boolean @default(false)
   notifyMeBeforeShiftDays String?
@@ -229,18 +226,15 @@ model Shift {
 
 model Availability {
   id        String   @id @default(cuid())
-  startTime DateTime
-  endTime   DateTime
-  timezone  String?  @db.VarChar(255)
+  startDate DateTime
+  endDate   DateTime
+  startTime Int?
+  endTime   Int?
 
   desc        String
   isAvailable Boolean
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  // TODO - Deprecated, get rid of these later
-  startDate DateTime
-  endDate   DateTime
 
   // Relationships
   memberId String

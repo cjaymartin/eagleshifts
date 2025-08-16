@@ -9,21 +9,11 @@ import { Prisma, User } from '@/generated/prisma';
 import { TRPCError } from '@trpc/server';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 
-// Extend dayjs with UTC plugin
+// Extend dayjs with plugins
 dayjs.extend(utc);
-
-// Helper function to convert date strings to YYYY-MM-DD format
-function formatDateString(dateString: string): string {
-    return dayjs.utc(dateString).format('YYYY-MM-DD');
-}
-
-// Helper function to parse date strings without timezone issues
-function parseDateString(dateString: string): Date {
-    // Parse the date string as YYYY-MM-DD and set the time to noon UTC
-    // This ensures that the date will be the same regardless of timezone
-    return dayjs.utc(`${formatDateString(dateString)}T00:00:00Z`).toDate();
-}
+dayjs.extend(timezone);
 
 export const availabilityRouter = router({
     list: memberProcedure
@@ -68,9 +58,9 @@ export const availabilityRouter = router({
                     where.endDate = {};
 
                     if (input.startDate)
-                        where.startDate.gte = parseDateString(input.startDate);
+                        where.startDate.gte = new Date(input.startDate);
                     if (input.endDate)
-                        where.endDate.lte = parseDateString(input.endDate);
+                        where.endDate.lte = new Date(input.endDate);
                 }
 
                 if (input.isAvailable !== undefined) {
@@ -81,20 +71,23 @@ export const availabilityRouter = router({
             const availabilities = await ctx.prisma.availability.findMany({
                 where,
                 include: {
-                    member: true,
+                    member: {
+                        include: {
+                            settings: true
+                        }
+                    },
                 },
                 orderBy: {
                     startDate: 'asc',
                 },
             });
 
-            // Format dates as YYYY-MM-DD strings for the response
+            // Return the availabilities with ISO string dates for date fields
+            // startTime and endTime are already 4-digit integers
             return availabilities.map((availability) => ({
                 ...availability,
-                startDate: formatDateString(
-                    availability.startDate.toISOString()
-                ),
-                endDate: formatDateString(availability.endDate.toISOString()),
+                startDate: availability.startDate.toISOString(),
+                endDate: availability.endDate.toISOString(),
             }));
         }),
 
@@ -110,6 +103,10 @@ export const availabilityRouter = router({
                 throw new Error('Invalid date format. Use YYYY-MM-DD.');
             }
 
+            // Create start and end of day in UTC
+            const startOfDay = targetDate.startOf('day').toDate();
+            const endOfDay = targetDate.endOf('day').toDate();
+
             // Query starting from member and left-joining availability
             const members = await ctx.prisma.member.findMany({
                 where: {
@@ -119,8 +116,8 @@ export const availabilityRouter = router({
                     user: true,
                     availabilities: {
                         where: {
-                            startDate: { lte: targetDate.toDate() },
-                            endDate: { gte: targetDate.toDate() },
+                            startDate: { lte: endOfDay },
+                            endDate: { gte: startOfDay },
                         },
                     },
                 },
@@ -158,7 +155,11 @@ export const availabilityRouter = router({
                     },
                 },
                 include: {
-                    member: true,
+                    member: {
+                        include: {
+                            settings: true
+                        }
+                    },
                 },
             });
 
@@ -169,21 +170,22 @@ export const availabilityRouter = router({
                 });
             }
 
-            // Format dates as YYYY-MM-DD strings for the response
+            // Return the availability with ISO string dates for date fields
+            // startTime and endTime are already 4-digit integers
             return {
                 ...availability,
-                startDate: formatDateString(
-                    availability.startDate.toISOString()
-                ),
-                endDate: formatDateString(availability.endDate.toISOString()),
+                startDate: availability.startDate.toISOString(),
+                endDate: availability.endDate.toISOString(),
             };
         }),
 
     create: userProcedure
         .input(
             z.object({
-                startDate: z.string(),
-                endDate: z.string(),
+                startDate: z.date(),
+                endDate: z.date(),
+                startTime: z.number().optional(),
+                endTime: z.number().optional(),
                 desc: z.string(),
                 isAvailable: z.boolean(),
                 memberId: z.string(),
@@ -208,6 +210,9 @@ export const availabilityRouter = router({
                     id: input.memberId,
                     organizationId: ctx.user.organizationId,
                 },
+                include: {
+                    settings: true
+                }
             });
 
             if (!member) {
@@ -217,23 +222,31 @@ export const availabilityRouter = router({
                 });
             }
 
+            // Use the provided startDate and endDate - ensure UTC with 00:00:00.000 time
+            const startDate = dayjs.utc(input.startDate).startOf('day').toDate();
+            const endDate = dayjs.utc(input.endDate).startOf('day').toDate();
+
+            // Use the provided startTime and endTime or default values
+            const startTime = input.startTime ?? 0; // Default to 00:00 (midnight)
+            const endTime = input.endTime ?? 2359; // Default to 23:59
+
             const availability = await ctx.prisma.availability.create({
                 data: {
-                    startDate: parseDateString(input.startDate),
-                    endDate: parseDateString(input.endDate),
+                    startDate,
+                    endDate,
+                    startTime,
+                    endTime,
                     desc: input.desc,
                     isAvailable: input.isAvailable,
                     memberId: input.memberId,
                 },
             });
 
-            // Format dates as YYYY-MM-DD strings for the response
+            // Return the availability with ISO string dates
             return {
                 ...availability,
-                startDate: formatDateString(
-                    availability.startDate.toISOString()
-                ),
-                endDate: formatDateString(availability.endDate.toISOString()),
+                startDate: availability.startDate.toISOString(),
+                endDate: availability.endDate.toISOString(),
             };
         }),
 
@@ -241,8 +254,10 @@ export const availabilityRouter = router({
         .input(
             z.object({
                 id: z.string(),
-                startDate: z.string().optional(),
-                endDate: z.string().optional(),
+                startDate: z.date().optional(),
+                endDate: z.date().optional(),
+                startTime: z.number().optional(),
+                endTime: z.number().optional(),
                 desc: z.string().optional(),
                 isAvailable: z.boolean().optional(),
             })
@@ -264,6 +279,7 @@ export const availabilityRouter = router({
                         member: {
                             select: {
                                 organizationId: true,
+                                settings: true
                             },
                         },
                     },
@@ -288,26 +304,32 @@ export const availabilityRouter = router({
                 });
             }
 
+            // Prepare update data
+            const updatePayload: any = { ...updateData };
+
+            // Process startDate if provided - ensure UTC with 00:00:00.000 time
+            if (updateData.startDate) {
+                updatePayload.startDate = dayjs.utc(updateData.startDate).startOf('day').toDate();
+            }
+
+            // Process endDate if provided - ensure UTC with 00:00:00.000 time
+            if (updateData.endDate) {
+                updatePayload.endDate = dayjs.utc(updateData.endDate).startOf('day').toDate();
+            }
+
+            // Process startTime and endTime as is (they're already 4-digit integers)
+            // No need for additional processing
+
             const availability = await ctx.prisma.availability.update({
                 where: { id },
-                data: {
-                    ...updateData,
-                    startDate: updateData.startDate
-                        ? parseDateString(updateData.startDate)
-                        : undefined,
-                    endDate: updateData.endDate
-                        ? parseDateString(updateData.endDate)
-                        : undefined,
-                },
+                data: updatePayload,
             });
 
-            // Format dates as YYYY-MM-DD strings for the response
+            // Return the availability with ISO string dates
             return {
                 ...availability,
-                startDate: formatDateString(
-                    availability.startDate.toISOString()
-                ),
-                endDate: formatDateString(availability.endDate.toISOString()),
+                startDate: availability.startDate.toISOString(),
+                endDate: availability.endDate.toISOString(),
             };
         }),
 

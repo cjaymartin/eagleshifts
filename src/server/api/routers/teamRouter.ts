@@ -38,6 +38,7 @@ const userProfileSchema = z.object({
     displayName: z.string(),
     email: z.string().email(),
     phoneNumber: z.string(),
+    timezone: z.string().optional(),
 });
 
 export const teamRouter = router({
@@ -328,6 +329,7 @@ export const teamRouter = router({
             },
             include: {
                 user: true,
+                settings: true,
             },
         });
 
@@ -338,10 +340,44 @@ export const teamRouter = router({
             });
         }
 
+        // Check if settings exist and if timezone is missing
+        if (!member.settings || !member.settings.timezone) {
+            // Fetch the business profile to get its timezone
+            const businessProfile =
+                await ctx.prisma.organizationProfile.findUnique({
+                    where: { id: ctx.user.organizationId },
+                });
+
+            const businessTimezone =
+                businessProfile?.timezone || 'America/New_York';
+
+            // Create the settings entry or update the timezone
+            if (!member.settings) {
+                await ctx.prisma.memberSettings.create({
+                    data: {
+                        id: member.id,
+                        timezone: businessTimezone,
+                    },
+                });
+            } else {
+                await ctx.prisma.memberSettings.update({
+                    where: { id: member.id },
+                    data: { timezone: businessTimezone },
+                });
+            }
+
+            // Update the member object to reflect the new settings
+            (member.settings as any) = {
+                ...member.settings,
+                timezone: businessTimezone,
+            };
+        }
+
         return {
             displayName: member.name || member.user.name,
             email: member.user.email,
             phoneNumber: member.phoneNumber || '',
+            timezone: (member.settings as any)?.timezone,
         };
     }),
 
@@ -376,6 +412,25 @@ export const teamRouter = router({
                 },
             });
 
+            // Update or create member settings with timezone
+            if (input.timezone) {
+                if (member.settings) {
+                    await ctx.prisma.memberSettings.update({
+                        where: { id: member.id },
+                        data: {
+                            timezone: input.timezone,
+                        },
+                    });
+                } else {
+                    await ctx.prisma.memberSettings.create({
+                        data: {
+                            id: member.id,
+                            timezone: input.timezone,
+                        },
+                    });
+                }
+            }
+
             // Return the updated profile with the original email (which cannot be changed)
             return {
                 success: true,
@@ -383,6 +438,7 @@ export const teamRouter = router({
                     displayName: input.displayName,
                     email: member.user.email, // Use the original email from the user record
                     phoneNumber: input.phoneNumber,
+                    timezone: input.timezone,
                 },
             };
         }),

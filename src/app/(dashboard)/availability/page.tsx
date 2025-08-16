@@ -178,9 +178,10 @@ export default function Availability() {
 
             if (action === 'doubleClick') {
                 // Create a new availability entry starting on the selected date
+                // Set endDate to be the same as startDate
                 const newAvailability = {
                     startDate: start,
-                    endDate: end,
+                    endDate: start, // Set to same day as startDate
                     memberId: selectedMemberId,
                     isAvailable: true,
                 };

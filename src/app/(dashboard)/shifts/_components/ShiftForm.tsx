@@ -14,7 +14,7 @@ import {
     Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { MobileTimePicker } from '@mui/x-date-pickers/MobileTimePicker';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -579,7 +579,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 name="startTime"
                                 control={control}
                                 render={({ field }) => (
-                                    <MobileTimePicker
+                                    <TimePicker
                                         disabled={!isAdmin}
                                         label="Start Time"
                                         value={
@@ -610,7 +610,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 name="endTime"
                                 control={control}
                                 render={({ field }) => (
-                                    <MobileTimePicker
+                                    <TimePicker
                                         {...field}
                                         label="End Time"
                                         disabled={!isAdmin}
