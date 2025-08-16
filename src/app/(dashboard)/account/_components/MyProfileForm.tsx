@@ -8,30 +8,22 @@ import { z } from 'zod';
 import {
     useUserProfileQuery,
     useUpdateUserProfileMutation,
-    useBusinessProfileQuery,
 } from '@/queries/team';
 import { useNotifications } from '@toolpad/core';
 import MuiPhoneNumber from 'mui-phone-number';
-import { isValidTimezone } from '@/utils/dateUtils';
-
 // Schema for user profile
 const profileFormSchema = z.object({
     displayName: z.string().min(1, { message: 'Required' }),
     email: z.string().email({ message: 'Invalid Format' }),
     phoneNumber: z.string().min(1, { message: 'Required' }),
-    timezone: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileFormSchema>;
 
 export default function MyProfileForm() {
     const { data: profile, isLoading } = useUserProfileQuery();
-    const { data: businessProfile } = useBusinessProfileQuery();
     const updateProfileMutation = useUpdateUserProfileMutation();
     const notifications = useNotifications();
-
-    // Get business timezone for fallback
-    const businessTimezone = businessProfile?.timezone || 'America/New_York';
 
     const {
         control,
@@ -44,7 +36,6 @@ export default function MyProfileForm() {
             displayName: '',
             email: '',
             phoneNumber: '',
-            timezone: '',
         },
     });
 
@@ -55,7 +46,6 @@ export default function MyProfileForm() {
                 displayName: profile.displayName || '',
                 email: profile.email || '',
                 phoneNumber: profile.phoneNumber || '',
-                timezone: profile.timezone || '',
             });
         }
     }, [profile, reset]);
@@ -130,43 +120,6 @@ export default function MyProfileForm() {
                                     error={!!errors.phoneNumber}
                                     helperText={errors.phoneNumber?.message}
                                 />
-                            )}
-                        />
-                    </Grid>
-                    <Grid>
-                        <Controller
-                            name="timezone"
-                            control={control}
-                            render={({ field }) => (
-                                <TextField
-                                    {...field}
-                                    label="Timezone"
-                                    select
-                                    fullWidth
-                                    variant="outlined"
-                                    error={!!errors.timezone}
-                                    helperText={errors.timezone?.message || `If no timezone is selected, the organization's timezone (${businessTimezone}) will be used`}
-                                >
-                                    <MenuItem value="">
-                                        <em>Use Organization Timezone</em>
-                                    </MenuItem>
-                                    {[
-                                        'America/New_York',
-                                        'America/Chicago',
-                                        'America/Denver',
-                                        'America/Los_Angeles',
-                                        'America/Anchorage',
-                                        'Pacific/Honolulu',
-                                        'Europe/London',
-                                        'Europe/Paris',
-                                        'Asia/Tokyo',
-                                        'Australia/Sydney',
-                                    ].map((zone) => (
-                                        <MenuItem key={zone} value={zone}>
-                                            {zone}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
                             )}
                         />
                     </Grid>
