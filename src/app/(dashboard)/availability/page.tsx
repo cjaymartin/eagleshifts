@@ -13,6 +13,7 @@ import {
     Typography,
     Autocomplete,
     TextField,
+    Alert,
 } from '@mui/material';
 import dayjs from 'dayjs';
 import {
@@ -304,45 +305,55 @@ export default function Availability() {
                 </Container>
             )}
 
-            <Grid container direction="row" maxWidth="xl">
-                <Grid sx={{ width: '60vw', height: 700 }}>
-                    <BigCalendar
-                        components={components as any}
-                        localizer={localizer}
-                        events={calendarEvents}
-                        startAccessor="start"
-                        onDoubleClickEvent={onDoubleClickEvent}
-                        onSelectSlot={onSelectSlot}
-                        eventPropGetter={eventPropGetter}
-                        selectable={true}
-                        endAccessor="end"
-                        step={15}
-                        timeslots={4}
-                        views={['month', 'week', 'day']}
-                        defaultView="month"
-                    />
-                </Grid>
-            </Grid>
+            {selectedMemberId ? (
+                <>
+                    <Grid container direction="row" maxWidth="xl">
+                        <Grid sx={{ width: '60vw', height: 700 }}>
+                            <BigCalendar
+                                components={components as any}
+                                localizer={localizer}
+                                events={calendarEvents}
+                                startAccessor="start"
+                                onDoubleClickEvent={onDoubleClickEvent}
+                                onSelectSlot={onSelectSlot}
+                                eventPropGetter={eventPropGetter}
+                                selectable={true}
+                                endAccessor="end"
+                                step={15}
+                                timeslots={4}
+                                views={['month', 'week', 'day']}
+                                defaultView="month"
+                            />
+                        </Grid>
+                    </Grid>
 
-            {/* Add button for creating new availability */}
-            <Container sx={{ m: 5 }}>
-                <IconButton
-                    onClick={() => {
-                        const newAvailability = {
-                            startDate: new Date(),
-                            endDate: new Date(),
-                            memberId: selectedMemberId,
-                            isAvailable: true,
-                        };
-                        dialogs.open(
-                            AvailabilityDialog,
-                            newAvailability as any
-                        );
-                    }}
-                >
-                    <AddIcon /> Add Availability
-                </IconButton>
-            </Container>
+                    {/* Add button for creating new availability */}
+                    <Container sx={{ m: 5 }}>
+                        <IconButton
+                            onClick={() => {
+                                const newAvailability = {
+                                    startDate: new Date(),
+                                    endDate: new Date(),
+                                    memberId: selectedMemberId,
+                                    isAvailable: true,
+                                };
+                                dialogs.open(
+                                    AvailabilityDialog,
+                                    newAvailability as any
+                                );
+                            }}
+                        >
+                            <AddIcon /> Add Availability
+                        </IconButton>
+                    </Container>
+                </>
+            ) : (
+                <Container sx={{ mt: 4 }}>
+                    <Alert severity="info">
+                        Please choose a member of your team to access availability
+                    </Alert>
+                </Container>
+            )}
         </Box>
     );
 }

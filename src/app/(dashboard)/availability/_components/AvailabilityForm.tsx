@@ -9,24 +9,20 @@ import {
     RadioGroup,
     Stack,
     TextField,
-    Typography,
-    Alert,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { MobileTimePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
 import { combineDateTime } from '@/utils/dateUtils';
 
 // Extend dayjs with plugins
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
-dayjs.extend(timezone);
 import { useForm, Controller } from 'react-hook-form';
 import { useNotifications } from '@toolpad/core';
-import { useAuthQuery, useTeamUsersQuery } from '@/queries/users';
+import { useAuthQuery } from '@/queries/users';
 import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/api/trpc/[trpc]';
 import {
@@ -34,8 +30,6 @@ import {
     useAvailabilityUpdateMutation,
     useAvailabilityDeleteMutation,
 } from '@/queries/availability';
-import { useUserProfileQuery } from '@/queries/team';
-import { useBusinessProfileQuery } from '@/queries/team';
 
 // Type for AvailabilityForm props
 type AvailabilityFormProps = {
@@ -53,19 +47,9 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
         availability,
         isNew: propsIsNew,
         onClose,
-        userId,
         memberId,
     } = props;
     const notifications = useNotifications();
-
-    // Get user profile to access timezone
-    const { data: userProfile } = useUserProfileQuery();
-    // Get business profile for fallback timezone
-    const { data: businessProfile } = useBusinessProfileQuery();
-
-    // Get the member's timezone or fall back to business timezone
-    const memberTimezone =
-        userProfile?.timeZone || businessProfile?.timezone || 'UTC';
 
     const defaultValues = {
         id: '',
@@ -82,7 +66,6 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
     const transformedAvailability = availability
         ? {
               ...availability,
-              // For startDate and endDate, use the date fields directly without timezone conversion
               startDate: availability.startDate
                   ? dayjs.utc(availability.startDate).startOf('day').toDate()
                   : null,
@@ -112,9 +95,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
         control,
         handleSubmit,
         formState: { errors, isSubmitting },
-        reset,
         setError,
-        getValues,
     } = useForm({
         defaultValues: availability
             ? {
@@ -129,21 +110,6 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
               }
             : defaultValues,
     });
-
-    // Helper for setting form errors
-    type FormError = {
-        field: string;
-        message: string;
-    };
-
-    // const setErrors = (errorList: FormError[]) => {
-    //     errorList.forEach((err: any /*FormError*/) => {
-    //         setError(err.field, {
-    //             type: 'manual',
-    //             message: err.message,
-    //         });
-    //     });
-    // };
 
     const { data: session } = useAuthQuery();
     const user = session?.user;
@@ -184,15 +150,16 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                 return;
             }
 
-            // Validate that startDate+startTime is before endDate+endTime - use UTC to avoid timezone issues
             const startDateTime = formData.startTime
-                ? dayjs.utc(formData.startDate)
+                ? dayjs
+                      .utc(formData.startDate)
                       .hour(dayjs(formData.startTime).hour())
                       .minute(dayjs(formData.startTime).minute())
                 : dayjs.utc(formData.startDate).startOf('day');
 
             const endDateTime = formData.endTime
-                ? dayjs.utc(formData.endDate)
+                ? dayjs
+                      .utc(formData.endDate)
                       .hour(dayjs(formData.endTime).hour())
                       .minute(dayjs(formData.endTime).minute())
                 : dayjs.utc(formData.endDate).endOf('day');
@@ -203,33 +170,6 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                 });
                 return;
             }
-
-            // Use the member's timezone or fall back to business timezone
-            const timezone = memberTimezone;
-
-            // Create datetime strings by combining the date with the time
-            // Use centralized date utility to combine date and time, convert to UTC
-            const startTimeISO = combineDateTime(
-                formData.startDate,
-                formData.startTime
-                    ? dayjs(formData.startTime).format('HH:mm')
-                    : '00:00',
-                {
-                    organizationTimezone: timezone,
-                    fallbackTimezone: 'UTC',
-                }
-            );
-
-            const endTimeISO = combineDateTime(
-                formData.endDate,
-                formData.endTime
-                    ? dayjs(formData.endTime).format('HH:mm')
-                    : '23:59',
-                {
-                    organizationTimezone: timezone,
-                    fallbackTimezone: 'UTC',
-                }
-            );
 
             // Convert time selections to 4-digit integers (e.g., 0600 for 6:00 AM)
             const startTimeInt = formData.startTime
@@ -306,13 +246,15 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
 
             // Validate that startDate+startTime is before endDate+endTime - use UTC to avoid timezone issues
             const startDateTime = formData.startTime
-                ? dayjs.utc(formData.startDate)
+                ? dayjs
+                      .utc(formData.startDate)
                       .hour(dayjs(formData.startTime).hour())
                       .minute(dayjs(formData.startTime).minute())
                 : dayjs.utc(formData.startDate).startOf('day');
 
             const endDateTime = formData.endTime
-                ? dayjs.utc(formData.endDate)
+                ? dayjs
+                      .utc(formData.endDate)
                       .hour(dayjs(formData.endTime).hour())
                       .minute(dayjs(formData.endTime).minute())
                 : dayjs.utc(formData.endDate).endOf('day');
@@ -324,9 +266,6 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                 return;
             }
 
-            // Use the member's timezone or fall back to business timezone
-            const timezone = memberTimezone;
-
             // Create datetime strings by combining the date with the time
             // Use centralized date utility to combine date and time, convert to UTC
             const startTimeISO = combineDateTime(
@@ -335,7 +274,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                     ? dayjs(formData.startTime).format('HH:mm')
                     : '00:00',
                 {
-                    organizationTimezone: timezone,
+                    organizationTimezone: 'UTC',
                     fallbackTimezone: 'UTC',
                 }
             );
@@ -346,7 +285,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                     ? dayjs(formData.endTime).format('HH:mm')
                     : '23:59',
                 {
-                    organizationTimezone: timezone,
+                    organizationTimezone: 'UTC',
                     fallbackTimezone: 'UTC',
                 }
             );
@@ -461,6 +400,36 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                                 />
                             )}
                         />
+
+                        <Controller
+                            name="startTime"
+                            control={control}
+                            render={({ field }) => (
+                                <MobileTimePicker
+                                    label="Start Time (optional)"
+                                    value={
+                                        field.value ? dayjs(field.value) : null
+                                    }
+                                    onChange={(date) =>
+                                        field.onChange(
+                                            date ? date.toDate() : null
+                                        )
+                                    }
+                                    slotProps={{
+                                        textField: {
+                                            error: !!errors.startTime,
+                                            helperText:
+                                                errors.startTime?.message,
+                                            fullWidth: true,
+                                        },
+                                    }}
+                                />
+                            )}
+                        />
+                    </Stack>
+
+                    {/* Time fields */}
+                    <Stack direction="row" spacing={2}>
                         <Controller
                             name="endDate"
                             control={control}
@@ -487,37 +456,6 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                                 />
                             )}
                         />
-                    </Stack>
-
-                    {/* Time fields */}
-                    <Stack direction="row" spacing={2}>
-                        <Controller
-                            name="startTime"
-                            control={control}
-                            render={({ field }) => (
-                                <MobileTimePicker
-                                    label="Start Time (optional)"
-                                    value={
-                                        field.value
-                                            ? dayjs(field.value)
-                                            : null
-                                    }
-                                    onChange={(date) =>
-                                        field.onChange(
-                                            date ? date.toDate() : null
-                                        )
-                                    }
-                                    slotProps={{
-                                        textField: {
-                                            error: !!errors.startTime,
-                                            helperText:
-                                                errors.startTime?.message,
-                                            fullWidth: true,
-                                        },
-                                    }}
-                                />
-                            )}
-                        />
                         <Controller
                             name="endTime"
                             control={control}
@@ -525,9 +463,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                                 <MobileTimePicker
                                     label="End Time (optional)"
                                     value={
-                                        field.value
-                                            ? dayjs(field.value)
-                                            : null
+                                        field.value ? dayjs(field.value) : null
                                     }
                                     onChange={(date) =>
                                         field.onChange(
