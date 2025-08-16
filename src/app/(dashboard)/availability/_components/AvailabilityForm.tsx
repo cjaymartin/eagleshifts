@@ -16,6 +16,8 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import utc from 'dayjs/plugin/utc';
 import { combineDateTime } from '@/utils/dateUtils';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 // Extend dayjs with plugins
 dayjs.extend(customParseFormat);
@@ -30,6 +32,83 @@ import {
     useAvailabilityUpdateMutation,
     useAvailabilityDeleteMutation,
 } from '@/queries/availability';
+
+// Define form data type
+type AvailabilityFormData = {
+    id?: string;
+    startDate: Date | null;
+    endDate: Date | null;
+    startTime: Date | null;
+    endTime: Date | null;
+    isAvailable: boolean;
+    desc: string;
+    memberId?: string;
+};
+
+// Create zod schema for form validation
+const availabilityFormSchema = z
+    .object({
+        id: z.string().optional(),
+        startDate: z.preprocess(
+            (val) =>
+                val === null || val === undefined || val === ''
+                    ? undefined
+                    : val,
+            z.date({
+                error: (issue) => {
+                    if (issue.code === 'invalid_type') {
+                        return 'Start date is required';
+                    }
+                },
+            })
+        ),
+        endDate: z.preprocess(
+            (val) =>
+                val === null || val === undefined || val === ''
+                    ? undefined
+                    : val,
+            z.date({
+                error: (issue) => {
+                    if (issue.code === 'invalid_type') {
+                        return 'End date is required';
+                    }
+                },
+            })
+        ),
+        startTime: z.date().nullable(),
+        endTime: z.date().nullable(),
+        isAvailable: z.boolean(),
+        desc: z.string().default(''),
+        memberId: z.string().optional(),
+    })
+    .refine(
+        (data) => {
+            // Skip validation if either date is missing
+            if (!data.startDate || !data.endDate) return true;
+
+            // Create datetime objects for comparison
+            const startDateTime = data.startTime
+                ? dayjs
+                      .utc(data.startDate)
+                      .hour(dayjs(data.startTime).hour())
+                      .minute(dayjs(data.startTime).minute())
+                : dayjs.utc(data.startDate).startOf('day');
+
+            const endDateTime = data.endTime
+                ? dayjs
+                      .utc(data.endDate)
+                      .hour(dayjs(data.endTime).hour())
+                      .minute(dayjs(data.endTime).minute())
+                : dayjs.utc(data.endDate).endOf('day');
+
+            // Validate that start datetime is before end datetime
+            return !startDateTime.isAfter(endDateTime);
+        },
+        {
+            message: 'End date/time must be after start date/time',
+            path: ['endDate'], // Show error on the endDate field
+        }
+    );
 
 // Type for AvailabilityForm props
 type AvailabilityFormProps = {
@@ -96,7 +175,8 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
         handleSubmit,
         formState: { errors, isSubmitting },
         setError,
-    } = useForm({
+    } = useForm<AvailabilityFormData>({
+        resolver: zodResolver(availabilityFormSchema) as any,
         defaultValues: availability
             ? {
                   id: transformedAvailability.id,
@@ -124,53 +204,9 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
     const updateMutation = useAvailabilityUpdateMutation();
     const deleteMutation = useAvailabilityDeleteMutation();
 
-    // Define form data type
-    type AvailabilityFormData = {
-        id?: string;
-        startDate: Date | null;
-        endDate: Date | null;
-        startTime: Date | null;
-        endTime: Date | null;
-        isAvailable: boolean;
-        desc: string;
-        memberId?: string;
-    };
-
     // Form submission handlers
     async function onNewFormSubmit(formData: AvailabilityFormData) {
         try {
-            // Validate form data
-            if (!formData.startDate) {
-                setError('startDate', { message: 'Start date is required' });
-                return;
-            }
-
-            if (!formData.endDate) {
-                setError('endDate', { message: 'End date is required' });
-                return;
-            }
-
-            const startDateTime = formData.startTime
-                ? dayjs
-                      .utc(formData.startDate)
-                      .hour(dayjs(formData.startTime).hour())
-                      .minute(dayjs(formData.startTime).minute())
-                : dayjs.utc(formData.startDate).startOf('day');
-
-            const endDateTime = formData.endTime
-                ? dayjs
-                      .utc(formData.endDate)
-                      .hour(dayjs(formData.endTime).hour())
-                      .minute(dayjs(formData.endTime).minute())
-                : dayjs.utc(formData.endDate).endOf('day');
-
-            if (startDateTime.isAfter(endDateTime)) {
-                setError('endDate', {
-                    message: 'End date/time must be after start date/time',
-                });
-                return;
-            }
-
             // Convert time selections to 4-digit integers (e.g., 0600 for 6:00 AM)
             const startTimeInt = formData.startTime
                 ? parseInt(dayjs(formData.startTime).format('HHmm'))
@@ -193,15 +229,6 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                 isAvailable: formData.isAvailable,
                 memberId: formData.memberId || memberId || user?.memberId,
             };
-
-            // Ensure memberId is provided
-            if (!availabilityData.memberId) {
-                notifications.show('Member ID is required', {
-                    severity: 'error',
-                    autoHideDuration: 3000,
-                });
-                return;
-            }
 
             // Create availability
             await createMutation.mutateAsync(availabilityData as any);
@@ -233,43 +260,10 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                 return;
             }
 
-            // Validate form data
-            if (!formData.startDate) {
-                setError('startDate', { message: 'Start date is required' });
-                return;
-            }
-
-            if (!formData.endDate) {
-                setError('endDate', { message: 'End date is required' });
-                return;
-            }
-
-            // Validate that startDate+startTime is before endDate+endTime - use UTC to avoid timezone issues
-            const startDateTime = formData.startTime
-                ? dayjs
-                      .utc(formData.startDate)
-                      .hour(dayjs(formData.startTime).hour())
-                      .minute(dayjs(formData.startTime).minute())
-                : dayjs.utc(formData.startDate).startOf('day');
-
-            const endDateTime = formData.endTime
-                ? dayjs
-                      .utc(formData.endDate)
-                      .hour(dayjs(formData.endTime).hour())
-                      .minute(dayjs(formData.endTime).minute())
-                : dayjs.utc(formData.endDate).endOf('day');
-
-            if (startDateTime.isAfter(endDateTime)) {
-                setError('endDate', {
-                    message: 'End date/time must be after start date/time',
-                });
-                return;
-            }
-
             // Create datetime strings by combining the date with the time
             // Use centralized date utility to combine date and time, convert to UTC
             const startTimeISO = combineDateTime(
-                formData.startDate,
+                formData.startDate!,
                 formData.startTime
                     ? dayjs(formData.startTime).format('HH:mm')
                     : '00:00',
@@ -280,7 +274,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             );
 
             const endTimeISO = combineDateTime(
-                formData.endDate,
+                formData.endDate!,
                 formData.endTime
                     ? dayjs(formData.endTime).format('HH:mm')
                     : '23:59',
