@@ -11,7 +11,7 @@ import {
     TextField,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { MobileTimePicker } from '@mui/x-date-pickers';
+import { TimePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import utc from 'dayjs/plugin/utc';
@@ -399,7 +399,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                             name="startTime"
                             control={control}
                             render={({ field }) => (
-                                <MobileTimePicker
+                                <TimePicker
                                     label="Start Time (optional)"
                                     value={
                                         field.value ? dayjs(field.value) : null
@@ -454,7 +454,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                             name="endTime"
                             control={control}
                             render={({ field }) => (
-                                <MobileTimePicker
+                                <TimePicker
                                     label="End Time (optional)"
                                     value={
                                         field.value ? dayjs(field.value) : null
