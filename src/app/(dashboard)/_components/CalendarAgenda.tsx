@@ -348,32 +348,30 @@ function Agenda({
         <div className="rbc-agenda-view">
             {events.length !== 0 ? (
                 <React.Fragment>
-                    <table ref={headerRef} className="rbc-agenda-table">
-                        <thead>
-                            <tr>
-                                <th className="rbc-header" ref={dateColRef}>
-                                    {messages.date}
-                                </th>
-                                <th className="rbc-header" ref={timeColRef}>
-                                    {messages.time}
-                                </th>
-                                <th
-                                    className="rbc-header"
-                                    style={{ width: '40%' }}
-                                >
-                                    {messages.event}
-                                </th>
-                                <th
-                                    className="rbc-header"
-                                    style={{ width: '60%' }}
-                                >
-                                    Location
-                                </th>
-                            </tr>
-                        </thead>
-                    </table>
                     <div className="rbc-agenda-content" ref={contentRef}>
-                        <table className="rbc-agenda-table">
+                        <table ref={headerRef} className="rbc-agenda-table">
+                            <thead>
+                                <tr>
+                                    <th className="rbc-header" ref={dateColRef}>
+                                        {messages.date}
+                                    </th>
+                                    <th className="rbc-header" ref={timeColRef}>
+                                        {messages.time}
+                                    </th>
+                                    <th
+                                        className="rbc-header"
+                                        style={{ width: '40%' }}
+                                    >
+                                        {messages.event}
+                                    </th>
+                                    <th
+                                        className="rbc-header"
+                                        style={{ width: '60%' }}
+                                    >
+                                        Location
+                                    </th>
+                                </tr>
+                            </thead>
                             <tbody ref={tbodyRef}>
                                 {range.map((day, idx) =>
                                     renderDay(day, events, idx)
