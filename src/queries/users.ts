@@ -189,7 +189,9 @@ export function useIsImitatingQuery() {
                     //     'Content-Type': 'application/json',
                     // },
                     credentials: 'include', // Include cookies in the request
-                });
+                }).catch(() => ({
+                    ok: false,
+                }));
 
                 if (!response.ok) {
                     return false;
