@@ -197,7 +197,7 @@ export function useIsImitatingQuery() {
                     return false;
                 }
 
-                const data = await response.json();
+                const data = await (response as any)?.json();
                 return data.isImitating;
             } catch (error) {
                 console.error('Error checking imitation status:', error);

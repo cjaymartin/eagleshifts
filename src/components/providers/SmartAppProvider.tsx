@@ -2,7 +2,6 @@
 
 import { NextAppProvider } from '@toolpad/core/nextjs';
 import React, { useState, useEffect, Suspense } from 'react';
-import { NotificationsProvider } from '@/components/providers/NotificationsProvider';
 import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
 import { branding } from '@/config/branding';
@@ -141,18 +140,7 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
             authentication={authentication}
             session={session}
         >
-            <NotificationsProvider
-                slotProps={{
-                    snackbar: {
-                        anchorOrigin: {
-                            vertical: 'bottom',
-                            horizontal: 'left',
-                        },
-                    },
-                }}
-            >
-                {children}
-            </NotificationsProvider>
+            {children}
         </NextAppProvider>
     );
 }

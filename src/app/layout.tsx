@@ -11,6 +11,7 @@ import { CookiesProvider } from 'next-client-cookies/server';
 import SmartAppProvider from '@/components/providers/SmartAppProvider';
 import { ClientLocalizationProvider } from '@/components/providers/ClientLocalizationProvider';
 import { DialogsProvider } from '@toolpad/core';
+import { NotificationsProvider } from '@/components/providers/NotificationsProvider';
 import { TRPCProvider } from '@/lib/trpc/Provider';
 
 const roboto = Roboto({
@@ -46,23 +47,34 @@ export default function RootLayout({
             <body>
                 <ClientLocalizationProvider>
                     <DialogsProvider>
-                        <AppRouterCacheProvider>
-                            <TRPCProvider>
-                                {/*<ReactQueryProvider>*/}
-                                <SubdomainProvider>
-                                    <CookiesProvider>
-                                        <React.Suspense
-                                            fallback={<LinearProgress />}
-                                        >
-                                            <SmartAppProvider>
-                                                {children}
-                                            </SmartAppProvider>
-                                        </React.Suspense>
-                                    </CookiesProvider>
-                                </SubdomainProvider>
-                                {/*</ReactQueryProvider>*/}
-                            </TRPCProvider>
-                        </AppRouterCacheProvider>
+                        <NotificationsProvider
+                            slotProps={{
+                                snackbar: {
+                                    anchorOrigin: {
+                                        vertical: 'bottom',
+                                        horizontal: 'left',
+                                    },
+                                },
+                            }}
+                        >
+                            <AppRouterCacheProvider>
+                                <TRPCProvider>
+                                    {/*<ReactQueryProvider>*/}
+                                    <SubdomainProvider>
+                                        <CookiesProvider>
+                                            <React.Suspense
+                                                fallback={<LinearProgress />}
+                                            >
+                                                <SmartAppProvider>
+                                                    {children}
+                                                </SmartAppProvider>
+                                            </React.Suspense>
+                                        </CookiesProvider>
+                                    </SubdomainProvider>
+                                    {/*</ReactQueryProvider>*/}
+                                </TRPCProvider>
+                            </AppRouterCacheProvider>
+                        </NotificationsProvider>
                     </DialogsProvider>
                 </ClientLocalizationProvider>
             </body>

@@ -24,6 +24,8 @@ import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { useDialogs } from '@toolpad/core';
 import { useNotifications } from '@/components/providers/NotificationsProvider';
 import FormDatePicker from '@/components/form/FormDatePicker';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import {
@@ -49,6 +51,97 @@ import { reset } from 'next/dist/lib/picocolors';
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+// Define form data type
+type ShiftFormData = {
+    id?: string;
+    title: string;
+    locationId: string | null;
+    legacyLocation?: string;
+    date: Date | null;
+    startTime: Date | null;
+    endTime: Date | null;
+    slots: number;
+    notes?: string;
+    adminNotes?: string;
+    assignments?: any[];
+};
+
+// Create zod schema for form validation
+const shiftFormSchema = z
+    .object({
+        id: z.string().optional(),
+        title: z
+            .string({
+                error: (issue) => {
+                    if (issue.code === 'invalid_type') {
+                        return 'Title is required';
+                    }
+                },
+            })
+            .min(1, 'Title is required'),
+        locationId: z
+            .string({
+                error: (issue) => {
+                    if (issue.code === 'invalid_type') {
+                        return 'Location is required';
+                    }
+                },
+            })
+            .min(1, 'Location is required')
+            .nonoptional(),
+        legacyLocation: z.string().optional(),
+        date: z.date({
+            error: (issue) => {
+                if (issue.code === 'invalid_type') {
+                    return 'Date is required';
+                }
+            },
+        }),
+        startTime: z.date({
+            error: (issue) => {
+                if (issue.code === 'invalid_type') {
+                    return 'Start time is required';
+                }
+            },
+        }),
+        endTime: z.date({
+            error: (issue) => {
+                if (issue.code === 'invalid_type') {
+                    return 'End time is required';
+                }
+            },
+        }),
+        slots: z
+            .number({
+                error: (issue) => {
+                    if (issue.code === 'invalid_type') {
+                        return 'Slots is required';
+                    }
+                },
+            })
+            .min(1, 'At least one slot is required'),
+        notes: z.string().optional(),
+        adminNotes: z.string().optional(),
+        assignments: z.array(z.any()).optional(),
+    })
+    .refine(
+        (data) => {
+            // Skip validation if either time is missing
+            if (!data.startTime || !data.endTime) return true;
+
+            // Create datetime objects for comparison
+            const startDateTime = dayjs(data.startTime);
+            const endDateTime = dayjs(data.endTime);
+
+            // Validate that start time is before end time
+            return !startDateTime.isAfter(endDateTime);
+        },
+        {
+            message: 'End time must be after start time',
+            path: ['endTime'], // Show error on the endTime field
+        }
+    );
 
 // Helper function to close the dialog
 const useShiftDialogHelpers = () => ({
@@ -162,7 +255,8 @@ export default function ShiftForm(props: ShiftFormProps) {
           }
         : defaultValues;
 
-    const methods = useForm({
+    const methods = useForm<ShiftFormData>({
+        resolver: zodResolver(shiftFormSchema) as any,
         defaultValues: transformedShift as any,
     });
     const {
@@ -208,34 +302,9 @@ export default function ShiftForm(props: ShiftFormProps) {
     const setCancelledMutations = useShiftCancelMutation();
 
     // Form submission handlers
-    async function onNewFormSubmit(formData: any) {
+    async function onNewFormSubmit(formData: ShiftFormData) {
         try {
-            // Validate form data
-            if (!formData.title) {
-                setError('title', { message: 'Title is required' });
-                return;
-            }
-            if (!formData.locationId) {
-                setError('locationId', { message: 'Location is required' });
-                return;
-            }
-            if (!formData.date) {
-                setError('date', { message: 'Date is required' });
-                return;
-            }
-            if (!formData.startTime) {
-                setError('startTime', { message: 'Start time is required' });
-                return;
-            }
-            if (!formData.endTime) {
-                setError('endTime', { message: 'End time is required' });
-                return;
-            }
             console.log({ formData });
-            if (!formData.slots) {
-                setError('slots', { message: 'Slots is required' });
-                return;
-            }
 
             // Use the shift's timezone, or organization's timezone, or default to UTC
             const timezone =
@@ -245,7 +314,7 @@ export default function ShiftForm(props: ShiftFormProps) {
             // We need to work with the local time directly to avoid double timezone conversion
             // Use centralized date utility to combine date and time, convert to UTC
             const startTimeISO = combineDateTime(
-                formData.date,
+                formData.date!,
                 dayjs(formData.startTime).format('HH:mm'),
                 {
                     organizationTimezone: timezone,
@@ -254,7 +323,7 @@ export default function ShiftForm(props: ShiftFormProps) {
             );
 
             const endTimeISO = combineDateTime(
-                formData.date,
+                formData.date!,
                 dayjs(formData.endTime).format('HH:mm'),
                 {
                     organizationTimezone: timezone,
@@ -269,7 +338,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                 endTime: endTimeISO,
                 slots: Number(formData.slots),
                 timezone: timezone,
-                locationId: formData.locationId,
+                locationId: formData.locationId!,
                 legacyLocation: formData.locationId
                     ? undefined
                     : formData.legacyLocation,
@@ -327,7 +396,7 @@ export default function ShiftForm(props: ShiftFormProps) {
         }
     }
 
-    async function onUpdateFormSubmit(formData: any) {
+    async function onUpdateFormSubmit(formData: ShiftFormData) {
         try {
             if (!shiftId) {
                 notifications.show('Shift ID is required for updates', {
@@ -337,26 +406,12 @@ export default function ShiftForm(props: ShiftFormProps) {
                 return;
             }
 
-            // Validate required fields
-            if (!formData.date) {
-                setError('date', { message: 'Date is required' });
-                return;
-            }
-            if (!formData.startTime) {
-                setError('startTime', { message: 'Start time is required' });
-                return;
-            }
-            if (!formData.endTime) {
-                setError('endTime', { message: 'End time is required' });
-                return;
-            }
-
             const timezone =
                 shift?.timezone || businessProfile?.timezone || 'UTC';
 
             // Use centralized date utility to combine date and time, convert to UTC
             const startTimeISO = combineDateTime(
-                formData.date,
+                formData.date!,
                 dayjs(formData.startTime).format('HH:mm'),
                 {
                     organizationTimezone: timezone,
@@ -365,7 +420,7 @@ export default function ShiftForm(props: ShiftFormProps) {
             );
 
             const endTimeISO = combineDateTime(
-                formData.date,
+                formData.date!,
                 dayjs(formData.endTime).format('HH:mm'),
                 {
                     organizationTimezone: timezone,
@@ -380,7 +435,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                 endTime: endTimeISO,
                 slots: Number(formData.slots),
                 timezone: timezone,
-                locationId: formData.locationId,
+                locationId: formData.locationId!,
                 legacyLocation: formData.locationId
                     ? undefined
                     : formData.legacyLocation,
@@ -674,7 +729,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 control={control}
                                 render={({ field }) => (
                                     <ShiftAssignmentTool
-                                        {...field}
+                                        {...(field as any)}
                                         shift={shift as any}
                                         control={control}
                                         readOnly={!isAdmin}
