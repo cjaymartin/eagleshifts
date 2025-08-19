@@ -96,10 +96,13 @@ jest.mock('@/queries/shifts', () => ({
     }),
 }));
 
-jest.mock('@toolpad/core', () => ({
+jest.mock('@/components/providers/NotificationsProvider', () => ({
     useNotifications: () => ({
         show: jest.fn(),
     }),
+}));
+
+jest.mock('@toolpad/core', () => ({
     useDialogs: () => ({
         confirm: jest.fn(() => Promise.resolve(true)),
     }),

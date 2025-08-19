@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import { Controller, useForm } from 'react-hook-form';
-import { useNotifications } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import {
     useLocationCreateMutation,
     useLocationGroupsQuery,

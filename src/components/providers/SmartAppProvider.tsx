@@ -2,7 +2,7 @@
 
 import { NextAppProvider } from '@toolpad/core/nextjs';
 import React, { useState, useEffect, Suspense } from 'react';
-import { NotificationsProvider } from '@toolpad/core';
+import { NotificationsProvider } from '@/components/providers/NotificationsProvider';
 import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
 import { branding } from '@/config/branding';

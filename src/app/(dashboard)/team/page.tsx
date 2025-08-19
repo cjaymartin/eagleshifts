@@ -33,7 +33,8 @@ import {
     useDeleteInvitationMutation,
     useReInviteMutation,
 } from '@/queries/invitations';
-import { useDialogs, useNotifications } from '@toolpad/core';
+import { useDialogs } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import TeamDialog from './_components/TeamDialog';
 import { sortBy } from 'lodash';
 import { trpc } from '@/lib/trpc/client';

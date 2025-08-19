@@ -12,7 +12,7 @@ import {
     Typography,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
-import { useNotifications } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/api/trpc/[trpc]';
 import { useAuthQuery } from '@/queries/users';

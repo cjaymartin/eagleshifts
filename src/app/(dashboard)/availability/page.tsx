@@ -30,7 +30,8 @@ import {
     useUpdateDefaultAvailabilityMutation,
 } from '@/queries/users';
 import { trpc } from '@/lib/trpc/client';
-import { useDialogs, useNotifications } from '@toolpad/core';
+import { useDialogs } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import AddIcon from '@mui/icons-material/Add';
 import AvailabilityDialog from './_components/AvailabilityDialog';
 

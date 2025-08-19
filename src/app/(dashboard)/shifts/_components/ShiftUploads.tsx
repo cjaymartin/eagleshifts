@@ -12,7 +12,7 @@ import {
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
-import { useNotifications } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import {
     useShiftUploadsQuery,
     useUploadFileMutation,

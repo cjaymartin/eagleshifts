@@ -19,7 +19,7 @@ import {
     useUserNotificationSettingsQuery,
     useUpdateUserNotificationSettingsMutation,
 } from '@/queries/team';
-import { useNotifications } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import { useAuthQuery } from '@/queries/users';
 
 // Schema for user notification settings

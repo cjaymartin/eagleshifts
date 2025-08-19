@@ -15,7 +15,7 @@ import {
     useUserIcalLinkQuery,
     useRegenerateUserIcalLinkMutation,
 } from '@/queries/team';
-import { useNotifications } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 
 export default function IcalLinkControl() {
     const { data: icalData, isLoading } = useUserIcalLinkQuery();

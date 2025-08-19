@@ -10,7 +10,7 @@ import {
     Typography,
 } from '@mui/material';
 import { Controller, useForm } from 'react-hook-form';
-import { useNotifications } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import {
     useLocationGroupCreateMutation,
     useLocationGroupsQuery,

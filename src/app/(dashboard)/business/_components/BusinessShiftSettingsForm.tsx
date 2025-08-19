@@ -21,7 +21,7 @@ import {
     useUpdateBusinessShiftSettingsMutation,
 } from '@/queries/team';
 import { useInitializeUploadGroupsMutation } from '@/queries/uploads';
-import { useNotifications } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import { debounce } from 'lodash';
 
 // Schema for business shift settings

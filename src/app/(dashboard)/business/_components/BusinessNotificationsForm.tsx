@@ -9,7 +9,7 @@ import {
     useBusinessNotificationSettingsQuery,
     useUpdateBusinessNotificationSettingsMutation,
 } from '@/queries/team';
-import { useNotifications } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import DayOfWeekPicker from './DayOfWeekPicker';
 
 // Schema for business notification settings

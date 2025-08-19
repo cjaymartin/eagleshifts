@@ -9,7 +9,7 @@ import {
     useUserProfileQuery,
     useUpdateUserProfileMutation,
 } from '@/queries/team';
-import { useNotifications } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import MuiPhoneNumber from 'mui-phone-number';
 // Schema for user profile
 const profileFormSchema = z.object({

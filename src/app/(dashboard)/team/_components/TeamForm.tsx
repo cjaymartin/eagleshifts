@@ -15,7 +15,7 @@ import {
     DialogActions,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
-import { useNotifications } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import { useAuthQuery } from '@/queries/users';
 import { useCreateInvitationMutation } from '@/queries/invitations';
 import { z } from 'zod';

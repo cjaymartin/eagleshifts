@@ -21,7 +21,8 @@ import timezone from 'dayjs/plugin/timezone';
 import { combineDateTime } from '@/utils/dateUtils';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
-import { useNotifications, useDialogs } from '@toolpad/core';
+import { useDialogs } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import FormDatePicker from '@/components/form/FormDatePicker';
 
 import AssignmentIcon from '@mui/icons-material/Assignment';

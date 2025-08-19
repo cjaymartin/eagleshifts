@@ -28,7 +28,8 @@ import * as FileSaver from 'file-saver';
 import Download from '@mui/icons-material/Download';
 import { useBusinessProfileQuery } from '@/queries/team';
 import { useAuthQuery, useTeamUsersLookupQuery } from '@/queries/users';
-import { useDialogs, useNotifications } from '@toolpad/core';
+import { useDialogs } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import RequestDialog from './_components/RequestDialog';
 import {
     useShiftRequestsListQuery,

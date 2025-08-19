@@ -19,7 +19,8 @@ import {
     Typography,
 } from '@mui/material';
 import { Add, Close, Delete, Edit, Group } from '@mui/icons-material';
-import { useNotifications, useDialogs } from '@toolpad/core';
+import { useDialogs } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 import { useAuthQuery } from '@/queries/users';
 import {
     useLocationGroupsQuery,

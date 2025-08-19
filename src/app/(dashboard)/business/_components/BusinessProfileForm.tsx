@@ -16,7 +16,7 @@ import {
     useBusinessProfileQuery,
     useUpdateBusinessProfileMutation,
 } from '@/queries/team';
-import { useNotifications } from '@toolpad/core';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 
 // We need to create a DayOfWeekPicker component
 import DayOfWeekPicker from './DayOfWeekPicker';
