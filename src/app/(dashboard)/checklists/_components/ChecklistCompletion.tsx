@@ -29,7 +29,7 @@ import { trpc } from '@/lib/trpc/client';
 import { useNotifications } from '@/components/providers/NotificationsProvider';
 import dayjs from 'dayjs';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { useUploadFileMutation, readFileAsBase64, useUploadGroupsQuery } from '@/queries/uploads';
+import { useUploadFileMutation, readFileAsBase64, useUploadGroupsQuery, useCreateChecklistUploadGroupMutation } from '@/queries/uploads';
 
 type ChecklistCompletionProps = {
     shift: any;
@@ -52,6 +52,12 @@ export default function ChecklistCompletion({
     } | null>(null);
     const [geoError, setGeoError] = useState<string | null>(null);
     const [uploading, setUploading] = useState<Record<string, boolean>>({});
+    const [locationModalOpen, setLocationModalOpen] = useState(false);
+    const [selectedLocation, setSelectedLocation] = useState<{
+        latitude: number;
+        longitude: number;
+        itemName: string;
+    } | null>(null);
 
     const notifications = useNotifications();
 
@@ -59,7 +65,10 @@ export default function ChecklistCompletion({
     const uploadFileMutation = useUploadFileMutation();
 
     // Get upload groups
-    const { data: uploadGroups = [] } = useUploadGroupsQuery();
+    const { data: uploadGroups = [], refetch: refetchUploadGroups } = useUploadGroupsQuery();
+
+    // Create checklist upload group mutation
+    const createChecklistUploadGroupMutation = useCreateChecklistUploadGroupMutation();
 
     // Handle file upload
     const handleFileUpload = async (
@@ -90,7 +99,27 @@ export default function ChecklistCompletion({
             } else if (uploadGroups.length > 0) {
                 uploadGroupId = uploadGroups[0].id;
             } else {
-                throw new Error("No upload groups available. Please contact an administrator.");
+                // No upload groups available - try to create a default checklist upload group
+                try {
+                    notifications.info("No upload groups found. Creating a default checklist upload group...");
+
+                    const newGroup = await createChecklistUploadGroupMutation.mutateAsync();
+
+                    if (newGroup && newGroup.id) {
+                        uploadGroupId = newGroup.id;
+                        // Refresh the upload groups list
+                        await refetchUploadGroups();
+                        notifications.success("Created a default checklist upload group.");
+                    } else {
+                        throw new Error("Failed to create a default checklist upload group.");
+                    }
+                } catch (error: any) {
+                    console.error('Error creating checklist upload group:', error);
+                    notifications.error(
+                        "No upload groups available and failed to create a default one. Please ask an administrator to set up upload groups in the Business Settings page."
+                    );
+                    throw new Error("No upload groups available. Please ask an administrator to set up upload groups in the Business Settings page.");
+                }
             }
 
             // Upload file
@@ -328,6 +357,40 @@ export default function ChecklistCompletion({
                 {checklistData.name}
             </Typography>
 
+            {/* Map button section at the top of the checklist */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, mt: 1 }}>
+                <LocationOnIcon color="primary" sx={{ mr: 1 }} />
+                <Typography variant="body2" sx={{ flexGrow: 1 }}>
+                    {geolocation ? 
+                        `Current location: ${geolocation.latitude.toFixed(6)}, ${geolocation.longitude.toFixed(6)}` : 
+                        "No geo available"}
+                </Typography>
+
+                {/* Add a prominent map button that's always visible */}
+                <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<LocationOnIcon />}
+                    onClick={() => {
+                        if (geolocation) {
+                            setSelectedLocation({
+                                latitude: geolocation.latitude,
+                                longitude: geolocation.longitude,
+                                itemName: "Current Location"
+                            });
+                            setLocationModalOpen(true);
+                        } else {
+                            getGeolocation();
+                            notifications.info("Getting your current location...");
+                        }
+                    }}
+                    size="small"
+                    sx={{ ml: 2 }}
+                >
+                    {geolocation ? "View Map" : "Get Location"}
+                </Button>
+            </Box>
+
             {checklistData.description && (
                 <Typography variant="body2" color="text.secondary" paragraph>
                     {checklistData.description}
@@ -396,6 +459,33 @@ export default function ChecklistCompletion({
                                                     />
                                                 </Tooltip>
                                             )}
+                                            {isCompleted && completions[item.id] && completions[item.id].latitude && completions[item.id].longitude && (
+                                                <Tooltip title="View location coordinates">
+                                                    <IconButton 
+                                                        size="medium" 
+                                                        color="primary"
+                                                        sx={{ 
+                                                            ml: 1,
+                                                            border: '1px solid',
+                                                            borderColor: 'primary.main',
+                                                            backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                                                            '&:hover': {
+                                                                backgroundColor: 'rgba(25, 118, 210, 0.15)',
+                                                            }
+                                                        }}
+                                                        onClick={() => {
+                                                            setSelectedLocation({
+                                                                latitude: completions[item.id].latitude,
+                                                                longitude: completions[item.id].longitude,
+                                                                itemName: item.name
+                                                            });
+                                                            setLocationModalOpen(true);
+                                                        }}
+                                                    >
+                                                        <LocationOnIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
                                             {!isCompleted &&
                                                 !hasRequiredFields && (
                                                     <Tooltip title="Required fields missing">
@@ -407,72 +497,74 @@ export default function ChecklistCompletion({
                                                 )}
                                         </Box>
                                     }
-                                    secondary={
-                                        <Box
-                                            sx={{
-                                                display: 'flex',
-                                                flexWrap: 'wrap',
-                                                gap: 1,
-                                                mt: 1,
-                                            }}
-                                        >
-                                            {item.geoLocationEnabled && (
-                                                <Chip
-                                                    icon={<LocationOnIcon />}
-                                                    label="Location Required"
-                                                    size="small"
-                                                    color={
-                                                        geolocation
-                                                            ? 'success'
-                                                            : 'primary'
-                                                    }
-                                                    variant="outlined"
-                                                />
-                                            )}
-
-                                            {item.commentsOption !== 'off' && (
-                                                <Chip
-                                                    icon={<CommentIcon />}
-                                                    label={
-                                                        item.commentsOption ===
-                                                        'required'
-                                                            ? 'Comments Required'
-                                                            : 'Comments Optional'
-                                                    }
-                                                    size="small"
-                                                    color={
-                                                        item.commentsOption ===
-                                                        'required'
-                                                            ? 'secondary'
-                                                            : 'default'
-                                                    }
-                                                    variant="outlined"
-                                                />
-                                            )}
-
-                                            {item.uploadOption !== 'off' && (
-                                                <Chip
-                                                    icon={<AttachFileIcon />}
-                                                    label={
-                                                        item.uploadOption ===
-                                                        'required'
-                                                            ? 'Upload Required'
-                                                            : 'Upload Optional'
-                                                    }
-                                                    size="small"
-                                                    color={
-                                                        item.uploadOption ===
-                                                        'required'
-                                                            ? 'secondary'
-                                                            : 'default'
-                                                    }
-                                                    variant="outlined"
-                                                />
-                                            )}
-                                        </Box>
-                                    }
                                 />
                             </ListItem>
+
+                            {/* Chips section - moved outside of ListItemText to avoid nesting div in p */}
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    gap: 1,
+                                    mt: 1,
+                                    ml: 9, // Align with the text above
+                                    mb: 1,
+                                }}
+                            >
+                                {item.geoLocationEnabled && (
+                                    <Chip
+                                        icon={<LocationOnIcon />}
+                                        label="Location Required"
+                                        size="small"
+                                        color={
+                                            geolocation
+                                                ? 'success'
+                                                : 'primary'
+                                        }
+                                        variant="outlined"
+                                    />
+                                )}
+
+                                {item.commentsOption !== 'off' && (
+                                    <Chip
+                                        icon={<CommentIcon />}
+                                        label={
+                                            item.commentsOption ===
+                                            'required'
+                                                ? 'Comments Required'
+                                                : 'Comments Optional'
+                                        }
+                                        size="small"
+                                        color={
+                                            item.commentsOption ===
+                                            'required'
+                                                ? 'secondary'
+                                                : 'default'
+                                        }
+                                        variant="outlined"
+                                    />
+                                )}
+
+                                {item.uploadOption !== 'off' && (
+                                    <Chip
+                                        icon={<AttachFileIcon />}
+                                        label={
+                                            item.uploadOption ===
+                                            'required'
+                                                ? 'Upload Required'
+                                                : 'Upload Optional'
+                                        }
+                                        size="small"
+                                        color={
+                                            item.uploadOption ===
+                                            'required'
+                                                ? 'secondary'
+                                                : 'default'
+                                        }
+                                        variant="outlined"
+                                    />
+                                )}
+                            </Box>
 
                             {(item.commentsOption !== 'off' ||
                                 item.uploadOption !== 'off') && (
@@ -625,6 +717,46 @@ export default function ChecklistCompletion({
                     <Button onClick={handleCancelUncheck}>Cancel</Button>
                     <Button onClick={handleConfirmUncheck} color="error">
                         Uncheck
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Location Coordinates Modal */}
+            <Dialog 
+                open={locationModalOpen} 
+                onClose={() => setLocationModalOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>
+                    Location Coordinates for {selectedLocation?.itemName}
+                </DialogTitle>
+                <DialogContent>
+                    {selectedLocation && (
+                        <Box sx={{ py: 2 }}>
+                            <Typography variant="h6" gutterBottom>
+                                Latitude: {selectedLocation.latitude.toFixed(6)}
+                            </Typography>
+                            <Typography variant="h6" gutterBottom>
+                                Longitude: {selectedLocation.longitude.toFixed(6)}
+                            </Typography>
+                            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<LocationOnIcon />}
+                                    onClick={() => window.open(`https://maps.google.com/?q=${selectedLocation.latitude},${selectedLocation.longitude}`, '_blank')}
+                                    sx={{ mr: 2 }}
+                                >
+                                    View in Google Maps
+                                </Button>
+                            </Box>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setLocationModalOpen(false)}>
+                        Close
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -34,6 +34,41 @@ async function isAuthorizedForShiftUploads(
 }
 
 export const uploadsRouter = router({
+    // Create a default checklist upload group if none exists
+    createChecklistUploadGroup: memberProcedure.mutation(async ({ ctx }) => {
+        try {
+            // Check if a checklist upload group already exists
+            const existingGroup = await ctx.prisma.uploadGroup.findFirst({
+                where: {
+                    organizationId: ctx.user.organizationId,
+                    uploadName: { contains: 'Checklist', mode: 'insensitive' },
+                },
+            });
+
+            // If a checklist upload group already exists, return it
+            if (existingGroup) {
+                return existingGroup;
+            }
+
+            // Create a new checklist upload group
+            const newGroup = await ctx.prisma.uploadGroup.create({
+                data: {
+                    organizationId: ctx.user.organizationId,
+                    uploadName: 'Checklist Uploads',
+                    isActive: true,
+                },
+            });
+
+            return newGroup;
+        } catch (error: any) {
+            if (error instanceof TRPCError) throw error;
+            throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: `Failed to create checklist upload group: ${error.message}`,
+            });
+        }
+    }),
+
     // Initialize upload groups based on organization_profile.uploadNames
     initializeUploadGroups: adminProcedure.mutation(async ({ ctx }) => {
         try {

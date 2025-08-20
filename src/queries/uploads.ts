@@ -59,6 +59,11 @@ export const useInitializeUploadGroupsMutation = () => {
     return trpc.uploads.initializeUploadGroups.useMutation();
 };
 
+// Create a default checklist upload group if none exists
+export const useCreateChecklistUploadGroupMutation = () => {
+    return trpc.uploads.createChecklistUploadGroup.useMutation();
+};
+
 // Helper function to read a file as base64
 export const readFileAsBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
