@@ -92,10 +92,42 @@ export async function sendShiftRequestNotificationToAdmin({
     Please login to your console and approve or reject that request.
   `;
 
+    const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+        <h2 style="color: #2e7d32; margin-bottom: 20px;">New Shift Request</h2>
+        <p style="font-size: 16px; line-height: 1.5;">A member of your team has requested a shift with open slots.</p>
+
+        <p style="font-size: 16px; line-height: 1.5;"><strong>User:</strong> ${userName} (${userEmail})</p>
+
+        <p style="font-size: 16px; line-height: 1.5;">Has requested to be assigned to the following shift:</p>
+
+        <div style="background-color: #f5f5f5; border-left: 4px solid #2e7d32; padding: 15px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #333;">Shift Details</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold; width: 100px;">Shift:</td>
+                    <td style="padding: 8px 0;">${shiftTitle}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Date:</td>
+                    <td style="padding: 8px 0;">${formattedDate}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Location:</td>
+                    <td style="padding: 8px 0;">${shiftLocation}</td>
+                </tr>
+            </table>
+        </div>
+
+        <p style="font-size: 16px; line-height: 1.5;">Please login to your console and approve or reject that request.</p>
+    </div>
+    `;
+
     return sendEmail({
         to: adminEmails,
         subject,
         text,
+        html,
     });
 }
 
@@ -118,6 +150,7 @@ export async function sendShiftRequestResolutionToUser({
     const formattedDate = dayjs(shiftDate).format('YYYY-MM-DD');
     let subject: string;
     let text: string;
+    let html: string;
 
     if (status === 'approved') {
         subject = 'Shift Request - Approved!';
@@ -127,6 +160,32 @@ export async function sendShiftRequestResolutionToUser({
       ${shiftTitle} at ${shiftLocation} on ${formattedDate}.
       ${reason ? `\nAdditional Information:\n${reason}` : ''}
     `;
+        html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+            <h2 style="color: #2e7d32; margin-bottom: 20px;">Shift Request Approved!</h2>
+            <p style="font-size: 16px; line-height: 1.5;">You have been assigned to a shift you requested.</p>
+
+            <div style="background-color: #f5f5f5; border-left: 4px solid #2e7d32; padding: 15px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #333;">Shift Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; width: 100px;">Shift:</td>
+                        <td style="padding: 8px 0;">${shiftTitle}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">Date:</td>
+                        <td style="padding: 8px 0;">${formattedDate}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">Location:</td>
+                        <td style="padding: 8px 0;">${shiftLocation}</td>
+                    </tr>
+                </table>
+            </div>
+
+            ${reason ? `<p style="font-size: 16px; line-height: 1.5;"><strong>Additional Information:</strong><br>${reason}</p>` : ''}
+        </div>
+        `;
     } else {
         subject = 'Shift Request';
         text = `
@@ -135,12 +194,39 @@ export async function sendShiftRequestResolutionToUser({
       ${shiftTitle} at ${shiftLocation} on ${formattedDate}.
       ${reason ? `\nReason for this decision:\n${reason}` : ''}
     `;
+        html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+            <h2 style="color: #d32f2f; margin-bottom: 20px;">Shift Request Not Approved</h2>
+            <p style="font-size: 16px; line-height: 1.5;">You have received a response about a shift you requested. The request was not approved.</p>
+
+            <div style="background-color: #f5f5f5; border-left: 4px solid #d32f2f; padding: 15px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #333;">Shift Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; width: 100px;">Shift:</td>
+                        <td style="padding: 8px 0;">${shiftTitle}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">Date:</td>
+                        <td style="padding: 8px 0;">${formattedDate}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">Location:</td>
+                        <td style="padding: 8px 0;">${shiftLocation}</td>
+                    </tr>
+                </table>
+            </div>
+
+            ${reason ? `<p style="font-size: 16px; line-height: 1.5;"><strong>Reason for this decision:</strong><br>${reason}</p>` : ''}
+        </div>
+        `;
     }
 
     return sendEmail({
         to: userEmail,
         subject,
         text,
+        html,
     });
 }
 

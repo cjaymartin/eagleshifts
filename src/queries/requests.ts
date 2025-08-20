@@ -25,8 +25,8 @@ export function useShiftRequestGetQuery(id: string) {
 }
 
 // List all requests with optional filtering
-export function useShiftRequestsListQuery(pendingOnly?: boolean) {
-    return trpc.requests.list.useQuery({ pendingOnly });
+export function useShiftRequestsListQuery(pendingOnly?: boolean, options?: any) {
+    return trpc.requests.list.useQuery({ pendingOnly }, options);
 }
 
 // Mutations

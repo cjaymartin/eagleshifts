@@ -31,6 +31,11 @@ import { useAuthQuery, useTeamUsersLookupQuery } from '@/queries/users';
 import { useDialogs } from '@toolpad/core';
 import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
 import LocationViewDialog from '@/components/locations/LocationViewDialog';
+import {
+    useShiftRequestCreateMutation,
+    useShiftRequestsListQuery,
+} from '@/queries/requests';
+import { useNotifications } from '@/components/providers/NotificationsProvider';
 
 // Extend dayjs with plugins
 dayjs.extend(utc);
@@ -60,6 +65,13 @@ export default function ShiftViewDialog({
 
     // Access dialogs for opening edit dialog
     const dialogs = useDialogs();
+    const notifications = useNotifications();
+
+    // Get the user's shift requests
+    const { data: userRequests = [] } = useShiftRequestsListQuery();
+
+    // Create shift request mutation
+    const createRequestMutation = useShiftRequestCreateMutation();
 
     // Handle opening the edit dialog (for admins only)
     const handleEdit = () => {
@@ -88,10 +100,33 @@ export default function ShiftViewDialog({
     };
 
     // Handle requesting a shift (for non-admins)
-    const handleRequestShift = () => {
-        // In a real implementation, this would create a shift request
-        // For now, just close the dialog
-        onClose();
+    const handleRequestShift = async () => {
+        if (!payload?.id) {
+            notifications.show('Shift ID is required', {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
+            return;
+        }
+
+        try {
+            await createRequestMutation.mutateAsync({
+                shiftId: payload.id,
+                reason: '',
+            });
+
+            notifications.show('Shift request submitted', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
+            onClose();
+        } catch (error: any) {
+            console.error('Error requesting shift:', error);
+            notifications.show(error.message || 'Failed to request shift', {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
+        }
     };
 
     // Check if user is assigned to this shift
@@ -103,6 +138,23 @@ export default function ShiftViewDialog({
     const slots = payload?.slots || 1;
     const assignmentsCount = payload?.shiftAssignments?.length || 0;
     const hasAvailableSlots = assignmentsCount < slots;
+
+    // Check if user has already requested this shift
+    const hasRequested = payload?.id
+        ? userRequests.some(
+              (request) =>
+                  request.shiftId === payload.id && request.status === 'pending'
+          )
+        : false;
+
+    // Check if user has a rejected request for this shift
+    const hasRejectedRequest = payload?.id
+        ? userRequests.some(
+              (request) =>
+                  request.shiftId === payload.id &&
+                  request.status === 'rejected'
+          )
+        : false;
 
     // Format date and time with timezone
     const timezone = payload?.timezone || 'UTC';
@@ -363,15 +415,28 @@ export default function ShiftViewDialog({
                 )}
 
                 {/* Show Request Shift button for eligible non-admins */}
-                {!isAdmin && !isAssigned && hasAvailableSlots && (
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={handleRequestShift}
-                    >
-                        Request Shift
-                    </Button>
+                {!isAdmin &&
+                    !isAssigned &&
+                    hasAvailableSlots &&
+                    !hasRequested &&
+                    !hasRejectedRequest && (
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleRequestShift}
+                        >
+                            Request Shift
+                        </Button>
+                    )}
+
+                {/* Show message when user has a pending request for the shift */}
+                {!isAdmin && !isAssigned && hasRequested && (
+                    <Typography variant="body2" color="text.secondary">
+                        You have already requested this shift
+                    </Typography>
                 )}
+
+                {/* Show nothing (leave area blank) for rejected requests */}
 
                 <Button variant="outlined" onClick={onClose as any}>
                     Close
