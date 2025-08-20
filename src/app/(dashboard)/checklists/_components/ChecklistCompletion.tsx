@@ -30,6 +30,7 @@ import { useNotifications } from '@/components/providers/NotificationsProvider';
 import dayjs from 'dayjs';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useUploadFileMutation, readFileAsBase64, useUploadGroupsQuery, useCreateChecklistUploadGroupMutation } from '@/queries/uploads';
+import LocationMap from '@/components/locations/LocationMap';
 
 type ChecklistCompletionProps = {
     shift: any;
@@ -191,6 +192,11 @@ export default function ChecklistCompletion({
             setUploads(newUploads);
         }
     }, [checklistData]);
+
+    // Automatically get geolocation when component mounts
+    useEffect(() => {
+        getGeolocation();
+    }, []);
 
     // Get geolocation
     const getGeolocation = () => {
@@ -363,32 +369,29 @@ export default function ChecklistCompletion({
                 <Typography variant="body2" sx={{ flexGrow: 1 }}>
                     {geolocation ? 
                         `Current location: ${geolocation.latitude.toFixed(6)}, ${geolocation.longitude.toFixed(6)}` : 
-                        "No geo available"}
+                        "Getting your location..."}
                 </Typography>
 
-                {/* Add a prominent map button that's always visible */}
-                <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<LocationOnIcon />}
-                    onClick={() => {
-                        if (geolocation) {
+                {/* View map button - only visible when geolocation is available */}
+                {geolocation && (
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<LocationOnIcon />}
+                        onClick={() => {
                             setSelectedLocation({
                                 latitude: geolocation.latitude,
                                 longitude: geolocation.longitude,
                                 itemName: "Current Location"
                             });
                             setLocationModalOpen(true);
-                        } else {
-                            getGeolocation();
-                            notifications.info("Getting your current location...");
-                        }
-                    }}
-                    size="small"
-                    sx={{ ml: 2 }}
-                >
-                    {geolocation ? "View Map" : "Get Location"}
-                </Button>
+                        }}
+                        size="small"
+                        sx={{ ml: 2 }}
+                    >
+                        View Map
+                    </Button>
+                )}
             </Box>
 
             {checklistData.description && (
@@ -721,35 +724,30 @@ export default function ChecklistCompletion({
                 </DialogActions>
             </Dialog>
 
-            {/* Location Coordinates Modal */}
+            {/* Location Map Modal */}
             <Dialog 
                 open={locationModalOpen} 
                 onClose={() => setLocationModalOpen(false)}
-                maxWidth="sm"
+                maxWidth="md"
                 fullWidth
             >
                 <DialogTitle>
-                    Location Coordinates for {selectedLocation?.itemName}
+                    Location Map for {selectedLocation?.itemName}
                 </DialogTitle>
                 <DialogContent>
                     {selectedLocation && (
                         <Box sx={{ py: 2 }}>
-                            <Typography variant="h6" gutterBottom>
-                                Latitude: {selectedLocation.latitude.toFixed(6)}
+                            <Typography variant="body2" gutterBottom>
+                                Coordinates: {selectedLocation.latitude.toFixed(6)}, {selectedLocation.longitude.toFixed(6)}
                             </Typography>
-                            <Typography variant="h6" gutterBottom>
-                                Longitude: {selectedLocation.longitude.toFixed(6)}
-                            </Typography>
-                            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    startIcon={<LocationOnIcon />}
-                                    onClick={() => window.open(`https://maps.google.com/?q=${selectedLocation.latitude},${selectedLocation.longitude}`, '_blank')}
-                                    sx={{ mr: 2 }}
-                                >
-                                    View in Google Maps
-                                </Button>
+                            <Box sx={{ mt: 2, height: 400 }}>
+                                <LocationMap 
+                                    latitude={selectedLocation.latitude}
+                                    longitude={selectedLocation.longitude}
+                                    zoom={15}
+                                    height={400}
+                                    popupContent={selectedLocation.itemName}
+                                />
                             </Box>
                         </Box>
                     )}
