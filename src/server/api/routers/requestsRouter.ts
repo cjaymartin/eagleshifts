@@ -158,8 +158,39 @@ export const requestsRouter = router({
                 },
             });
 
-            if (existingRequest) {
-                throw new Error('You already have a request for this shift');
+            // Check if the user is already assigned to this shift
+            const existingAssignment = await ctx.prisma.shiftAssignment.findFirst({
+                where: {
+                    shiftId: input.shiftId,
+                    memberId: member.id,
+                    outcome: 'assigned',
+                },
+            });
+
+            // If the user is already assigned to this shift, they can't request it
+            if (existingAssignment) {
+                throw new Error('You are already assigned to this shift');
+            }
+
+            // If the user has a pending request, they can't request it again
+            if (existingRequest && existingRequest.status === 'pending') {
+                throw new Error('You already have a pending request for this shift');
+            }
+
+            // If the user has a rejected request, they can't request it again
+            if (existingRequest && existingRequest.status === 'rejected') {
+                throw new Error('Your request for this shift was rejected');
+            }
+
+            // If the user has an approved request but is not assigned, they can request again
+            // This handles the case where a user was approved but then removed from the shift
+            if (existingRequest && existingRequest.status === 'approved') {
+                // Delete the existing request since it's stale (approved but not assigned)
+                await ctx.prisma.shiftRequest.delete({
+                    where: {
+                        id: existingRequest.id,
+                    },
+                });
             }
 
             // Create the request
@@ -371,6 +402,39 @@ export const requestsRouter = router({
 
                 // If the request is approved, create a shift assignment
                 if (input.status === 'approved') {
+                    // Check if the shift is already full
+                    const shift = await ctx.prisma.shift.findUnique({
+                        where: {
+                            id: request.shiftId,
+                        },
+                        include: {
+                            shiftAssignments: true,
+                        },
+                    });
+
+                    if (!shift) {
+                        throw new TRPCError({
+                            code: 'NOT_FOUND',
+                            message: 'Shift not found',
+                        });
+                    }
+
+                    // Check if the shift is already full
+                    if (shift.shiftAssignments.length >= shift.slots) {
+                        throw new TRPCError({
+                            code: 'BAD_REQUEST',
+                            message: 'This shift is already full',
+                        });
+                    }
+
+                    // Check if the shift is cancelled
+                    if (shift.isCancelled) {
+                        throw new TRPCError({
+                            code: 'BAD_REQUEST',
+                            message: 'Cannot approve request for a cancelled shift',
+                        });
+                    }
+
                     // Check if there's already an assignment for this member and shift
                     const existingAssignment =
                         await ctx.prisma.shiftAssignment.findFirst({
@@ -379,6 +443,13 @@ export const requestsRouter = router({
                                 memberId: request.memberId,
                             },
                         });
+
+                    // If the user is already assigned to this shift, just update the request status
+                    // but don't create a new assignment
+                    if (existingAssignment && existingAssignment.outcome === 'assigned') {
+                        // Just update the request status, the user is already assigned
+                        return request;
+                    }
 
                     if (!existingAssignment) {
                         // Create a new assignment

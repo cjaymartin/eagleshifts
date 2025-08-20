@@ -43,6 +43,10 @@ import {
     useShiftCreateMutation,
     useShiftUpdateMutation,
 } from '@/queries/shifts';
+import {
+    useShiftRequestCreateMutation,
+    useShiftRequestsListQuery,
+} from '@/queries/requests';
 import LocationAutocomplete from '@/components/form/LocationAutocomplete';
 import LocationViewDialog from '@/components/locations/LocationViewDialog';
 import LocationForm from '@/components/locations/LocationForm';
@@ -479,15 +483,54 @@ export default function ShiftForm(props: ShiftFormProps) {
     const hasAvailableSlots =
         assignments.length === 0 || assignments.length < Number(slots);
 
-    // In a real implementation, this would fetch shift requests from the server
-    const hasRequests = false;
+    // Get the user's shift requests
+    const { data: userRequests = [] } = useShiftRequestsListQuery();
+
+    // Check if the user has already requested this shift
+    const hasRequests = shiftId
+        ? userRequests.some(
+              (request) =>
+                  request.shiftId === shiftId && request.status === 'pending'
+          )
+        : false;
+
+    // Check if user has a rejected request for this shift
+    const hasRejectedRequest = shiftId
+        ? userRequests.some(
+              (request) =>
+                  request.shiftId === shiftId && request.status === 'rejected'
+          )
+        : false;
+
+    // Create shift request mutation
+    const createRequestMutation = useShiftRequestCreateMutation();
 
     async function handleShiftRequest() {
-        // In a real implementation, this would create a shift request
-        notifications.show('Shift request submitted', {
-            severity: 'success',
-            autoHideDuration: 3000,
-        });
+        if (!shiftId) {
+            notifications.show('Shift ID is required', {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
+            return;
+        }
+
+        try {
+            await createRequestMutation.mutateAsync({
+                shiftId,
+                reason: '',
+            });
+
+            notifications.show('Shift request submitted', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
+        } catch (error: any) {
+            console.error('Error requesting shift:', error);
+            notifications.show(error.message || 'Failed to request shift', {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
+        }
     }
 
     return (
@@ -519,7 +562,8 @@ export default function ShiftForm(props: ShiftFormProps) {
                             {!isAdmin &&
                                 !isAssigned &&
                                 hasAvailableSlots &&
-                                !hasRequests && (
+                                !hasRequests &&
+                                !hasRejectedRequest && (
                                     <Container>
                                         <Button onClick={handleShiftRequest}>
                                             <AssignmentIcon />
@@ -527,6 +571,8 @@ export default function ShiftForm(props: ShiftFormProps) {
                                         </Button>
                                     </Container>
                                 )}
+
+                            {/* Show nothing (leave area blank) for rejected requests */}
                             <Controller
                                 name="title"
                                 control={control}

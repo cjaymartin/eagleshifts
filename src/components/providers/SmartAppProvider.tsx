@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
 import { branding } from '@/config/branding';
 import { useAuthQuery, useIsImitatingQuery } from '@/queries/users';
+import { useShiftRequestsListQuery } from '@/queries/requests';
 import theme from '@/lib/DefaultTheme';
 import {
     CalendarToday,
@@ -18,6 +19,7 @@ import {
     History,
     LocationOn,
 } from '@mui/icons-material';
+import { Badge } from '@mui/material';
 
 type SmartAppProviderProps = {
     children: React.ReactNode;
@@ -32,6 +34,11 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
     const { data: session, isPending } = useAuthQuery();
     const { data: isImitating } = useIsImitatingQuery();
 
+    // Get pending requests count for admin badge
+    const isAdmin = ['admin', 'owner'].includes(session?.user?.role ?? 'guest');
+    const { data: pendingRequests = [] } = useShiftRequestsListQuery(true, {
+        enabled: isAdmin, // Only fetch if user is admin
+    });
 
     useEffect(() => {
         // Get user role from session
@@ -73,7 +80,17 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
                       {
                           title: 'Requests',
                           segment: 'requests',
-                          icon: <RequestPage />,
+                          icon:
+                              pendingRequests.length > 0 ? (
+                                  <Badge
+                                      badgeContent={pendingRequests.length}
+                                      color="info"
+                                  >
+                                      <RequestPage />
+                                  </Badge>
+                              ) : (
+                                  <RequestPage />
+                              ),
                       },
                       { title: 'My Team', segment: 'team', icon: <Group /> },
                       {
