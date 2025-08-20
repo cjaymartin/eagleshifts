@@ -6,9 +6,11 @@ import dayjs from 'dayjs';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useAuthQuery } from '@/queries/users';
 import { useDialogs } from '@toolpad/core';
 import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
+import ShiftViewDialog from '@/components/calendar/ShiftViewDialog';
 import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/api/trpc/[trpc]';
 import { useShiftDeleteMutation } from '@/queries/shifts';
@@ -51,6 +53,10 @@ export function ShiftRow(props: ShiftRowProps) {
     const timezone = shift.timezone || businessProfile?.timezone || 'UTC';
 
     const isAdmin = ['admin', 'owner'].includes(role);
+
+    function handleView() {
+        dialogs.open(ShiftViewDialog, shift);
+    }
 
     function handleEdit() {
         dialogs.open(ShiftDialog, shift);
@@ -121,6 +127,11 @@ export function ShiftRow(props: ShiftRowProps) {
                 {filledSlots} / {shift.slots}
             </TableCell>
             <TableCell sx={{ minWidth: 152 }}>
+                <Tooltip title="View">
+                    <IconButton onClick={handleView}>
+                        <VisibilityIcon />
+                    </IconButton>
+                </Tooltip>
                 <Tooltip title="Edit">
                     <IconButton onClick={handleEdit}>
                         <EditIcon />

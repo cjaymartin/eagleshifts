@@ -9,6 +9,7 @@ import {
     DialogTitle,
     Grid,
     IconButton,
+    MenuItem,
     Stack,
     TextField,
     Typography,
@@ -42,6 +43,9 @@ import {
     useShiftCancelMutation,
     useShiftCreateMutation,
     useShiftUpdateMutation,
+    useChecklistsQuery,
+    useAttachChecklistMutation,
+    useDetachChecklistMutation,
 } from '@/queries/shifts';
 import {
     useShiftRequestCreateMutation,
@@ -161,11 +165,140 @@ type ShiftFormProps = {
     shiftId?: string;
     shift?: inferRouterOutputs<AppRouter>['shifts']['byId'] | null;
     onClose?: () => void;
+    readOnly?: boolean;
 };
+
+// Checklist Section Component
+function ChecklistSection({ shiftId, shift }: { shiftId?: string, shift?: any }) {
+    const [selectedChecklistId, setSelectedChecklistId] = useState<string>('');
+    const { data: checklists = [], isLoading: isLoadingChecklists } = useChecklistsQuery();
+    const attachChecklistMutation = useAttachChecklistMutation();
+    const detachChecklistMutation = useDetachChecklistMutation();
+    const notifications = useNotifications();
+
+    // Determine if a checklist is attached by checking both Checklist object and checklistId
+    const hasChecklist = !!(shift?.Checklist || shift?.checklistId);
+
+    console.log('ChecklistSection render', { shift, shiftId, hasChecklist });
+
+    // Set the selected checklist ID when the shift data is loaded
+    useEffect(() => {
+        if (shift?.Checklist?.id) {
+            setSelectedChecklistId(shift.Checklist.id);
+        } else if (shift?.checklistId) {
+            setSelectedChecklistId(shift.checklistId);
+        }
+    }, [shift]);
+
+    const handleAttachChecklist = async () => {
+        if (!shiftId || !selectedChecklistId) return;
+
+        try {
+            await attachChecklistMutation.mutateAsync({
+                shiftId,
+                checklistId: selectedChecklistId,
+            });
+            notifications.show('Checklist attached successfully', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
+        } catch (error: any) {
+            console.error('Error attaching checklist:', error);
+            notifications.show(`Failed to attach checklist: ${error.message}`, {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
+        }
+    };
+
+    const handleDetachChecklist = async () => {
+        if (!shiftId) return;
+
+        try {
+            await detachChecklistMutation.mutateAsync({
+                shiftId,
+            });
+            setSelectedChecklistId('');
+            notifications.show('Checklist detached successfully', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
+        } catch (error: any) {
+            console.error('Error detaching checklist:', error);
+            notifications.show(`Failed to detach checklist: ${error.message}`, {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
+        }
+    };
+
+    if (isLoadingChecklists) {
+        return <Typography>Loading checklists...</Typography>;
+    }
+
+    return (
+        <Box sx={{ mt: 2, mb: 2 }}>
+            <Typography variant="h6" gutterBottom>
+                Checklist
+            </Typography>
+
+            {hasChecklist ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="body1" sx={{ mr: 2 }}>
+                        Current Checklist: <strong>{shift.Checklist?.name || 'Checklist Attached'}</strong>
+                    </Typography>
+                    <Button 
+                        variant="outlined" 
+                        color="secondary" 
+                        onClick={handleDetachChecklist}
+                        disabled={detachChecklistMutation.isLoading}
+                    >
+                        Remove Checklist
+                    </Button>
+                </Box>
+            ) : (
+                <Box sx={{ mb: 2 }}>
+                    <Typography variant="body1" gutterBottom>
+                        No checklist attached to this shift.
+                    </Typography>
+                </Box>
+            )}
+
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <TextField
+                    select
+                    label="Select Checklist"
+                    value={selectedChecklistId}
+                    onChange={(e) => setSelectedChecklistId(e.target.value)}
+                    sx={{ minWidth: 300, mr: 2 }}
+                >
+                    <MenuItem value="">
+                        <em>None</em>
+                    </MenuItem>
+                    {checklists.map((checklist) => (
+                        <MenuItem key={checklist.id} value={checklist.id}>
+                            {checklist.name}
+                        </MenuItem>
+                    ))}
+                </TextField>
+
+                <Button 
+                    variant="contained" 
+                    color="primary" 
+                    onClick={handleAttachChecklist}
+                    disabled={!selectedChecklistId || attachChecklistMutation.isLoading || selectedChecklistId === shift?.Checklist?.id}
+                >
+                    {attachChecklistMutation.isLoading ? 'Attaching...' : 'Attach Checklist'}
+                </Button>
+            </Box>
+        </Box>
+    );
+}
 
 export default function ShiftForm(props: ShiftFormProps) {
     console.log('ShiftForm render', {
         props,
+        hasChecklist: !!(props.shift?.Checklist || props.shift?.checklistId),
         timestamp: new Date().toISOString(),
     });
 
@@ -176,8 +309,12 @@ export default function ShiftForm(props: ShiftFormProps) {
         isNew: propsIsNew,
         isDuplicate: propsDuplicate,
         onClose,
+        readOnly,
     } = props;
     const notifications = useNotifications();
+
+    // Determine if a checklist is attached by checking both Checklist object and checklistId
+    const hasChecklist = !!(shift?.Checklist || shift?.checklistId);
 
     const [isCancelled, setIsCancelled] = useState(shift?.isCancelled);
     useEffect(() => {
@@ -258,6 +395,11 @@ export default function ShiftForm(props: ShiftFormProps) {
                   }) || [],
           }
         : defaultValues;
+
+    console.log('transformedShift', { 
+        hasChecklist: !!(shift?.Checklist || shift?.checklistId),
+        hasTransformedChecklist: !!(transformedShift.Checklist || transformedShift.checklistId)
+    });
 
     const methods = useForm<ShiftFormData>({
         resolver: zodResolver(shiftFormSchema) as any,
@@ -579,7 +721,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 render={({ field }) => (
                                     <TextField
                                         {...field}
-                                        disabled={!isAdmin}
+                                        disabled={!isAdmin || readOnly}
                                         label="Title"
                                         variant="outlined"
                                         error={!!errors.title}
@@ -624,7 +766,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                                     );
                                                 }
                                             }}
-                                            disabled={!isAdmin}
+                                            disabled={!isAdmin || readOnly}
                                             error={!!errors.locationId}
                                             helperText={
                                                 errors.locationId
@@ -652,7 +794,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                             <FormDatePicker
                                 name="date"
                                 label="Date"
-                                disabled={!isAdmin}
+                                disabled={!isAdmin || readOnly}
                             />
                             {/*<Controller*/}
                             {/*    name="date"*/}
@@ -682,7 +824,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 control={control}
                                 render={({ field }) => (
                                     <TimePicker
-                                        disabled={!isAdmin}
+                                        disabled={!isAdmin || readOnly}
                                         label="Start Time"
                                         value={
                                             field.value
@@ -715,7 +857,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                     <TimePicker
                                         {...field}
                                         label="End Time"
-                                        disabled={!isAdmin}
+                                        disabled={!isAdmin || readOnly}
                                         // Ensure value is a valid dayjs object or null
                                         value={
                                             field.value
@@ -755,7 +897,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                         render={({ field }) => (
                                             <TextField
                                                 {...field}
-                                                disabled={!isAdmin}
+                                                disabled={!isAdmin || readOnly}
                                                 label="Slots"
                                                 variant="outlined"
                                                 type="number"
@@ -778,7 +920,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                         {...(field as any)}
                                         shift={shift as any}
                                         control={control}
-                                        readOnly={!isAdmin}
+                                        readOnly={!isAdmin || readOnly}
                                     />
                                 )}
                             />
@@ -787,7 +929,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                             {shiftId && (isAdmin || isAssigned) && (
                                 <ShiftUploads
                                     shiftId={shiftId}
-                                    readOnly={!isAdmin && !isAssigned}
+                                    readOnly={(!isAdmin && !isAssigned) || readOnly}
                                 />
                             )}
 
@@ -799,7 +941,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                         {...field}
                                         multiline
                                         rows={3}
-                                        disabled={!isAdmin}
+                                        disabled={!isAdmin || readOnly}
                                         label="Notes"
                                         variant="outlined"
                                         error={!!errors.notes}
@@ -830,8 +972,18 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 />
                             )}
 
+                            {/* Checklist Section */}
+                            {isAdmin && !isNew && (
+                                <>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Debug: {hasChecklist ? `Checklist attached: ${shift.Checklist?.name || shift.checklistId}` : 'No checklist attached'}
+                                    </Typography>
+                                    <ChecklistSection shiftId={shiftId} shift={shift} />
+                                </>
+                            )}
+
                             <Stack direction="row" spacing={2}>
-                                {isAdmin && !isNew && (
+                                {isAdmin && !isNew && !readOnly && (
                                     <Button
                                         variant="contained"
                                         type="button"
@@ -844,7 +996,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                             : 'Cancel Shift'}
                                     </Button>
                                 )}
-                                {isAdmin && (
+                                {isAdmin && !readOnly && (
                                     <Button
                                         variant="contained"
                                         type="submit"

@@ -106,6 +106,96 @@ function convertUtcToTimezone(
 }
 
 export const shiftsRouter = router({
+    // Attach a checklist to a shift
+    attachChecklist: adminProcedure
+        .input(
+            z.object({
+                shiftId: z.string(),
+                checklistId: z.string(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            // Check if the shift exists and belongs to the current organization
+            const shift = await ctx.prisma.shift.findFirst({
+                where: {
+                    id: input.shiftId,
+                    organizationId: ctx.user.organizationId,
+                },
+            });
+
+            if (!shift) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Shift not found',
+                });
+            }
+
+            // Check if the checklist exists and belongs to the current organization
+            const checklist = await ctx.prisma.checklist.findFirst({
+                where: {
+                    id: input.checklistId,
+                    organizationId: ctx.user.organizationId,
+                },
+            });
+
+            if (!checklist) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Checklist not found',
+                });
+            }
+
+            // Attach the checklist to the shift
+            const updatedShift = await ctx.prisma.shift.update({
+                where: {
+                    id: input.shiftId,
+                },
+                data: {
+                    checklistId: input.checklistId,
+                },
+                include: {
+                    Checklist: true,
+                },
+            });
+
+            return updatedShift;
+        }),
+
+    // Detach a checklist from a shift
+    detachChecklist: adminProcedure
+        .input(
+            z.object({
+                shiftId: z.string(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            // Check if the shift exists and belongs to the current organization
+            const shift = await ctx.prisma.shift.findFirst({
+                where: {
+                    id: input.shiftId,
+                    organizationId: ctx.user.organizationId,
+                },
+            });
+
+            if (!shift) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Shift not found',
+                });
+            }
+
+            // Detach the checklist from the shift
+            const updatedShift = await ctx.prisma.shift.update({
+                where: {
+                    id: input.shiftId,
+                },
+                data: {
+                    checklistId: null,
+                },
+            });
+
+            return updatedShift;
+        }),
     seed: adminProcedure.query(async ({ ctx }) => {
         // Check if the organization has any shifts
         const existingShiftsCount = await ctx.prisma.shift.count({
@@ -418,6 +508,7 @@ export const shiftsRouter = router({
                             group: true,
                         },
                     },
+                    Checklist: true,
                 },
             });
 

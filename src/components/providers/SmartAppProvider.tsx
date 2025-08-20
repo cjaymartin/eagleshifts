@@ -20,6 +20,7 @@ import {
     LocationOn,
 } from '@mui/icons-material';
 import { Badge } from '@mui/material';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 
 type SmartAppProviderProps = {
     children: React.ReactNode;
@@ -91,6 +92,11 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
                               ) : (
                                   <RequestPage />
                               ),
+                      },
+                      {
+                          title: 'Checklists',
+                          segment: 'checklists',
+                          icon: <AssignmentIcon />,
                       },
                       { title: 'My Team', segment: 'team', icon: <Group /> },
                       {

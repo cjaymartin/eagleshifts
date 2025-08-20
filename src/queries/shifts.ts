@@ -69,3 +69,26 @@ export function useShiftDeleteMutation() {
 export function useShiftSeedQuery() {
     return trpc.shifts.seed.useQuery();
 }
+
+// Checklist related hooks
+export function useChecklistsQuery() {
+    return trpc.checklists.list.useQuery();
+}
+
+export function useAttachChecklistMutation() {
+    const utils = trpc.useUtils();
+    return trpc.shifts.attachChecklist.useMutation({
+        onSuccess() {
+            void utils.shifts.invalidate();
+        },
+    });
+}
+
+export function useDetachChecklistMutation() {
+    const utils = trpc.useUtils();
+    return trpc.shifts.detachChecklist.useMutation({
+        onSuccess() {
+            void utils.shifts.invalidate();
+        },
+    });
+}

@@ -11,6 +11,7 @@ import { uploadsRouter } from '@/server/api/routers/uploadsRouter';
 import { logsRouter } from '@/server/api/routers/logsRouter';
 import { locationsRouter } from '@/server/api/routers/locationsRouter';
 import { invitationsRouter } from '@/server/api/routers/invitationsRouter';
+import { checklistsRouter } from '@/server/api/routers/checklistsRouter';
 
 export const appRouter = router({
     shifts: shiftsRouter,
@@ -23,6 +24,7 @@ export const appRouter = router({
     logs: logsRouter,
     locations: locationsRouter,
     invitations: invitationsRouter,
+    checklists: checklistsRouter,
 
     session: router({
         get: router({
