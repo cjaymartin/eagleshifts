@@ -214,6 +214,7 @@ export default function ShiftForm(props: ShiftFormProps) {
     const transformedShift = shift
         ? {
               ...shift,
+              slots: shift?.slots || 1,
               // Parse dates from ISO format
               date: shift.startTime
                   ? dayjs(shift.startTime)
