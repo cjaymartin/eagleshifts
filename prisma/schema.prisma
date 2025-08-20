@@ -114,6 +114,7 @@ model Organization {
   locationGroups LocationGroup[]
 
   logEntries LogEntry[]
+  Checklist  Checklist[]
 
   @@unique([slug])
   @@map("organization")
@@ -154,12 +155,13 @@ model Member {
   phoneNumber          String?
   metadata             String?
 
-  settings         MemberSettings?
-  availabilities   Availability[]
-  shiftAssignments shiftAssignment[]
-  shiftRequests    ShiftRequest[]
-  uploads          Upload[]          @relation("Uploader")
-  deletedUploads   Upload[]          @relation("Deleter")
+  settings                MemberSettings?
+  availabilities          Availability[]
+  shiftAssignments        shiftAssignment[]
+  shiftRequests           ShiftRequest[]
+  uploads                 Upload[]                  @relation("Uploader")
+  deletedUploads          Upload[]                  @relation("Deleter")
+  ChecklistItemCompletion ChecklistItemCompletion[]
 
   @@unique([organizationId, userId])
   @@map("member")
@@ -213,13 +215,16 @@ model Shift {
   isCancelled Boolean @default(false)
 
   // Relationships
-  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  location         Location?         @relation(fields: [locationId], references: [id])
+  organization            Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location                Location?                 @relation(fields: [locationId], references: [id])
   // assignments   Member[]       @relation("ShiftAssignments")
-  shiftAssignments shiftAssignment[]
-  shiftRequests    ShiftRequest[]
-  memberId         String?
-  uploads          Upload[]
+  shiftAssignments        shiftAssignment[]
+  shiftRequests           ShiftRequest[]
+  memberId                String?
+  uploads                 Upload[]
+  Checklist               Checklist?                @relation(fields: [checklistId], references: [id])
+  checklistId             String?
+  ChecklistItemCompletion ChecklistItemCompletion[]
 
   @@map("shift")
 }
@@ -327,12 +332,13 @@ model Upload {
   deletedAt     DateTime?
 
   // Relationships
-  uploadGroup UploadGroup @relation(fields: [uploadGroupId], references: [id], onDelete: Cascade)
-  shift       Shift       @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  uploaderId  String
-  uploader    Member      @relation("Uploader", fields: [uploaderId], references: [id], onDelete: Cascade)
-  deleterId   String?
-  deleter     Member?     @relation("Deleter", fields: [deleterId], references: [id])
+  uploadGroup             UploadGroup               @relation(fields: [uploadGroupId], references: [id], onDelete: Cascade)
+  shift                   Shift                     @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  uploaderId              String
+  uploader                Member                    @relation("Uploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+  deleterId               String?
+  deleter                 Member?                   @relation("Deleter", fields: [deleterId], references: [id])
+  ChecklistItemCompletion ChecklistItemCompletion[]
 
   @@map("upload")
 }
@@ -372,4 +378,62 @@ model Location {
 
   @@unique([organizationId, name])
   @@map("location")
+}
+
+model Checklist {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relationships
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  items        ChecklistItem[]
+  shifts       Shift[]
+
+  @@unique([organizationId, name])
+  @@map("checklist")
+}
+
+model ChecklistItem {
+  id                 String   @id @default(cuid())
+  name               String
+  order              Int
+  geoLocationEnabled Boolean  @default(false)
+  commentsOption     String // "required", "optional", "off"
+  uploadOption       String // "required", "optional", "off"
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relationships
+  checklistId String
+  checklist   Checklist                 @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  completions ChecklistItemCompletion[]
+
+  @@map("checklist_item")
+}
+
+model ChecklistItemCompletion {
+  id          String   @id @default(cuid())
+  completed   Boolean  @default(true)
+  completedAt DateTime @default(now())
+  latitude    Float?
+  longitude   Float?
+  comments    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  checklistItemId String
+  checklistItem   ChecklistItem @relation(fields: [checklistItemId], references: [id], onDelete: Cascade)
+  memberId        String
+  member          Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  shiftId         String
+  shift           Shift         @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  uploadId        String?
+  upload          Upload?       @relation(fields: [uploadId], references: [id])
+
+  @@map("checklist_item_completion")
 }
