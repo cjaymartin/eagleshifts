@@ -29,8 +29,91 @@ import { trpc } from '@/lib/trpc/client';
 import { useNotifications } from '@/components/providers/NotificationsProvider';
 import dayjs from 'dayjs';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { useUploadFileMutation, readFileAsBase64, useUploadGroupsQuery, useCreateChecklistUploadGroupMutation } from '@/queries/uploads';
+import { useUploadFileMutation, readFileAsBase64, useUploadGroupsQuery, useCreateChecklistUploadGroupMutation, useShiftUploadsQuery, useFileUrlQuery } from '@/queries/uploads';
 import LocationMap from '@/components/locations/LocationMap';
+import { isFileTypeSupported, FilePreviewDialog } from '@/components/FilePreview';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+
+// Component to display upload details
+const UploadDetails = ({ upload }: { upload: any }) => {
+    // Use the useFileUrlQuery hook at the top level of the component
+    const { data } = useFileUrlQuery(upload.id);
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const isPreviewable = upload.fileName ? isFileTypeSupported(upload.fileName) : false;
+
+    return (
+        <Box sx={{ mt: 1, p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+            <Typography variant="body2" gutterBottom>
+                <strong>File:</strong> {upload.fileName}
+            </Typography>
+            <Typography variant="body2" gutterBottom>
+                <strong>Size:</strong> {(upload.fileSize / 1024).toFixed(2)} KB
+            </Typography>
+            <Typography variant="body2" gutterBottom>
+                <strong>Type:</strong> {upload.fileType}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                {data?.url && (
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<AttachFileIcon />}
+                        href={data.url}
+                        download
+                        sx={{ mt: 1 }}
+                    >
+                        Download File
+                    </Button>
+                )}
+                {data?.url && isPreviewable && (
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<VisibilityIcon />}
+                        onClick={() => setPreviewOpen(true)}
+                        sx={{ mt: 1 }}
+                    >
+                        Preview File
+                    </Button>
+                )}
+            </Box>
+
+            {/* File Preview Dialog */}
+            {isPreviewable && (
+                <FilePreviewDialog
+                    open={previewOpen}
+                    onClose={() => setPreviewOpen(false)}
+                    uploadId={upload.id}
+                />
+            )}
+        </Box>
+    );
+};
+
+// Component to find and display upload details
+const UploadDetailsContainer = ({ 
+    itemId, 
+    uploadId, 
+    shiftUploads 
+}: { 
+    itemId: string; 
+    uploadId: string; 
+    shiftUploads: any[] 
+}) => {
+    if (!uploadId) return null;
+
+    // Find the group upload that contains this upload
+    const groupUpload = shiftUploads.find(g => g.upload && g.upload.id === uploadId);
+    if (!groupUpload || !groupUpload.upload) {
+        console.log(`No matching upload found for item ${itemId} with uploadId ${uploadId}`);
+        return null;
+    }
+
+    const upload = groupUpload.upload;
+    console.log(`Found matching upload for item ${itemId}:`, upload);
+
+    return <UploadDetails upload={upload} />;
+};
 
 type ChecklistCompletionProps = {
     shift: any;
@@ -71,23 +154,87 @@ export default function ChecklistCompletion({
     // Create checklist upload group mutation
     const createChecklistUploadGroupMutation = useCreateChecklistUploadGroupMutation();
 
+    // Get uploads for the shift
+    const { data: shiftUploads = [], refetch: refetchShiftUploads } = useShiftUploadsQuery(shift.id);
+
+    // Fetch checklist completions for the shift
+    const {
+        data: checklistData,
+        isLoading,
+        error,
+        refetch,
+    } = trpc.checklists.getShiftCompletions.useQuery({ shiftId: shift.id });
+
+    // Log shift uploads whenever they change and update uploads state
+    useEffect(() => {
+        console.log("shiftUploads data updated:", shiftUploads);
+
+        // If we have shift uploads, update the uploads state to include them
+        if (shiftUploads && shiftUploads.length > 0) {
+            // Find all checklist items that require uploads
+            const itemsWithRequiredUploads = checklistData?.items.filter(
+                item => item.uploadOption === 'required'
+            ) || [];
+
+            // Check if we have any uploads that aren't already in the uploads state
+            const newUploads: Record<string, string> = { ...uploads };
+            let hasNewUploads = false;
+
+            // For each upload in shiftUploads
+            shiftUploads.forEach(groupUpload => {
+                if (groupUpload.upload) {
+                    console.log("Found upload in shiftUploads:", groupUpload.upload);
+
+                    // Check if this upload is already associated with an item
+                    const isAlreadyAssociated = Object.values(uploads).includes(groupUpload.upload.id);
+
+                    // If not already associated and we have items that need uploads
+                    if (!isAlreadyAssociated && itemsWithRequiredUploads.length > 0) {
+                        // Find the first item that needs an upload and doesn't have one yet
+                        const itemToAssociate = itemsWithRequiredUploads.find(
+                            item => !uploads[item.id] && !completions[item.id]
+                        );
+
+                        if (itemToAssociate) {
+                            console.log(`Associating upload ${groupUpload.upload.id} with item ${itemToAssociate.id}`);
+                            newUploads[itemToAssociate.id] = groupUpload.upload.id;
+                            hasNewUploads = true;
+                        }
+                    }
+                }
+            });
+
+            // Update uploads state if we found new uploads
+            if (hasNewUploads) {
+                console.log("Updating uploads state with new uploads:", newUploads);
+                setUploads(newUploads);
+            }
+        }
+    }, [shiftUploads, checklistData, uploads, completions]);
+
     // Handle file upload
     const handleFileUpload = async (
         itemId: string,
         uploadName: string,
         event: React.ChangeEvent<HTMLInputElement>
     ) => {
+        console.log(`handleFileUpload called for item ${itemId}`, { uploadName });
         const file = event.target.files?.[0];
         if (!file) return;
+
+        console.log("File selected:", { name: file.name, size: file.size, type: file.type });
 
         try {
             setUploading((prev) => ({ ...prev, [itemId]: true }));
 
             // Read file as base64
             const fileData = await readFileAsBase64(file);
+            console.log("File read as base64 (truncated):", fileData.substring(0, 50) + "...");
 
             // Find an appropriate upload group
             let uploadGroupId = "";
+
+            console.log("Available upload groups:", uploadGroups);
 
             // First, try to find a group with "checklist" in the name
             const checklistGroup = uploadGroups.find(group => 
@@ -97,31 +244,44 @@ export default function ChecklistCompletion({
             // If not found, use the first available group
             if (checklistGroup) {
                 uploadGroupId = checklistGroup.id;
+                console.log("Using checklist upload group:", checklistGroup);
             } else if (uploadGroups.length > 0) {
                 uploadGroupId = uploadGroups[0].id;
+                console.log("Using first available upload group:", uploadGroups[0]);
             } else {
+                console.log("No upload groups available, attempting to create one");
                 // No upload groups available - try to create a default checklist upload group
                 try {
-                    notifications.info("No upload groups found. Creating a default checklist upload group...");
+                    notifications.show("No upload groups found. Creating a default checklist upload group...", { severity: 'info', autoHideDuration: 3000 });
 
                     const newGroup = await createChecklistUploadGroupMutation.mutateAsync();
+                    console.log("Created new upload group:", newGroup);
 
                     if (newGroup && newGroup.id) {
                         uploadGroupId = newGroup.id;
                         // Refresh the upload groups list
                         await refetchUploadGroups();
-                        notifications.success("Created a default checklist upload group.");
+                        notifications.show("Created a default checklist upload group.", { severity: 'success', autoHideDuration: 3000 });
                     } else {
                         throw new Error("Failed to create a default checklist upload group.");
                     }
                 } catch (error: any) {
                     console.error('Error creating checklist upload group:', error);
-                    notifications.error(
-                        "No upload groups available and failed to create a default one. Please ask an administrator to set up upload groups in the Business Settings page."
+                    notifications.show(
+                        "No upload groups available and failed to create a default one. Please ask an administrator to set up upload groups in the Business Settings page.",
+                        { severity: 'error', autoHideDuration: 3000 }
                     );
                     throw new Error("No upload groups available. Please ask an administrator to set up upload groups in the Business Settings page.");
                 }
             }
+
+            console.log("Uploading file with params:", {
+                shiftId: shift.id,
+                uploadGroupId,
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type,
+            });
 
             // Upload file
             const result = await uploadFileMutation.mutateAsync({
@@ -133,14 +293,16 @@ export default function ChecklistCompletion({
                 fileData,
             });
 
+            console.log("Upload result:", result);
+
             // Handle successful upload
             if (result?.id) {
                 handleFileUploaded(itemId, result.id);
-                notifications.success(`File uploaded successfully`);
+                notifications.show(`File uploaded successfully`, { severity: 'success', autoHideDuration: 3000 });
             }
         } catch (error: any) {
             console.error('Error uploading file:', error);
-            notifications.error(`Failed to upload file: ${error.message}`);
+            notifications.show(`Failed to upload file: ${error.message}`, { severity: 'error', autoHideDuration: 3000 });
         } finally {
             setUploading((prev) => ({ ...prev, [itemId]: false }));
             // Clear the file input
@@ -148,45 +310,48 @@ export default function ChecklistCompletion({
         }
     };
 
-    // Fetch checklist completions for the shift
-    const {
-        data: checklistData,
-        isLoading,
-        error,
-        refetch,
-    } = trpc.checklists.getShiftCompletions.useQuery({ shiftId: shift.id });
-
     // Complete checklist item mutation
     const completeItemMutation = trpc.checklists.completeItem.useMutation({
-        onSuccess: () => {
+        onSuccess: (data, variables) => {
+            console.log("completeItemMutation succeeded:", { data, variables });
             refetch();
-            notifications.success('Item updated successfully');
+            notifications.show('Item updated successfully', { severity: 'success', autoHideDuration: 3000 });
         },
-        onError: (error) => {
-            notifications.error(`Error updating item: ${error.message}`);
+        onError: (error, variables) => {
+            console.error("completeItemMutation failed:", { error, variables });
+            notifications.show(`Error updating item: ${error.message}`, { severity: 'error', autoHideDuration: 3000 });
         },
     });
 
     // Initialize completions, comments, and uploads from fetched data
     useEffect(() => {
         if (checklistData) {
+            console.log("Initializing from checklistData:", checklistData);
             const newCompletions: Record<string, any> = {};
             const newComments: Record<string, string> = {};
             const newUploads: Record<string, string> = {};
 
             checklistData.items.forEach((item) => {
+                console.log(`Processing item ${item.id} (${item.name}):`, item);
                 if (item.completions && item.completions.length > 0) {
                     const completion = item.completions[0];
+                    console.log(`Found completion for item ${item.id}:`, completion);
                     newCompletions[item.id] = completion;
                     if (completion.comments) {
                         newComments[item.id] = completion.comments;
                     }
                     if (completion.uploadId) {
+                        console.log(`Found uploadId for item ${item.id}:`, completion.uploadId);
                         newUploads[item.id] = completion.uploadId;
                     }
                 }
             });
 
+            console.log("Setting state with:", {
+                completions: newCompletions,
+                comments: newComments,
+                uploads: newUploads
+            });
             setCompletions(newCompletions);
             setComments(newComments);
             setUploads(newUploads);
@@ -211,49 +376,75 @@ export default function ChecklistCompletion({
                 },
                 (error) => {
                     setGeoError(`Error getting location: ${error.message}`);
-                    notifications.error(
-                        `Error getting location: ${error.message}`
+                    notifications.show(
+                        `Error getting location: ${error.message}`,
+                        { severity: 'error', autoHideDuration: 3000 }
                     );
                 }
             );
         } else {
             setGeoError('Geolocation is not supported by this browser');
-            notifications.error('Geolocation is not supported by this browser');
+            notifications.show('Geolocation is not supported by this browser', { severity: 'error', autoHideDuration: 3000 });
         }
     };
 
     // Handle checkbox change
     const handleCheckboxChange = (item: any) => {
+        console.log(`handleCheckboxChange called for item ${item.id} (${item.name})`);
         const isCompleted = !!completions[item.id];
+        console.log(`Item is currently ${isCompleted ? 'completed' : 'not completed'}`);
 
         if (isCompleted) {
             // If unchecking, show confirmation dialog
+            console.log("Showing confirmation dialog for unchecking item");
             setConfirmUncheckItem(item.id);
         } else {
             // If checking, validate required fields
             let canComplete = true;
+            console.log("Validating required fields for item:", {
+                commentsOption: item.commentsOption,
+                hasComments: !!comments[item.id],
+                uploadOption: item.uploadOption,
+                hasUpload: !!uploads[item.id],
+                geoLocationEnabled: item.geoLocationEnabled,
+                hasGeolocation: !!geolocation
+            });
 
             // Check if comments are required but missing
             if (
                 item.commentsOption === 'required' &&
                 (!comments[item.id] || comments[item.id].trim() === '')
             ) {
-                notifications.error('Comments are required for this item');
+                console.log("Comments are required but missing");
+                notifications.show('Comments are required for this item', { severity: 'error', autoHideDuration: 3000 });
                 canComplete = false;
             }
 
             // Check if upload is required but missing
             if (item.uploadOption === 'required' && !uploads[item.id]) {
-                notifications.error('File upload is required for this item');
+                console.log("Upload is required but missing");
+                console.log("Current uploads state:", uploads);
+                notifications.show('File upload is required for this item', { severity: 'error', autoHideDuration: 3000 });
                 canComplete = false;
             }
 
             // Get geolocation if needed
             if (item.geoLocationEnabled && !geolocation) {
+                console.log("Geolocation is required but missing, requesting it now");
                 getGeolocation();
             }
 
             if (canComplete) {
+                console.log("All validation passed, completing item with:", {
+                    itemId: item.id,
+                    shiftId: shift.id,
+                    completed: true,
+                    latitude: geolocation?.latitude,
+                    longitude: geolocation?.longitude,
+                    comments: comments[item.id],
+                    uploadId: uploads[item.id],
+                });
+
                 completeItemMutation.mutate({
                     itemId: item.id,
                     shiftId: shift.id,
@@ -263,6 +454,8 @@ export default function ChecklistCompletion({
                     comments: comments[item.id],
                     uploadId: uploads[item.id],
                 });
+            } else {
+                console.log("Validation failed, cannot complete item");
             }
         }
     };
@@ -277,13 +470,30 @@ export default function ChecklistCompletion({
 
     // Handle file upload
     const handleFileUploaded = (itemId: string, uploadId: string) => {
-        setUploads((prev) => ({
-            ...prev,
-            [itemId]: uploadId,
-        }));
+        console.log(`handleFileUploaded called for item ${itemId} with uploadId ${uploadId}`);
+
+        console.log("Current uploads state before update:", uploads);
+        setUploads((prev) => {
+            const newUploads = {
+                ...prev,
+                [itemId]: uploadId,
+            };
+            console.log("New uploads state:", newUploads);
+            return newUploads;
+        });
 
         // If the item is already completed, update it with the new upload
         if (completions[itemId]) {
+            console.log(`Item ${itemId} is already completed, updating with new upload:`, {
+                itemId,
+                shiftId: shift.id,
+                completed: true,
+                latitude: completions[itemId].latitude,
+                longitude: completions[itemId].longitude,
+                comments: comments[itemId],
+                uploadId,
+            });
+
             completeItemMutation.mutate({
                 itemId: itemId,
                 shiftId: shift.id,
@@ -293,7 +503,13 @@ export default function ChecklistCompletion({
                 comments: comments[itemId],
                 uploadId: uploadId,
             });
+        } else {
+            console.log(`Item ${itemId} is not completed yet. Upload has been associated but item needs to be checked.`);
         }
+
+        // Refresh the shift uploads to show the new upload
+        console.log("Refreshing shift uploads...");
+        refetchShiftUploads();
     };
 
     // Handle uncheck confirmation
@@ -408,12 +624,70 @@ export default function ChecklistCompletion({
 
             <List>
                 {checklistData.items.map((item, index) => {
-                    const isCompleted = !!completions[item.id];
-                    const hasRequiredFields =
-                        (item.commentsOption !== 'required' ||
-                            (comments[item.id] &&
-                                comments[item.id].trim() !== '')) &&
-                        (item.uploadOption !== 'required' || uploads[item.id]);
+                    const isCompleted = !!completions[item.id] && completions[item.id].completed === true;
+                    // Check if all required fields are filled
+                    const hasComments = comments[item.id] && comments[item.id].trim() !== '';
+                    const hasUpload = !!uploads[item.id];
+
+                    // Get unassociated uploads before checking hasUploadInShiftUploads
+                    const unassociatedUploads = shiftUploads.filter(groupUpload => 
+                        groupUpload.upload && !Object.values(uploads).includes(groupUpload.upload.id)
+                    );
+
+                    // Check if there's an upload in shiftUploads that matches this item's upload ID
+                    const hasUploadInShiftUploads = (
+                        // Either the item already has an upload ID and it exists in shiftUploads
+                        (uploads[item.id] && shiftUploads.some(groupUpload => 
+                            groupUpload.upload && groupUpload.upload.id === uploads[item.id]
+                        )) ||
+                        // Or there's an unassociated upload in shiftUploads and this item requires an upload
+                        (item.uploadOption === 'required' && !uploads[item.id] && unassociatedUploads.length > 0)
+                    );
+
+                    // If the item is already completed, it has all required fields
+                    const isAlreadyCompleted = isCompleted;
+
+                    const hasRequiredFields = isAlreadyCompleted || (
+                        // Check if required comments are filled
+                        (item.commentsOption !== 'required' || hasComments) &&
+                        // Check if required upload is present (either in uploads state or in shiftUploads)
+                        (item.uploadOption !== 'required' || hasUpload || hasUploadInShiftUploads)
+                    );
+
+                    // Reusing unassociatedUploads from above
+
+                    // If this item requires an upload and doesn't have one yet, but there are unassociated uploads,
+                    // automatically associate the first unassociated upload with this item
+                    if (item.uploadOption === 'required' && !uploads[item.id] && unassociatedUploads.length > 0 && !isCompleted) {
+                        const uploadToAssociate = unassociatedUploads[0].upload;
+                        if (uploadToAssociate) {
+                            console.log(`Auto-associating upload ${uploadToAssociate.id} with item ${item.id}`);
+
+                            // Update the uploads state
+                            setTimeout(() => {
+                                setUploads(prev => ({
+                                    ...prev,
+                                    [item.id]: uploadToAssociate.id
+                                }));
+                            }, 0);
+                        }
+                    }
+
+                    console.log(`hasRequiredFields for item ${item.id} (${item.name}):`, {
+                        hasRequiredFields,
+                        isAlreadyCompleted,
+                        commentsOption: item.commentsOption,
+                        hasComments,
+                        uploadOption: item.uploadOption,
+                        hasUpload,
+                        hasUploadInShiftUploads,
+                        uploadId: uploads[item.id],
+                        uploads,
+                        shiftUploadsCount: shiftUploads.length,
+                        shiftUploadsWithUpload: shiftUploads.filter(g => g.upload).length,
+                        unassociatedUploadsCount: unassociatedUploads.length,
+                        unassociatedUploads: unassociatedUploads.map(g => g.upload?.id)
+                    });
 
                     return (
                         <Paper
@@ -428,11 +702,24 @@ export default function ChecklistCompletion({
                             }}
                         >
                             <ListItem>
-                                <Checkbox
-                                    checked={isCompleted}
-                                    onChange={() => handleCheckboxChange(item)}
-                                    color="primary"
-                                />
+                                <Tooltip title={!isCompleted && hasRequiredFields ? "Click to mark as completed" : ""}>
+                                    <Checkbox
+                                        checked={isCompleted}
+                                        onChange={() => handleCheckboxChange(item)}
+                                        color={!isCompleted && hasRequiredFields ? "success" : "primary"}
+                                        sx={{
+                                            '&:hover': {
+                                                backgroundColor: !isCompleted && hasRequiredFields ? 'rgba(76, 175, 80, 0.1)' : undefined,
+                                            },
+                                            animation: !isCompleted && hasRequiredFields ? 'pulse 1.5s infinite' : 'none',
+                                            '@keyframes pulse': {
+                                                '0%': { boxShadow: '0 0 0 0 rgba(76, 175, 80, 0.4)' },
+                                                '70%': { boxShadow: '0 0 0 10px rgba(76, 175, 80, 0)' },
+                                                '100%': { boxShadow: '0 0 0 0 rgba(76, 175, 80, 0)' },
+                                            },
+                                        }}
+                                    />
+                                </Tooltip>
                                 <ListItemText
                                     primary={
                                         <Box
@@ -462,14 +749,15 @@ export default function ChecklistCompletion({
                                                     />
                                                 </Tooltip>
                                             )}
-                                            {isCompleted && completions[item.id] && completions[item.id].latitude && completions[item.id].longitude && (
-                                                <Tooltip title="View location coordinates">
-                                                    <IconButton 
-                                                        size="medium" 
+                                            {isCompleted && completions[item.id] && completions[item.id].latitude && completions[item.id].longitude && item.geoLocationEnabled && (
+                                                <Tooltip title="View location where this item was completed">
+                                                    <Button
+                                                        variant="outlined"
+                                                        size="small"
+                                                        startIcon={<LocationOnIcon />}
                                                         color="primary"
                                                         sx={{ 
                                                             ml: 1,
-                                                            border: '1px solid',
                                                             borderColor: 'primary.main',
                                                             backgroundColor: 'rgba(25, 118, 210, 0.08)',
                                                             '&:hover': {
@@ -485,8 +773,8 @@ export default function ChecklistCompletion({
                                                             setLocationModalOpen(true);
                                                         }}
                                                     >
-                                                        <LocationOnIcon />
-                                                    </IconButton>
+                                                        View Map
+                                                    </Button>
                                                 </Tooltip>
                                             )}
                                             {!isCompleted &&
@@ -618,12 +906,26 @@ export default function ChecklistCompletion({
                                     {item.uploadOption !== 'off' && (
                                         <Box sx={{ mt: 2 }}>
                                             {uploads[item.id] ? (
-                                                <Alert
-                                                    severity="success"
-                                                    sx={{ mb: 1 }}
-                                                >
-                                                    File uploaded successfully
-                                                </Alert>
+                                                <Box>
+                                                    <Alert
+                                                        severity="success"
+                                                        sx={{ mb: 1 }}
+                                                    >
+                                                        File uploaded successfully. {!isCompleted && item.uploadOption === 'required' && "You can now check this item."}
+                                                    </Alert>
+                                                    {/* Display uploaded file details */}
+                                                    {console.log(`Rendering uploads for item ${item.id}:`, { 
+                                                        uploadId: uploads[item.id], 
+                                                        shiftUploads
+                                                    })}
+
+                                                    {/* Display upload details using the container component */}
+                                                    <UploadDetailsContainer 
+                                                        itemId={item.id} 
+                                                        uploadId={uploads[item.id]} 
+                                                        shiftUploads={shiftUploads} 
+                                                    />
+                                                </Box>
                                             ) : (
                                                 <Box>
                                                     <input
@@ -732,7 +1034,9 @@ export default function ChecklistCompletion({
                 fullWidth
             >
                 <DialogTitle>
-                    Location Map for {selectedLocation?.itemName}
+                    Location Map: {selectedLocation?.itemName === "Current Location" 
+                        ? "Your Current Location" 
+                        : `Where "${selectedLocation?.itemName}" was completed`}
                 </DialogTitle>
                 <DialogContent>
                     {selectedLocation && (

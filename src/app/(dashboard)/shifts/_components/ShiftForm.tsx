@@ -385,6 +385,8 @@ export default function ShiftForm(props: ShiftFormProps) {
               legacyLocation: shift.locationId
                   ? ''
                   : shift.legacyLocation || shift.location || '',
+              notes: shift.notes || '',
+              adminNotes: shift.adminNotes || '',
               assignments:
                   shift.shiftAssignments?.map((assignment) => {
                       return {
