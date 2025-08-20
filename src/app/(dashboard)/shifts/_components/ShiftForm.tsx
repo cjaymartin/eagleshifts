@@ -738,7 +738,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                             />
 
                             {/* Uploads section */}
-                            {shiftId && (
+                            {shiftId && (isAdmin || isAssigned) && (
                                 <ShiftUploads
                                     shiftId={shiftId}
                                     readOnly={!isAdmin && !isAssigned}
