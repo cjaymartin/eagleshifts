@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Chip, IconButton, TableCell, Tooltip } from '@mui/material';
+import { Chip, IconButton, TableCell, Tooltip, Box } from '@mui/material';
 import dayjs from 'dayjs';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useAuthQuery } from '@/queries/users';
 import { useDialogs } from '@toolpad/core';
 import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
@@ -37,6 +38,7 @@ const formatTime = (time: string, timezone: string) => {
 
 export type ShiftRowProps = {
     shift: inferRouterOutputs<AppRouter>['shifts']['byId'];
+    isChecklistComplete?: boolean;
 };
 
 export function ShiftRow(props: ShiftRowProps) {
@@ -88,15 +90,22 @@ export function ShiftRow(props: ShiftRowProps) {
         <React.Fragment>
             {/*<CardMedia component="img" src={props.featuredImage} />*/}
             <TableCell>
-                {shift.title}
-                {shift.isCancelled && (
-                    <Chip
-                        label="Cancelled"
-                        variant="outlined"
-                        color="warning"
-                        sx={{ ml: 2 }}
-                    />
-                )}
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    {shift.title}
+                    {props.isChecklistComplete && (
+                        <Tooltip title="Checklist Complete">
+                            <CheckCircleIcon color="success" sx={{ ml: 1 }} />
+                        </Tooltip>
+                    )}
+                    {shift.isCancelled && (
+                        <Chip
+                            label="Cancelled"
+                            variant="outlined"
+                            color="warning"
+                            sx={{ ml: 2 }}
+                        />
+                    )}
+                </Box>
             </TableCell>
             <TableCell sx={{ maxWidth: 300 }}>
                 {shift.location?.name || shift.legacyLocation || ''}

@@ -75,6 +75,26 @@ export function useChecklistsQuery() {
     return trpc.checklists.list.useQuery();
 }
 
+export function useIsShiftChecklistCompleteQuery(shiftId: string) {
+    return trpc.checklists.isShiftChecklistComplete.useQuery(
+        { shiftId },
+        {
+            enabled: !!shiftId,
+        }
+    );
+}
+
+export function useBatchCheckShiftChecklistsQuery(shiftIds: string[]) {
+    return trpc.checklists.batchCheckShiftChecklists.useQuery(
+        { shiftIds },
+        {
+            enabled: shiftIds.length > 0,
+            // Cache the results for 5 minutes to reduce API calls
+            staleTime: 5 * 60 * 1000,
+        }
+    );
+}
+
 export function useAttachChecklistMutation() {
     const utils = trpc.useUtils();
     return trpc.shifts.attachChecklist.useMutation({

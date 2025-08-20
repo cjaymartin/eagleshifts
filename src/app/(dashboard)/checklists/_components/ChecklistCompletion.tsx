@@ -449,8 +449,10 @@ export default function ChecklistCompletion({
                     itemId: item.id,
                     shiftId: shift.id,
                     completed: true,
-                    latitude: geolocation?.latitude,
-                    longitude: geolocation?.longitude,
+                    ...(item.geoLocationEnabled ? {
+                        latitude: geolocation?.latitude,
+                        longitude: geolocation?.longitude,
+                    } : {}),
                     comments: comments[item.id],
                     uploadId: uploads[item.id],
                 });
@@ -484,25 +486,24 @@ export default function ChecklistCompletion({
 
         // If the item is already completed, update it with the new upload
         if (completions[itemId]) {
-            console.log(`Item ${itemId} is already completed, updating with new upload:`, {
-                itemId,
-                shiftId: shift.id,
-                completed: true,
-                latitude: completions[itemId].latitude,
-                longitude: completions[itemId].longitude,
-                comments: comments[itemId],
-                uploadId,
-            });
+            // Find the item to check if geoLocationEnabled is true
+            const item = checklistData?.items.find(i => i.id === itemId);
 
-            completeItemMutation.mutate({
+            const mutationPayload = {
                 itemId: itemId,
                 shiftId: shift.id,
                 completed: true,
-                latitude: completions[itemId].latitude,
-                longitude: completions[itemId].longitude,
+                ...(item?.geoLocationEnabled ? {
+                    latitude: completions[itemId].latitude,
+                    longitude: completions[itemId].longitude,
+                } : {}),
                 comments: comments[itemId],
                 uploadId: uploadId,
-            });
+            };
+
+            console.log(`Item ${itemId} is already completed, updating with new upload:`, mutationPayload);
+
+            completeItemMutation.mutate(mutationPayload);
         } else {
             console.log(`Item ${itemId} is not completed yet. Upload has been associated but item needs to be checked.`);
         }

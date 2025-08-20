@@ -31,6 +31,7 @@ import { trpc } from '@/lib/trpc/client';
 import { useDialogs } from '@toolpad/core';
 import ShiftForm from '@/app/(dashboard)/shifts/_components/ShiftForm';
 import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
+import { useBatchCheckShiftChecklistsQuery } from '@/queries/shifts';
 
 export default function Shifts() {
     //const { setNew: openAddShiftDialog } = useShiftDialogHelpers();
@@ -47,6 +48,10 @@ export default function Shifts() {
     // Get organization profile data for timezone
     const { data: businessProfile } = useBusinessProfileQuery();
     const { data: shifts } = trpc.shifts.list.useQuery(filters as any);
+
+    // Get checklist completion status for all shifts in a single batch query
+    const shiftIds = shifts?.map(shift => shift.id) || [];
+    const { data: checklistStatuses } = useBatchCheckShiftChecklistsQuery(shiftIds);
 
     const fileType =
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
@@ -130,7 +135,10 @@ export default function Shifts() {
                                 ? shifts.map((shift) => {
                                       return (
                                           <TableRow key={shift.id}>
-                                              <ShiftRow shift={shift as any} />
+                                              <ShiftRow 
+                                                  shift={shift as any} 
+                                                  isChecklistComplete={checklistStatuses ? checklistStatuses[shift.id] : false} 
+                                              />
                                           </TableRow>
                                       );
                                   })

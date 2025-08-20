@@ -4,6 +4,96 @@ import { Prisma } from '@/generated/prisma';
 import { TRPCError } from '@trpc/server';
 
 export const checklistsRouter = router({
+    // Check if a shift's checklist is complete
+    isShiftChecklistComplete: memberProcedure
+        .input(z.object({ shiftId: z.string() }))
+        .query(async ({ ctx, input }) => {
+            // Find the shift to ensure it belongs to the current organization
+            const shift = await ctx.prisma.shift.findFirst({
+                where: {
+                    id: input.shiftId,
+                    organizationId: ctx.user.organizationId,
+                },
+                include: {
+                    Checklist: {
+                        include: {
+                            items: {
+                                include: {
+                                    completions: {
+                                        where: {
+                                            shiftId: input.shiftId,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+
+            if (!shift || !shift.Checklist) {
+                return { isComplete: false };
+            }
+
+            // Count total items and completed items
+            const totalItems = shift.Checklist.items.length;
+            const completedItems = shift.Checklist.items.filter(
+                item => item.completions.some(completion => completion.completed)
+            ).length;
+
+            // Checklist is complete if all items are completed
+            return { isComplete: completedItems === totalItems };
+        }),
+
+    // Batch check if multiple shifts' checklists are complete
+    // This is more efficient for checking many shifts at once
+    batchCheckShiftChecklists: memberProcedure
+        .input(z.object({ shiftIds: z.array(z.string()) }))
+        .query(async ({ ctx, input }) => {
+            // Find all shifts in a single query
+            const shifts = await ctx.prisma.shift.findMany({
+                where: {
+                    id: { in: input.shiftIds },
+                    organizationId: ctx.user.organizationId,
+                },
+                include: {
+                    Checklist: {
+                        include: {
+                            items: {
+                                include: {
+                                    completions: {
+                                        where: {
+                                            shiftId: { in: input.shiftIds },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+
+            // Process results
+            const results = shifts.reduce((acc, shift) => {
+                if (!shift.Checklist) {
+                    acc[shift.id] = false;
+                    return acc;
+                }
+
+                const totalItems = shift.Checklist.items.length;
+                const completedItems = shift.Checklist.items.filter(
+                    item => item.completions.some(
+                        completion => completion.completed && completion.shiftId === shift.id
+                    )
+                ).length;
+
+                acc[shift.id] = completedItems === totalItems;
+                return acc;
+            }, {} as Record<string, boolean>);
+
+            return results;
+        }),
+
     // Get all checklists for the current organization
     list: memberProcedure.query(async ({ ctx }) => {
         const checklists = await ctx.prisma.checklist.findMany({
@@ -681,13 +771,13 @@ export const checklistsRouter = router({
         // Filter to only include shifts with incomplete checklist items
         const shiftsWithIncompleteChecklists = shifts.filter(shift => {
             if (!shift.Checklist) return false;
-            
+
             // Count total items and completed items
             const totalItems = shift.Checklist.items.length;
             const completedItems = shift.Checklist.items.filter(
                 item => item.completions.some(completion => completion.completed)
             ).length;
-            
+
             // Include the shift if there are incomplete items
             return completedItems < totalItems;
         });
