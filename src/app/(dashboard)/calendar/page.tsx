@@ -11,11 +11,7 @@ import { utcToOrgTimezone } from '@/utils/dateUtils';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-import {
-    Calendar as BigCalendar,
-    dayjsLocalizer,
-    Views,
-} from 'react-big-calendar';
+import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import {
     ShiftFilters,
@@ -28,9 +24,11 @@ import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
 import ShiftViewDialog from '@/components/calendar/ShiftViewDialog';
 import AddIcon from '@mui/icons-material/Add';
 import CalendarAgenda from '@/app/(dashboard)/_components/CalendarAgenda';
+import moment from 'moment';
 
 // Create a localizer for the calendar
-const localizer = dayjsLocalizer(dayjs);
+//const localizer = dayjsLocalizer(dayjs);
+const localizer = momentLocalizer(moment);
 
 // Colored wrapper for date cells
 const ColoredDateCellWrapper: React.FC<{ children: React.ReactElement }> = ({
@@ -421,13 +419,13 @@ export default function Calendar() {
                     id: shift.id,
                     title: shift.title,
                     allDay: false,
-                    start: utcToOrgTimezone(shift.startTime, { 
-                        organizationTimezone: shiftTimezone, 
-                        fallbackTimezone: 'America/New_York' 
+                    start: utcToOrgTimezone(shift.startTime, {
+                        organizationTimezone: shiftTimezone,
+                        fallbackTimezone: 'America/New_York',
                     }),
-                    end: utcToOrgTimezone(shift.endTime, { 
-                        organizationTimezone: shiftTimezone, 
-                        fallbackTimezone: 'America/New_York' 
+                    end: utcToOrgTimezone(shift.endTime, {
+                        organizationTimezone: shiftTimezone,
+                        fallbackTimezone: 'America/New_York',
                     }),
                     location: {
                         id: shift?.location?.id,
