@@ -41,12 +41,18 @@ export default function ChecklistList() {
     // Delete checklist mutation
     const deleteChecklistMutation = trpc.checklists.delete.useMutation({
         onSuccess: () => {
-            notifications.success('Checklist deleted successfully');
+            notifications.show('Checklist deleted successfully', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
             refetch();
             setOpenDeleteDialog(false);
         },
         onError: (error) => {
-            notifications.error(`Error deleting checklist: ${error.message}`);
+            notifications.show(`Error deleting checklist: ${error.message}`, {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
         },
     });
 
@@ -234,8 +240,8 @@ export default function ChecklistList() {
                 <DialogTitle>Delete Checklist</DialogTitle>
                 <DialogContent>
                     <Typography>
-                        Are you sure you want to delete the checklist "
-                        {selectedChecklist?.name}"?
+                        Are you sure you want to delete the checklist &quot;
+                        {selectedChecklist?.name}&quot;?
                         {selectedChecklist?._count?.shifts > 0 && (
                             <Box sx={{ color: 'error.main', mt: 1 }}>
                                 This checklist is attached to{' '}

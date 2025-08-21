@@ -86,7 +86,7 @@ export default function MemberChecklistView() {
     if (shifts.length === 0) {
         return (
             <Alert severity="info" sx={{ mb: 2 }}>
-                You don't have any upcoming shifts with checklists to complete.
+                You do not have any upcoming shifts with checklists to complete.
             </Alert>
         );
     }
@@ -104,7 +104,11 @@ export default function MemberChecklistView() {
                     );
 
                     return (
-                        <Grid item xs={12} sm={6} md={4} key={shift.id}>
+                        <Grid
+                            component="div"
+                            size={{ xs: 12, sm: 6, md: 4 }}
+                            key={shift.id}
+                        >
                             <Card variant="outlined">
                                 <CardContent>
                                     <Typography variant="h6" gutterBottom>

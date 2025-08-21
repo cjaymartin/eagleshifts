@@ -57,7 +57,7 @@ export default function ChecklistItemForm({ item, onSubmit, onCancel }: Checklis
 
             <Box sx={{ mt: 2 }}>
                 <Grid container spacing={2}>
-                    <Grid item xs={12}>
+                    <Grid component="div" size={{xs: 12}}>
                         <Controller
                             name="name"
                             control={control}
@@ -74,7 +74,7 @@ export default function ChecklistItemForm({ item, onSubmit, onCancel }: Checklis
                         />
                     </Grid>
 
-                    <Grid item xs={12} sm={4}>
+                    <Grid component="div" size={{xs: 12, sm: 4}}>
                         <FormControl component="fieldset" sx={{ mt: 2 }}>
                             <FormControlLabel
                                 control={
@@ -95,7 +95,7 @@ export default function ChecklistItemForm({ item, onSubmit, onCancel }: Checklis
                         </FormControl>
                     </Grid>
 
-                    <Grid item xs={12} sm={4}>
+                    <Grid component="div" size={{xs: 12, sm: 4}}>
                         <FormControl component="fieldset">
                             <FormLabel component="legend">Comments</FormLabel>
                             <Controller
@@ -124,7 +124,7 @@ export default function ChecklistItemForm({ item, onSubmit, onCancel }: Checklis
                         </FormControl>
                     </Grid>
 
-                    <Grid item xs={12} sm={4}>
+                    <Grid component="div" size={{xs: 12, sm: 4}}>
                         <FormControl component="fieldset">
                             <FormLabel component="legend">File Upload</FormLabel>
                             <Controller

@@ -296,8 +296,8 @@ export default function ChecklistCompletion({
             console.log("Upload result:", result);
 
             // Handle successful upload
-            if (result?.id) {
-                handleFileUploaded(itemId, result.id);
+            if (result?.upload?.id) {
+                handleFileUploaded(itemId, result.upload.id);
                 notifications.show(`File uploaded successfully`, { severity: 'success', autoHideDuration: 3000 });
             }
         } catch (error: any) {
@@ -915,10 +915,6 @@ export default function ChecklistCompletion({
                                                         File uploaded successfully. {!isCompleted && item.uploadOption === 'required' && "You can now check this item."}
                                                     </Alert>
                                                     {/* Display uploaded file details */}
-                                                    {console.log(`Rendering uploads for item ${item.id}:`, { 
-                                                        uploadId: uploads[item.id], 
-                                                        shiftUploads
-                                                    })}
 
                                                     {/* Display upload details using the container component */}
                                                     <UploadDetailsContainer 

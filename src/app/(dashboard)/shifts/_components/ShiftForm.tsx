@@ -169,9 +169,16 @@ type ShiftFormProps = {
 };
 
 // Checklist Section Component
-function ChecklistSection({ shiftId, shift }: { shiftId?: string, shift?: any }) {
+function ChecklistSection({
+    shiftId,
+    shift,
+}: {
+    shiftId?: string;
+    shift?: any;
+}) {
     const [selectedChecklistId, setSelectedChecklistId] = useState<string>('');
-    const { data: checklists = [], isLoading: isLoadingChecklists } = useChecklistsQuery();
+    const { data: checklists = [], isLoading: isLoadingChecklists } =
+        useChecklistsQuery();
     const attachChecklistMutation = useAttachChecklistMutation();
     const detachChecklistMutation = useDetachChecklistMutation();
     const notifications = useNotifications();
@@ -245,13 +252,16 @@ function ChecklistSection({ shiftId, shift }: { shiftId?: string, shift?: any })
             {hasChecklist ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <Typography variant="body1" sx={{ mr: 2 }}>
-                        Current Checklist: <strong>{shift.Checklist?.name || 'Checklist Attached'}</strong>
+                        Current Checklist:{' '}
+                        <strong>
+                            {shift.Checklist?.name || 'Checklist Attached'}
+                        </strong>
                     </Typography>
-                    <Button 
-                        variant="outlined" 
-                        color="secondary" 
+                    <Button
+                        variant="outlined"
+                        color="secondary"
                         onClick={handleDetachChecklist}
-                        disabled={detachChecklistMutation.isLoading}
+                        disabled={detachChecklistMutation.isPending}
                     >
                         Remove Checklist
                     </Button>
@@ -282,13 +292,19 @@ function ChecklistSection({ shiftId, shift }: { shiftId?: string, shift?: any })
                     ))}
                 </TextField>
 
-                <Button 
-                    variant="contained" 
-                    color="primary" 
+                <Button
+                    variant="contained"
+                    color="primary"
                     onClick={handleAttachChecklist}
-                    disabled={!selectedChecklistId || attachChecklistMutation.isLoading || selectedChecklistId === shift?.Checklist?.id}
+                    disabled={
+                        !selectedChecklistId ||
+                        attachChecklistMutation.isPending ||
+                        selectedChecklistId === shift?.Checklist?.id
+                    }
                 >
-                    {attachChecklistMutation.isLoading ? 'Attaching...' : 'Attach Checklist'}
+                    {attachChecklistMutation.isPending
+                        ? 'Attaching...'
+                        : 'Attach Checklist'}
                 </Button>
             </Box>
         </Box>
@@ -388,8 +404,6 @@ export default function ShiftForm(props: ShiftFormProps) {
               legacyLocation: shift.locationId
                   ? ''
                   : shift.legacyLocation || shift.location || '',
-              notes: shift.notes || '',
-              adminNotes: shift.adminNotes || '',
               assignments:
                   shift.shiftAssignments?.map((assignment) => {
                       return {
@@ -401,9 +415,12 @@ export default function ShiftForm(props: ShiftFormProps) {
           }
         : defaultValues;
 
-    console.log('transformedShift', { 
+    console.log('transformedShift', {
         hasChecklist: !!(shift?.Checklist || shift?.checklistId),
-        hasTransformedChecklist: !!(transformedShift.Checklist || transformedShift.checklistId)
+        hasTransformedChecklist: !!(
+            (transformedShift as any)?.Checklist ||
+            (transformedShift as any)?.checklistId
+        ),
     });
 
     const methods = useForm<ShiftFormData>({
@@ -887,15 +904,15 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 )}
                             />
                             <Grid container spacing={2} alignItems="center">
-                                <Grid>
+                                <Grid component="div">
                                     <Typography variant="h6">
                                         {assignments?.length || 0}
                                     </Typography>
                                 </Grid>
-                                <Grid>
+                                <Grid component="div">
                                     <Typography variant="body1">of</Typography>
                                 </Grid>
-                                <Grid>
+                                <Grid component="div">
                                     <Controller
                                         name="slots"
                                         control={control}
@@ -934,7 +951,12 @@ export default function ShiftForm(props: ShiftFormProps) {
                             {shiftId && (isAdmin || isAssigned) && (
                                 <ShiftUploads
                                     shiftId={shiftId}
-                                    readOnly={(!isAdmin && !isAssigned) || readOnly}
+                                    readOnly={
+                                        !!(
+                                            (!isAdmin && !isAssigned) ||
+                                            readOnly
+                                        )
+                                    }
                                 />
                             )}
 
@@ -980,10 +1002,19 @@ export default function ShiftForm(props: ShiftFormProps) {
                             {/* Checklist Section */}
                             {isAdmin && !isNew && (
                                 <>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Debug: {hasChecklist ? `Checklist attached: ${shift.Checklist?.name || shift.checklistId}` : 'No checklist attached'}
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                    >
+                                        Debug:{' '}
+                                        {hasChecklist
+                                            ? `Checklist attached: ${shift.Checklist?.name || shift.checklistId}`
+                                            : 'No checklist attached'}
                                     </Typography>
-                                    <ChecklistSection shiftId={shiftId} shift={shift} />
+                                    <ChecklistSection
+                                        shiftId={shiftId}
+                                        shift={shift}
+                                    />
                                 </>
                             )}
 

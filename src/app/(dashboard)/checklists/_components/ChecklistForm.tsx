@@ -62,21 +62,21 @@ export default function ChecklistForm({
     // Mutations
     const createChecklistMutation = trpc.checklists.create.useMutation({
         onSuccess: () => {
-            notifications.success('Checklist created successfully');
+            notifications.show('Checklist created successfully', { severity: 'success', autoHideDuration: 3000 });
             onClose();
         },
         onError: (error) => {
-            notifications.error(`Error creating checklist: ${error.message}`);
+            notifications.show(`Error creating checklist: ${error.message}`, { severity: 'error', autoHideDuration: 3000 });
         },
     });
 
     const updateChecklistMutation = trpc.checklists.update.useMutation({
         onSuccess: () => {
-            notifications.success('Checklist updated successfully');
+            notifications.show('Checklist updated successfully', { severity: 'success', autoHideDuration: 3000 });
             onClose();
         },
         onError: (error) => {
-            notifications.error(`Error updating checklist: ${error.message}`);
+            notifications.show(`Error updating checklist: ${error.message}`, { severity: 'error', autoHideDuration: 3000 });
         },
     });
 
@@ -85,10 +85,10 @@ export default function ChecklistForm({
             setItems([...items, newItem]);
             setShowItemForm(false);
             setEditingItem(null);
-            notifications.success('Item added successfully');
+            notifications.show('Item added successfully', { severity: 'success', autoHideDuration: 3000 });
         },
         onError: (error) => {
-            notifications.error(`Error adding item: ${error.message}`);
+            notifications.show(`Error adding item: ${error.message}`, { severity: 'error', autoHideDuration: 3000 });
         },
     });
 
@@ -101,28 +101,28 @@ export default function ChecklistForm({
             );
             setShowItemForm(false);
             setEditingItem(null);
-            notifications.success('Item updated successfully');
+            notifications.show('Item updated successfully', { severity: 'success', autoHideDuration: 3000 });
         },
         onError: (error) => {
-            notifications.error(`Error updating item: ${error.message}`);
+            notifications.show(`Error updating item: ${error.message}`, { severity: 'error', autoHideDuration: 3000 });
         },
     });
 
     const deleteItemMutation = trpc.checklists.deleteItem.useMutation({
         onSuccess: () => {
-            notifications.success('Item deleted successfully');
+            notifications.show('Item deleted successfully', { severity: 'success', autoHideDuration: 3000 });
         },
         onError: (error) => {
-            notifications.error(`Error deleting item: ${error.message}`);
+            notifications.show(`Error deleting item: ${error.message}`, { severity: 'error', autoHideDuration: 3000 });
         },
     });
 
     const reorderItemsMutation = trpc.checklists.reorderItems.useMutation({
         onSuccess: () => {
-            notifications.success('Items reordered successfully');
+            notifications.show('Items reordered successfully', { severity: 'success', autoHideDuration: 3000 });
         },
         onError: (error) => {
-            notifications.error(`Error reordering items: ${error.message}`);
+            notifications.show(`Error reordering items: ${error.message}`, { severity: 'error', autoHideDuration: 3000 });
         },
     });
 
@@ -223,7 +223,7 @@ export default function ChecklistForm({
     return (
         <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 2 }}>
             <Grid container spacing={2}>
-                <Grid item xs={12}>
+                <Grid component="div" size={{xs: 12}}>
                     <Controller
                         name="name"
                         control={control}
@@ -239,7 +239,7 @@ export default function ChecklistForm({
                         )}
                     />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid component="div" size={{xs: 12}}>
                     <Controller
                         name="description"
                         control={control}
@@ -308,8 +308,8 @@ export default function ChecklistForm({
                     variant="contained"
                     color="primary"
                     disabled={
-                        createChecklistMutation.isLoading ||
-                        updateChecklistMutation.isLoading
+                        createChecklistMutation.isPending ||
+                        updateChecklistMutation.isPending
                     }
                 >
                     {isEditing ? 'Update Checklist' : 'Create Checklist'}
