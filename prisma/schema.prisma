@@ -108,6 +108,7 @@ model Organization {
   members        Member[]
   invitations    Invitation[]
   Shift          Shift[]
+  ShiftDraft     ShiftDraft[]
   profile        OrganizationProfile?
   uploadGroups   UploadGroup[]
   locations      Location[]
@@ -158,6 +159,7 @@ model Member {
   availabilities   Availability[]
   shiftAssignments shiftAssignment[]
   shiftRequests    ShiftRequest[]
+  shiftDrafts      ShiftDraft[]
   uploads          Upload[]          @relation("Uploader")
   deletedUploads   Upload[]          @relation("Deleter")
 
@@ -275,6 +277,32 @@ model ShiftRequest {
   @@map("shift_request")
 }
 
+model ShiftDraft {
+  id             String @id @default(cuid())
+  organizationId String
+  memberId       String // Required field - draft belongs to a specific member
+
+  title          String
+  legacyLocation String?
+  locationId     String?
+  date           DateTime
+  startTime      DateTime?
+  endTime        DateTime?
+  slots          Int
+  notes          String?
+  adminNotes     String?
+  timezone       String    @default("America/New_York")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relationships
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location     Location?    @relation(fields: [locationId], references: [id])
+  member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("shift_draft")
+}
+
 model LogEntry {
   id             String   @id @default(cuid())
   organizationId String
@@ -369,6 +397,7 @@ model Location {
   organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   group        LocationGroup? @relation(fields: [groupId], references: [id])
   shifts       Shift[]
+  ShiftDraft   ShiftDraft[]
 
   @@unique([organizationId, name])
   @@map("location")

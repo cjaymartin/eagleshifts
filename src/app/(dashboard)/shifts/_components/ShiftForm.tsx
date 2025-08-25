@@ -44,6 +44,11 @@ import {
     useShiftUpdateMutation,
 } from '@/queries/shifts';
 import {
+    useShiftDraftCreateMutation,
+    useShiftDraftDeleteMutation,
+    useShiftDraftUpdateMutation,
+} from '@/queries/shiftDrafts';
+import {
     useShiftRequestCreateMutation,
     useShiftRequestsListQuery,
 } from '@/queries/requests';
@@ -214,38 +219,45 @@ export default function ShiftForm(props: ShiftFormProps) {
     const transformedShift = shift
         ? {
               ...shift,
+              title: shift?.title ?? '',
               notes: shift?.notes ?? '',
               adminNotes: shift?.adminNotes ?? '',
               slots: shift?.slots || 1,
               // Parse dates from ISO format
-              date: shift.startTime
+              // For drafts, use the date field directly
+              date: (shift as any)?.date
+                  ? dayjs((shift as any).date)
+                        .tz(
+                            shift.timezone || businessProfile?.timezone || 'UTC'
+                        )
+                        .toDate()
+                  : shift.startTime
+                    ? dayjs(shift.startTime)
+                          .tz(
+                              shift.timezone ||
+                                  businessProfile?.timezone ||
+                                  'UTC'
+                          )
+                          .startOf('day')
+                          .toDate()
+                    : null,
+              // Handle startTime and endTime which may be strings or null for drafts
+              //
+              startTime: shift.startTime
                   ? dayjs(shift.startTime)
                         .tz(
                             shift.timezone || businessProfile?.timezone || 'UTC'
                         )
-                        .startOf('day')
                         .toDate()
                   : null,
-              startTime:
-                  (!propsIsNew || propsDuplicate) && shift.startTime
-                      ? dayjs(shift.startTime)
-                            .tz(
-                                shift.timezone ||
-                                    businessProfile?.timezone ||
-                                    'UTC'
-                            )
-                            .toDate()
-                      : null,
-              endTime:
-                  (!propsIsNew || propsDuplicate) && shift.endTime
-                      ? dayjs(shift.endTime)
-                            .tz(
-                                shift.timezone ||
-                                    businessProfile?.timezone ||
-                                    'UTC'
-                            )
-                            .toDate()
-                      : null,
+              endTime: shift.endTime
+                  ? dayjs(shift.endTime)
+                        .tz(
+                            shift.timezone || businessProfile?.timezone || 'UTC'
+                        )
+                        .toDate()
+                  : null,
+
               // Handle location fields
               locationId: shift.locationId || null,
               legacyLocation: shift.locationId
@@ -307,6 +319,9 @@ export default function ShiftForm(props: ShiftFormProps) {
     const createMutation = useShiftCreateMutation();
     const updateMutation = useShiftUpdateMutation();
     const setCancelledMutations = useShiftCancelMutation();
+    const createDraftMutation = useShiftDraftCreateMutation();
+    const updateDraftMutation = useShiftDraftUpdateMutation();
+    const deleteDraftMutation = useShiftDraftDeleteMutation();
 
     // Form submission handlers
     async function onNewFormSubmit(formData: ShiftFormData) {
@@ -360,6 +375,21 @@ export default function ShiftForm(props: ShiftFormProps) {
                 severity: 'success',
                 autoHideDuration: 3000,
             });
+
+            // If this shift was created from a draft, delete the draft
+            if (shift?.isDraft && shift?.draftId) {
+                try {
+                    await deleteDraftMutation.mutateAsync({
+                        id: shift.draftId,
+                    });
+                    console.log('Draft deleted after creating shift');
+                } catch (error) {
+                    console.error(
+                        'Error deleting draft after creating shift:',
+                        error
+                    );
+                }
+            }
 
             // Close dialog
             if (onClose) {
@@ -472,6 +502,103 @@ export default function ShiftForm(props: ShiftFormProps) {
     }
 
     const onSubmit = handleSubmit(isNew ? onNewFormSubmit : onUpdateFormSubmit);
+
+    // Function to save the current form data as a draft
+    async function onSaveDraft() {
+        try {
+            // Validate the form data
+            const formData = getValues();
+
+            // Check if required fields are filled
+            if (!formData.title || !formData.date) {
+                notifications.show(
+                    'Please fill in title and date before saving as draft',
+                    {
+                        severity: 'error',
+                        autoHideDuration: 3000,
+                    }
+                );
+                return;
+            }
+
+            // Use the shift's timezone, or organization's timezone, or default to UTC
+            const timezone =
+                shift?.timezone || businessProfile?.timezone || 'UTC';
+
+            // Get the date in ISO format
+            const dateISO = dayjs(formData.date).format('YYYY-MM-DD');
+
+            // Create ISO8601 datetime strings for startTime and endTime when they are provided
+            let startTimeISO = null;
+            let endTimeISO = null;
+
+            if (formData.startTime) {
+                // Use the combineDateTime utility to create a proper ISO string
+                startTimeISO = combineDateTime(
+                    formData.date!,
+                    dayjs(formData.startTime).format('HH:mm'),
+                    {
+                        organizationTimezone: timezone,
+                        fallbackTimezone: 'America/New_York',
+                    }
+                );
+            }
+
+            if (formData.endTime) {
+                // Use the combineDateTime utility to create a proper ISO string
+                endTimeISO = combineDateTime(
+                    formData.date!,
+                    dayjs(formData.endTime).format('HH:mm'),
+                    {
+                        organizationTimezone: timezone,
+                        fallbackTimezone: 'America/New_York',
+                    }
+                );
+            }
+
+            // Format data for API
+            const draftData = {
+                title: formData.title,
+                date: dateISO,
+                startTime: startTimeISO,
+                endTime: endTimeISO,
+                slots: Number(formData.slots || 1),
+                timezone: timezone,
+                locationId: formData.locationId || undefined,
+                legacyLocation: formData.locationId
+                    ? undefined
+                    : formData.legacyLocation,
+                notes: formData.notes,
+                adminNotes: formData.adminNotes,
+            };
+
+            // Check if we're editing an existing draft
+            if (shift?.isDraft && shift?.draftId) {
+                // Update existing draft
+                await updateDraftMutation.mutateAsync({
+                    id: shift.draftId,
+                    ...draftData,
+                });
+                notifications.show('Draft updated successfully', {
+                    severity: 'success',
+                    autoHideDuration: 3000,
+                });
+            } else {
+                // Create new draft
+                await createDraftMutation.mutateAsync(draftData);
+                notifications.show('Draft saved successfully', {
+                    severity: 'success',
+                    autoHideDuration: 3000,
+                });
+            }
+        } catch (error: any) {
+            console.error('Error saving draft:', error);
+            notifications.show('Failed to save draft', {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
+        }
+    }
 
     const { data: teamMembers = [] } = useTeamUsersQuery();
     const { data: userLookup } = useTeamUsersLookupQuery();
@@ -847,6 +974,15 @@ export default function ShiftForm(props: ShiftFormProps) {
                                             : 'Cancel Shift'}
                                     </Button>
                                 )}
+                                <Button
+                                    variant="contained"
+                                    type="button"
+                                    color="info"
+                                    disabled={isSubmitting}
+                                    onClick={onSaveDraft}
+                                >
+                                    Save to Draft
+                                </Button>
                                 {isAdmin && (
                                     <Button
                                         variant="contained"

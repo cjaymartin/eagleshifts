@@ -25,12 +25,14 @@ import { useBusinessProfileQuery } from '@/queries/team';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 import { ShiftRow } from './_components/ShiftRow';
+import { DraftRow } from './_components/DraftRow';
 import { useAuthQuery, useTeamUsersLookupQuery } from '@/queries/users';
 import { ShiftFilters, ShiftFilterSchema } from './_components/ShiftFilters';
 import { trpc } from '@/lib/trpc/client';
 import { useDialogs } from '@toolpad/core';
 import ShiftForm from '@/app/(dashboard)/shifts/_components/ShiftForm';
 import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
+import { useShiftDraftsListQuery, useShiftDraftDeleteMutation } from '@/queries/shiftDrafts';
 
 export default function Shifts() {
     //const { setNew: openAddShiftDialog } = useShiftDialogHelpers();
@@ -47,6 +49,7 @@ export default function Shifts() {
     // Get organization profile data for timezone
     const { data: businessProfile } = useBusinessProfileQuery();
     const { data: shifts } = trpc.shifts.list.useQuery(filters as any);
+    const { data: draftShifts = [] } = useShiftDraftsListQuery();
 
     const fileType =
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
@@ -126,6 +129,7 @@ export default function Shifts() {
                             </TableRow>
                         </TableHead>
                         <TableBody>
+                            {/* Regular shifts */}
                             {shifts
                                 ? shifts.map((shift) => {
                                       return (
@@ -135,6 +139,15 @@ export default function Shifts() {
                                       );
                                   })
                                 : null}
+
+                            {/* Draft shifts */}
+                            {draftShifts.map((draft) => {
+                                return (
+                                    <TableRow key={`draft-${draft.id}`}>
+                                        <DraftRow draft={draft} />
+                                    </TableRow>
+                                );
+                            })}
                         </TableBody>
                     </Table>
                 </TableContainer>
