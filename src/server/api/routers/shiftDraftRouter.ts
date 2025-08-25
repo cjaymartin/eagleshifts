@@ -9,12 +9,37 @@ import { TRPCError } from '@trpc/server';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// Helper function to convert a string in ISO format to a Date in the specified timezone
+// Helper function to convert a date to the specified timezone
 function convertToTimezone(
     isoString: string,
     timezone: string = 'America/New_York'
 ): Date {
-    return dayjs.tz(isoString, timezone).toDate();
+    // Check if the ISO string already includes timezone information
+    const hasTimezoneInfo =
+        /[+-]\d{2}:?\d{2}$/.test(isoString) || isoString.endsWith('Z');
+
+    let adjustedUtcDateTime;
+
+    if (hasTimezoneInfo) {
+        // If the string already has timezone info, parse it directly and convert to UTC
+        adjustedUtcDateTime = dayjs(isoString).utc();
+    } else {
+        // Parse the ISO string as UTC
+        const utcDateTime = dayjs.utc(isoString);
+
+        // Extract date and time components
+        const dateStr = utcDateTime.format('YYYY-MM-DD');
+        const timeStr = utcDateTime.format('HH:mm:ss');
+
+        // Create a datetime in the specified timezone
+        // This ensures that if the user enters 9:00 AM EST, it's stored as 9:00 AM EST (or 2:00 PM UTC)
+        const localDateTime = dayjs.tz(`${dateStr}T${timeStr}`, timezone);
+
+        // Convert back to UTC for storage
+        adjustedUtcDateTime = localDateTime.utc();
+    }
+
+    return adjustedUtcDateTime.toDate();
 }
 
 // Helper function to extract date from ISO string

@@ -528,12 +528,13 @@ export default function ShiftForm(props: ShiftFormProps) {
             // Get the date in ISO format
             const dateISO = dayjs(formData.date).format('YYYY-MM-DD');
 
-            // Create ISO8601 datetime strings for startTime and endTime when they are provided
+            // Create datetime strings by combining the date with the time
+            // We need to work with the local time directly to avoid double timezone conversion
+            // Use centralized date utility to combine date and time, convert to UTC
             let startTimeISO = null;
             let endTimeISO = null;
 
             if (formData.startTime) {
-                // Use the combineDateTime utility to create a proper ISO string
                 startTimeISO = combineDateTime(
                     formData.date!,
                     dayjs(formData.startTime).format('HH:mm'),
@@ -545,7 +546,6 @@ export default function ShiftForm(props: ShiftFormProps) {
             }
 
             if (formData.endTime) {
-                // Use the combineDateTime utility to create a proper ISO string
                 endTimeISO = combineDateTime(
                     formData.date!,
                     dayjs(formData.endTime).format('HH:mm'),

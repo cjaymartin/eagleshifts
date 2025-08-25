@@ -104,16 +104,14 @@ export function DraftRow(props: DraftRowProps) {
                 {draft.startTime
                     ? formatTime(draft.startTime.toString(), timezone)
                     : 'TBD'}
-                {draft.startTime && draft.endTime ? ' - ' : ''}
+                {draft.startTime || draft.endTime ? ' - ' : ''}
                 {draft.endTime
                     ? formatTime(draft.endTime.toString(), timezone)
                     : draft.startTime
                       ? 'TBD'
                       : ''}
             </TableCell>
-            <TableCell>
-                {draft.slots} / {draft.slots}
-            </TableCell>
+            <TableCell>0 / {draft.slots}</TableCell>
             <TableCell sx={{ minWidth: 152 }}>
                 <Tooltip title="Edit">
                     <IconButton onClick={handleEdit}>
