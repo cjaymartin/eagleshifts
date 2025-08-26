@@ -129,6 +129,15 @@ export default function Shifts() {
                             </TableRow>
                         </TableHead>
                         <TableBody>
+                            {/* Draft shifts - shown at the TOP */}
+                            {draftShifts.map((draft) => {
+                                return (
+                                    <TableRow key={`draft-${draft.id}`}>
+                                        <DraftRow draft={draft} />
+                                    </TableRow>
+                                );
+                            })}
+
                             {/* Regular shifts */}
                             {shifts
                                 ? shifts.map((shift) => {
@@ -139,15 +148,6 @@ export default function Shifts() {
                                       );
                                   })
                                 : null}
-
-                            {/* Draft shifts */}
-                            {draftShifts.map((draft) => {
-                                return (
-                                    <TableRow key={`draft-${draft.id}`}>
-                                        <DraftRow draft={draft} />
-                                    </TableRow>
-                                );
-                            })}
                         </TableBody>
                     </Table>
                 </TableContainer>

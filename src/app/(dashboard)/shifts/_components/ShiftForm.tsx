@@ -974,15 +974,17 @@ export default function ShiftForm(props: ShiftFormProps) {
                                             : 'Cancel Shift'}
                                     </Button>
                                 )}
-                                <Button
-                                    variant="contained"
-                                    type="button"
-                                    color="info"
-                                    disabled={isSubmitting}
-                                    onClick={onSaveDraft}
-                                >
-                                    Save to Draft
-                                </Button>
+                                {isNew && (
+                                    <Button
+                                        variant="contained"
+                                        type="button"
+                                        color="info"
+                                        disabled={isSubmitting}
+                                        onClick={onSaveDraft}
+                                    >
+                                        Save to Draft
+                                    </Button>
+                                )}
                                 {isAdmin && (
                                     <Button
                                         variant="contained"
