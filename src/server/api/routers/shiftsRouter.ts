@@ -164,8 +164,8 @@ export const shiftsRouter = router({
                     location: z.string().optional(),
                     locationIds: z.array(z.string()).optional(),
                     locationGroupIds: z.array(z.string()).optional(),
-                    startDate: z.string().optional(),
-                    endDate: z.string().optional(),
+                    startDate: z.date().optional(),
+                    endDate: z.date().optional(),
                     assigned: z.array(z.string()).optional(),
                     unfilled: z
                         .enum(['unfilled', 'filled', 'mine', 'any'])
@@ -249,11 +249,10 @@ export const shiftsRouter = router({
                 }
 
                 if (input.startDate || input.endDate) {
-                    // Filter based on startTime instead of date
+                    // Filter based on startTime for both startDate and endDate
                     if (input.startDate) {
-                        // Start of the day in the specified timezone
-                        const startOfDay = dayjs
-                            .tz(input.startDate, 'America/New_York')
+                        // Start of the day in UTC (most restrictive timezone)
+                        const startOfDay = dayjs(input.startDate)
                             .startOf('day')
                             .utc()
                             .toDate();
@@ -264,15 +263,15 @@ export const shiftsRouter = router({
                                 : { gte: startOfDay };
                     }
                     if (input.endDate) {
-                        // End of the day in the specified timezone
-                        const endOfDay = dayjs
-                            .tz(input.endDate, 'America/New_York')
+                        // End of the day in UTC (most inclusive timezone)
+                        const endOfDay = dayjs(input.endDate)
                             .endOf('day')
                             .utc()
                             .toDate();
-                        where.endTime =
-                            where.endTime && typeof where.endTime === 'object'
-                                ? { ...where.endTime, lte: endOfDay }
+                        where.startTime =
+                            where.startTime &&
+                            typeof where.startTime === 'object'
+                                ? { ...where.startTime, lte: endOfDay }
                                 : { lte: endOfDay };
                     }
                 }
