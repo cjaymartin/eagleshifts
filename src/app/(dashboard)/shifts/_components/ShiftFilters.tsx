@@ -30,7 +30,7 @@ const defaultFilters: ShiftFormFilterSchema = {
     locationGroupIds: [],
     startDate: null as Date | null,
     endDate: null as Date | null,
-    assigned: null,
+    assigned: [],
     unfilled: { label: 'Any', id: 'any' },
 };
 
@@ -40,7 +40,7 @@ type ShiftFormFilterSchema = {
     locationGroupIds: { id: string; name: string }[];
     startDate: Date | null;
     endDate: Date | null;
-    assigned: { id: string; name: string } | null;
+    assigned: { id: string; name: string }[];
     unfilled: { label: string; id: string };
 };
 
@@ -50,7 +50,7 @@ export type ShiftFilterSchema = {
     locationGroupIds: string[];
     startDate: Date | undefined;
     endDate: Date | undefined;
-    assigned: string | undefined;
+    assigned: string[];
     unfilled: string;
 };
 
@@ -98,10 +98,10 @@ export function ShiftFilters({
             endDate: data.endDate
                 ? dayjs.utc(data.endDate).toDate()
                 : undefined,
-            assigned: data.assigned?.id ?? undefined,
+            assigned: data.assigned.map((user) => user.id),
             unfilled: data.unfilled?.id,
-            locationIds: data.locationIds.map(loc => loc.id),
-            locationGroupIds: data.locationGroupIds.map(group => group.id),
+            locationIds: data.locationIds.map((loc) => loc.id),
+            locationGroupIds: data.locationGroupIds.map((group) => group.id),
         };
         setFilters(formattedFilters);
         setTimeout(() => {
@@ -129,7 +129,7 @@ export function ShiftFilters({
         if (filters.locationGroupIds.length > 0) count++;
         if (filters.startDate) count++;
         if (filters.endDate) count++;
-        if (filters.assigned) count++;
+        if (filters.assigned && filters.assigned.length > 0) count++;
         if (filters.unfilled && filters.unfilled.id !== 'any') count++;
         return count;
     };
@@ -145,88 +145,100 @@ export function ShiftFilters({
 
         if (filters.title) {
             filterChips.push(
-                <Chip 
-                    key="title" 
-                    label={`Title: ${filters.title}`} 
-                    size="small" 
-                    variant="outlined" 
+                <Chip
+                    key="title"
+                    label={`Title: ${filters.title}`}
+                    size="small"
+                    variant="outlined"
                 />
             );
         }
 
         if (filters.locationIds.length > 0) {
             filterChips.push(
-                <Chip 
-                    key="locations" 
-                    label={`Locations: ${filters.locationIds.length}`} 
-                    size="small" 
-                    variant="outlined" 
+                <Chip
+                    key="locations"
+                    label={`Locations: ${filters.locationIds.length}`}
+                    size="small"
+                    variant="outlined"
                 />
             );
         }
 
         if (filters.locationGroupIds.length > 0) {
             filterChips.push(
-                <Chip 
-                    key="locationGroups" 
-                    label={`Location Groups: ${filters.locationGroupIds.length}`} 
-                    size="small" 
-                    variant="outlined" 
+                <Chip
+                    key="locationGroups"
+                    label={`Location Groups: ${filters.locationGroupIds.length}`}
+                    size="small"
+                    variant="outlined"
                 />
             );
         }
 
         if (filters.startDate) {
             filterChips.push(
-                <Chip 
-                    key="startDate" 
-                    label={`From: ${dayjs(filters.startDate).format('MMM D, YYYY')}`} 
-                    size="small" 
-                    variant="outlined" 
+                <Chip
+                    key="startDate"
+                    label={`From: ${dayjs(filters.startDate).format('MMM D, YYYY')}`}
+                    size="small"
+                    variant="outlined"
                 />
             );
         }
 
         if (filters.endDate) {
             filterChips.push(
-                <Chip 
-                    key="endDate" 
-                    label={`To: ${dayjs(filters.endDate).format('MMM D, YYYY')}`} 
-                    size="small" 
-                    variant="outlined" 
+                <Chip
+                    key="endDate"
+                    label={`To: ${dayjs(filters.endDate).format('MMM D, YYYY')}`}
+                    size="small"
+                    variant="outlined"
                 />
             );
         }
 
-        if (filters.assigned) {
+        if (filters.assigned && filters.assigned.length > 0) {
             filterChips.push(
-                <Chip 
-                    key="assigned" 
-                    label={`Assigned: ${filters.assigned.name}`} 
-                    size="small" 
-                    variant="outlined" 
+                <Chip
+                    key="assigned"
+                    label={`Assigned: ${filters.assigned.length}`}
+                    size="small"
+                    variant="outlined"
                 />
             );
         }
 
-        if (filters.unfilled && filters.unfilled.id !== 'any') {
-            filterChips.push(
-                <Chip 
-                    key="status" 
-                    label={`Status: ${filters.unfilled.label}`} 
-                    size="small" 
-                    variant="outlined" 
-                />
-            );
+        console.log({ filters });
+
+        if (filters.unfilled && (filters as any).unfilled != 'any') {
+            const filledLabel = {
+                unfilled: 'Open',
+                filled: 'Filled',
+            }[(filters as any).unfilled as string];
+            if (filledLabel) {
+                filterChips.push(
+                    <Chip
+                        key="status"
+                        label={`Status: ${filledLabel}`}
+                        size="small"
+                        variant="outlined"
+                    />
+                );
+            }
         }
 
         return (
-            <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
+            <Stack
+                direction="row"
+                spacing={1}
+                sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}
+            >
                 {filterChips}
-                <Button 
-                    size="small" 
-                    variant="outlined" 
-                    color="secondary" 
+                <Button
+                    size="small"
+                    variant="outlined"
+                    color="secondary"
                     onClick={handleRemoveFilters}
                 >
                     Clear All
@@ -237,22 +249,22 @@ export function ShiftFilters({
 
     return (
         <Container sx={{ p: 2 }}>
-            <Paper 
-                elevation={2} 
-                sx={{ 
+            <Paper
+                elevation={2}
+                sx={{
                     borderRadius: 2,
-                    overflow: 'hidden'
+                    overflow: 'hidden',
                 }}
             >
-                <Box 
-                    sx={{ 
-                        p: 2, 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                <Box
+                    sx={{
+                        p: 2,
+                        display: 'flex',
+                        alignItems: 'center',
                         justifyContent: 'space-between',
                         bgcolor: 'background.paper',
                         borderBottom: expanded ? 1 : 0,
-                        borderColor: 'divider'
+                        borderColor: 'divider',
                     }}
                     onClick={() => setExpanded(!expanded)}
                     style={{ cursor: 'pointer' }}
@@ -260,21 +272,22 @@ export function ShiftFilters({
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <FilterListIcon sx={{ mr: 1 }} />
                         <Typography variant="h6">
-                            Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
+                            Filters{' '}
+                            {activeFilterCount > 0 && `(${activeFilterCount})`}
                         </Typography>
                     </Box>
-                    <ExpandMoreIcon 
-                        sx={{ 
-                            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.3s'
-                        }} 
+                    <ExpandMoreIcon
+                        sx={{
+                            transform: expanded
+                                ? 'rotate(180deg)'
+                                : 'rotate(0deg)',
+                            transition: 'transform 0.3s',
+                        }}
                     />
                 </Box>
 
                 {!expanded && activeFilterCount > 0 && (
-                    <Box sx={{ p: 2, pt: 0 }}>
-                        {renderFilterSummary()}
-                    </Box>
+                    <Box sx={{ p: 2, pt: 0 }}>{renderFilterSummary()}</Box>
                 )}
 
                 {expanded && (
@@ -282,13 +295,17 @@ export function ShiftFilters({
                         <form onSubmit={handleSubmit(onSubmit)}>
                             <Grid container spacing={3}>
                                 {/* Basic Information Group */}
-                                <Grid size={{xs:12}}>
-                                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                <Grid size={{ xs: 12 }}>
+                                    <Typography
+                                        variant="subtitle1"
+                                        fontWeight="bold"
+                                        gutterBottom
+                                    >
                                         Basic Information
                                     </Typography>
                                     <Divider sx={{ mb: 2 }} />
                                     <Grid container spacing={2}>
-                                        <Grid size={{xs:12, sm:6, md:4}}>
+                                        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                                             <Controller
                                                 name="title"
                                                 control={control}
@@ -302,7 +319,7 @@ export function ShiftFilters({
                                                 )}
                                             />
                                         </Grid>
-                                        <Grid size={{xs:12, sm:6, md:4}}>
+                                        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                                             <Controller
                                                 name="unfilled"
                                                 control={control}
@@ -310,31 +327,44 @@ export function ShiftFilters({
                                                     <Autocomplete
                                                         {...field}
                                                         options={[
-                                                            { label: 'Any', id: 'any' },
+                                                            {
+                                                                label: 'Any',
+                                                                id: 'any',
+                                                            },
                                                             {
                                                                 label: 'Open',
                                                                 id: 'unfilled',
                                                             },
                                                             isAdmin
                                                                 ? {
-                                                                    label: 'Filled',
-                                                                    id: 'filled',
-                                                                }
+                                                                      label: 'Filled',
+                                                                      id: 'filled',
+                                                                  }
                                                                 : {
-                                                                    label: 'Mine',
-                                                                    id: 'mine',
-                                                                },
+                                                                      label: 'Mine',
+                                                                      id: 'mine',
+                                                                  },
                                                         ]}
-                                                        isOptionEqualToValue={(option, value) => 
-                                                            option.id === value.id
+                                                        isOptionEqualToValue={(
+                                                            option,
+                                                            value
+                                                        ) =>
+                                                            option.id ===
+                                                            value.id
                                                         }
-                                                        getOptionLabel={(option) =>
+                                                        getOptionLabel={(
+                                                            option
+                                                        ) =>
                                                             option?.label || ''
                                                         }
                                                         onChange={(_, value) =>
-                                                            field.onChange(value)
+                                                            field.onChange(
+                                                                value
+                                                            )
                                                         }
-                                                        renderInput={(params) => (
+                                                        renderInput={(
+                                                            params
+                                                        ) => (
                                                             <TextField
                                                                 {...params}
                                                                 label="Status"
@@ -349,13 +379,17 @@ export function ShiftFilters({
                                 </Grid>
 
                                 {/* Location Group */}
-                                <Grid size={{xs:12}}>
-                                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                <Grid size={{ xs: 12 }}>
+                                    <Typography
+                                        variant="subtitle1"
+                                        fontWeight="bold"
+                                        gutterBottom
+                                    >
                                         Location
                                     </Typography>
                                     <Divider sx={{ mb: 2 }} />
                                     <Grid container spacing={2}>
-                                        <Grid size={{xs:12, sm:6}}>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
                                             <Controller
                                                 name="locationIds"
                                                 control={control}
@@ -364,12 +398,24 @@ export function ShiftFilters({
                                                         {...field}
                                                         multiple
                                                         options={locations}
-                                                        isOptionEqualToValue={(option, value) => 
-                                                            option.id === value.id
+                                                        isOptionEqualToValue={(
+                                                            option,
+                                                            value
+                                                        ) =>
+                                                            option.id ===
+                                                            value.id
                                                         }
-                                                        getOptionLabel={(option) => option.name || ''}
-                                                        onChange={(_, value) => field.onChange(value)}
-                                                        renderInput={(params) => (
+                                                        getOptionLabel={(
+                                                            option
+                                                        ) => option.name || ''}
+                                                        onChange={(_, value) =>
+                                                            field.onChange(
+                                                                value
+                                                            )
+                                                        }
+                                                        renderInput={(
+                                                            params
+                                                        ) => (
                                                             <TextField
                                                                 {...params}
                                                                 label="Locations"
@@ -380,7 +426,7 @@ export function ShiftFilters({
                                                 )}
                                             />
                                         </Grid>
-                                        <Grid size={{xs:12, sm:6}}>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
                                             <Controller
                                                 name="locationGroupIds"
                                                 control={control}
@@ -389,12 +435,24 @@ export function ShiftFilters({
                                                         {...field}
                                                         multiple
                                                         options={locationGroups}
-                                                        isOptionEqualToValue={(option, value) => 
-                                                            option.id === value.id
+                                                        isOptionEqualToValue={(
+                                                            option,
+                                                            value
+                                                        ) =>
+                                                            option.id ===
+                                                            value.id
                                                         }
-                                                        getOptionLabel={(option) => option.name || ''}
-                                                        onChange={(_, value) => field.onChange(value)}
-                                                        renderInput={(params) => (
+                                                        getOptionLabel={(
+                                                            option
+                                                        ) => option.name || ''}
+                                                        onChange={(_, value) =>
+                                                            field.onChange(
+                                                                value
+                                                            )
+                                                        }
+                                                        renderInput={(
+                                                            params
+                                                        ) => (
                                                             <TextField
                                                                 {...params}
                                                                 label="Location Groups"
@@ -409,13 +467,17 @@ export function ShiftFilters({
                                 </Grid>
 
                                 {/* Date Range Group */}
-                                <Grid size={{xs:12}}>
-                                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                <Grid size={{ xs: 12 }}>
+                                    <Typography
+                                        variant="subtitle1"
+                                        fontWeight="bold"
+                                        gutterBottom
+                                    >
                                         Date Range
                                     </Typography>
                                     <Divider sx={{ mb: 2 }} />
                                     <Grid container spacing={2}>
-                                        <Grid size={{xs:12, sm:6}}>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
                                             <Controller
                                                 name="startDate"
                                                 control={control}
@@ -424,22 +486,30 @@ export function ShiftFilters({
                                                         {...field}
                                                         value={
                                                             field.value
-                                                                ? dayjs.utc(field.value)
+                                                                ? dayjs.utc(
+                                                                      field.value
+                                                                  )
                                                                 : null
                                                         }
                                                         onChange={(date) =>
-                                                            field.onChange(date?.toDate())
+                                                            field.onChange(
+                                                                date?.toDate()
+                                                            )
                                                         }
                                                         slotProps={{
-                                                            field: { clearable: true },
-                                                            textField: { fullWidth: true }
+                                                            field: {
+                                                                clearable: true,
+                                                            },
+                                                            textField: {
+                                                                fullWidth: true,
+                                                            },
                                                         }}
                                                         label="Start Date"
                                                     />
                                                 )}
                                             />
                                         </Grid>
-                                        <Grid size={{xs:12, sm:6}}>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
                                             <Controller
                                                 name="endDate"
                                                 control={control}
@@ -447,7 +517,8 @@ export function ShiftFilters({
                                                     <DatePicker
                                                         {...field}
                                                         value={
-                                                            (field.value || null) as
+                                                            (field.value ||
+                                                                null) as
                                                                 | PickerValue
                                                                 | undefined
                                                         }
@@ -455,8 +526,12 @@ export function ShiftFilters({
                                                             field.onChange(date)
                                                         }
                                                         slotProps={{
-                                                            field: { clearable: true },
-                                                            textField: { fullWidth: true }
+                                                            field: {
+                                                                clearable: true,
+                                                            },
+                                                            textField: {
+                                                                fullWidth: true,
+                                                            },
                                                         }}
                                                         label="End Date"
                                                     />
@@ -468,34 +543,56 @@ export function ShiftFilters({
 
                                 {/* Assignment Group (Admin only) */}
                                 {isAdmin && (
-                                    <Grid size={{xs:12}}>
-                                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                    <Grid size={{ xs: 12 }}>
+                                        <Typography
+                                            variant="subtitle1"
+                                            fontWeight="bold"
+                                            gutterBottom
+                                        >
                                             Assignment
                                         </Typography>
                                         <Divider sx={{ mb: 2 }} />
                                         <Grid container spacing={2}>
-                                            <Grid size={{xs:12, sm:6}}>
+                                            <Grid size={{ xs: 12, sm: 6 }}>
                                                 <Controller
                                                     name="assigned"
                                                     control={control}
                                                     render={({ field }) => (
                                                         <Autocomplete
                                                             {...field}
-                                                            options={teamMembers || []}
-                                                            isOptionEqualToValue={(option, value) => 
-                                                                option.id === value.id
+                                                            multiple
+                                                            options={
+                                                                teamMembers ||
+                                                                []
                                                             }
-                                                            getOptionLabel={(option) =>
-                                                                option.name || ''
+                                                            isOptionEqualToValue={(
+                                                                option,
+                                                                value
+                                                            ) =>
+                                                                option.id ===
+                                                                value.id
                                                             }
-                                                            onChange={(_, value) =>
-                                                                field.onChange(value)
+                                                            getOptionLabel={(
+                                                                option
+                                                            ) =>
+                                                                option.name ||
+                                                                ''
                                                             }
-                                                            renderInput={(params) => (
+                                                            onChange={(
+                                                                _,
+                                                                value
+                                                            ) =>
+                                                                field.onChange(
+                                                                    value
+                                                                )
+                                                            }
+                                                            renderInput={(
+                                                                params
+                                                            ) => (
                                                                 <TextField
                                                                     {...params}
                                                                     label="Assigned To"
-                                                                    placeholder="Choose One"
+                                                                    placeholder="Select users"
                                                                     fullWidth
                                                                 />
                                                             )}
@@ -508,8 +605,14 @@ export function ShiftFilters({
                                 )}
 
                                 {/* Action Buttons */}
-                                <Grid size={{xs:12}}>
-                                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                                <Grid size={{ xs: 12 }}>
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            gap: 2,
+                                            justifyContent: 'flex-end',
+                                        }}
+                                    >
                                         <Button
                                             variant="contained"
                                             color="primary"

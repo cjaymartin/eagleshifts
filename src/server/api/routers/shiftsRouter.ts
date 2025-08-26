@@ -166,7 +166,7 @@ export const shiftsRouter = router({
                     locationGroupIds: z.array(z.string()).optional(),
                     startDate: z.string().optional(),
                     endDate: z.string().optional(),
-                    assigned: z.string().optional(),
+                    assigned: z.array(z.string()).optional(),
                     unfilled: z
                         .enum(['unfilled', 'filled', 'mine', 'any'])
                         .optional(),
@@ -278,11 +278,13 @@ export const shiftsRouter = router({
                 }
 
                 // Handle assigned filter
-                if (input.assigned) {
-                    // Use the member ID directly
+                if (input.assigned && input.assigned.length > 0) {
+                    // Use the member IDs array
                     where.shiftAssignments = {
                         some: {
-                            memberId: input.assigned,
+                            memberId: {
+                                in: input.assigned
+                            },
                             outcome: 'assigned',
                         },
                     };
