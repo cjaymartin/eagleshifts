@@ -49,6 +49,8 @@ export function useAvailabilityByDate(date: Date) {
         { date },
         {
             enabled: isValidDate,
+            // Ensure data is always fresh
+            staleTime: 0,
         }
     );
 }
@@ -67,7 +69,8 @@ export function useAvailabilityByDateLookupQuery(date: Date) {
     console.log({ availability });
 
     return useQuery({
-        queryKey: [...baseQuerykey, 'lookup'],
+        // Include availability in the query key to ensure it re-runs when availability changes
+        queryKey: [...baseQuerykey, 'lookup', availability],
         queryFn: () => {
             return (
                 availability?.reduce(
@@ -79,7 +82,9 @@ export function useAvailabilityByDateLookupQuery(date: Date) {
                 ) || {}
             );
         },
-        enabled: !!date && isValidDate,
+        enabled: !!date && isValidDate && !!availability,
+        // Ensure the query doesn't use stale data
+        staleTime: 0,
     });
 }
 
