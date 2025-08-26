@@ -162,6 +162,8 @@ export const shiftsRouter = router({
                 .object({
                     title: z.string().optional(),
                     location: z.string().optional(),
+                    locationIds: z.array(z.string()).optional(),
+                    locationGroupIds: z.array(z.string()).optional(),
                     startDate: z.string().optional(),
                     endDate: z.string().optional(),
                     assigned: z.string().optional(),
@@ -209,6 +211,42 @@ export const shiftsRouter = router({
                             },
                         },
                     ];
+
+                // Handle locationIds and locationGroupIds filters
+                const hasLocationIds = input.locationIds && input.locationIds.length > 0;
+                const hasLocationGroupIds = input.locationGroupIds && input.locationGroupIds.length > 0;
+
+                if (hasLocationIds && hasLocationGroupIds) {
+                    // If both filters are provided, use OR condition to match either
+                    where.OR = [
+                        ...(where.OR || []),
+                        {
+                            locationId: {
+                                in: input.locationIds,
+                            },
+                        },
+                        {
+                            location: {
+                                groupId: {
+                                    in: input.locationGroupIds,
+                                },
+                            },
+                        },
+                    ];
+                } else if (hasLocationIds) {
+                    // Only locationIds filter
+                    where.locationId = {
+                        in: input.locationIds,
+                    };
+                } else if (hasLocationGroupIds) {
+                    // Only locationGroupIds filter
+                    where.location = {
+                        ...where.location,
+                        groupId: {
+                            in: input.locationGroupIds,
+                        },
+                    };
+                }
 
                 if (input.startDate || input.endDate) {
                     // Filter based on startTime instead of date
