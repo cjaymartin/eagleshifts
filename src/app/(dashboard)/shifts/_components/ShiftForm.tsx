@@ -74,6 +74,8 @@ type ShiftFormData = {
     notes?: string;
     adminNotes?: string;
     assignments?: any[];
+    isDraft?: boolean | null;
+    draftId?: string | null;
 };
 
 // Create zod schema for form validation
@@ -159,12 +161,17 @@ const useShiftDialogHelpers = () => ({
     },
 });
 
+type ShiftFormShift = inferRouterOutputs<AppRouter>['shifts']['byId'] & {
+    isDraft?: boolean | null;
+    draftId?: string | null;
+};
+
 // Type for ShiftForm props
 type ShiftFormProps = {
     isNew?: boolean;
     isDuplicate?: boolean;
     shiftId?: string;
-    shift?: inferRouterOutputs<AppRouter>['shifts']['byId'] | null;
+    shift?: ShiftFormShift | null;
     onClose?: () => void;
 };
 
