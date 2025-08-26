@@ -215,37 +215,105 @@ export async function seedDatabase() {
             console.log(`Created location: ${createdLocation.name}`);
         }
 
+        // Create LocationGroups and assign locations to them
+        const locationGroups = [
+            {
+                name: 'Boston Area',
+                color: '#4CAF50', // Green
+            },
+            {
+                name: 'Cambridge Area',
+                color: '#2196F3', // Blue
+            },
+            {
+                name: 'Suburban Offices',
+                color: '#FF9800', // Orange
+            },
+        ];
+
+        const createdLocationGroups = [];
+        for (const group of locationGroups) {
+            const createdGroup = await prisma.locationGroup.create({
+                data: {
+                    id: uuidv4(),
+                    organizationId: testOrg.id,
+                    name: group.name,
+                    color: group.color,
+                },
+            });
+            createdLocationGroups.push(createdGroup);
+            console.log(`Created location group: ${createdGroup.name} with color ${createdGroup.color}`);
+        }
+
+        // Assign locations to groups
+        // Boston Area: Boston Downtown Office, Quincy Market Branch
+        await prisma.location.update({
+            where: { id: createdLocations[0].id }, // Boston Downtown Office
+            data: { groupId: createdLocationGroups[0].id },
+        });
+        await prisma.location.update({
+            where: { id: createdLocations[2].id }, // Quincy Market Branch
+            data: { groupId: createdLocationGroups[0].id },
+        });
+        console.log(`Assigned Boston Downtown Office and Quincy Market Branch to Boston Area group`);
+
+        // Cambridge Area: Cambridge Innovation Center, Somerville Office
+        await prisma.location.update({
+            where: { id: createdLocations[1].id }, // Cambridge Innovation Center
+            data: { groupId: createdLocationGroups[1].id },
+        });
+        await prisma.location.update({
+            where: { id: createdLocations[3].id }, // Somerville Office
+            data: { groupId: createdLocationGroups[1].id },
+        });
+        console.log(`Assigned Cambridge Innovation Center and Somerville Office to Cambridge Area group`);
+
+        // Suburban Offices: Brookline Store, Newton Center, Waltham Office Park
+        await prisma.location.update({
+            where: { id: createdLocations[4].id }, // Brookline Store
+            data: { groupId: createdLocationGroups[2].id },
+        });
+        await prisma.location.update({
+            where: { id: createdLocations[5].id }, // Newton Center
+            data: { groupId: createdLocationGroups[2].id },
+        });
+        await prisma.location.update({
+            where: { id: createdLocations[6].id }, // Waltham Office Park
+            data: { groupId: createdLocationGroups[2].id },
+        });
+        console.log(`Assigned Brookline Store, Newton Center, and Waltham Office Park to Suburban Offices group`);
+
         // 6. Add employee team members
         const teamMembers = [
             {
                 name: 'John Smith',
                 email: 'john.smith@example.com',
-                role: 'employee',
+                role: 'member',
             },
             {
                 name: 'Sarah Johnson',
                 email: 'sarah.johnson@example.com',
-                role: 'employee',
+                role: 'member',
             },
             {
                 name: 'Michael Brown',
                 email: 'michael.brown@example.com',
-                role: 'employee',
+                role: 'member',
             },
             {
                 name: 'Emily Davis',
                 email: 'emily.davis@example.com',
-                role: 'employee',
+                role: 'member',
             },
             {
                 name: 'David Wilson',
                 email: 'david.wilson@example.com',
-                role: 'employee',
+                role: 'member',
             },
             {
                 name: 'Jessica Martinez',
                 email: 'jessica.martinez@example.com',
-                role: 'employee',
+                role: 'member',
             },
         ];
 
