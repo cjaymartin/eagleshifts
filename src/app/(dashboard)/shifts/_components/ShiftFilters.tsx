@@ -1,23 +1,25 @@
 import React, { useMemo, useState } from 'react';
 import {
-    Accordion,
-    AccordionDetails,
-    AccordionSummary,
     Autocomplete,
     Box,
     Button,
     Chip,
     Container,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     Divider,
     Grid,
+    IconButton,
     Paper,
     Stack,
     TextField,
     Typography,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import CloseIcon from '@mui/icons-material/Close';
 import { useForm, Controller } from 'react-hook-form';
 import dayjs from 'dayjs';
 import { useAuthQuery, useTeamUsersQuery } from '@/queries/users';
@@ -134,7 +136,7 @@ export function ShiftFilters({
         return count;
     };
 
-    const [expanded, setExpanded] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
     const activeFilterCount = getActiveFilterCount();
 
     // Function to render active filter summary
@@ -247,27 +249,34 @@ export function ShiftFilters({
         );
     };
 
+    const handleOpenModal = () => {
+        setModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setModalOpen(false);
+    };
+
+    const handleApplyFilters = (data: ShiftFormFilterSchema) => {
+        onSubmit(data);
+        handleCloseModal();
+    };
+
     return (
         <Container sx={{ p: 2 }}>
             <Paper
                 elevation={2}
                 sx={{
                     borderRadius: 2,
-                    overflow: 'hidden',
+                    p: 2,
                 }}
             >
                 <Box
                     sx={{
-                        p: 2,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        bgcolor: 'background.paper',
-                        borderBottom: expanded ? 1 : 0,
-                        borderColor: 'divider',
                     }}
-                    onClick={() => setExpanded(!expanded)}
-                    style={{ cursor: 'pointer' }}
                 >
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <FilterListIcon sx={{ mr: 1 }} />
@@ -276,382 +285,396 @@ export function ShiftFilters({
                             {activeFilterCount > 0 && `(${activeFilterCount})`}
                         </Typography>
                     </Box>
-                    <ExpandMoreIcon
-                        sx={{
-                            transform: expanded
-                                ? 'rotate(180deg)'
-                                : 'rotate(0deg)',
-                            transition: 'transform 0.3s',
-                        }}
-                    />
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleOpenModal}
+                        startIcon={<FilterListIcon />}
+                    >
+                        {activeFilterCount > 0 ? 'Edit Filters' : 'Add Filters'}
+                    </Button>
                 </Box>
 
-                {!expanded && activeFilterCount > 0 && (
-                    <Box sx={{ p: 2, pt: 0 }}>{renderFilterSummary()}</Box>
+                {activeFilterCount > 0 && (
+                    <Box sx={{ mt: 2 }}>{renderFilterSummary()}</Box>
                 )}
+            </Paper>
 
-                {expanded && (
-                    <Box sx={{ p: 2 }}>
-                        <form onSubmit={handleSubmit(onSubmit)}>
-                            <Grid container spacing={3}>
-                                {/* Basic Information Group */}
-                                <Grid size={{ xs: 12 }}>
-                                    <Typography
-                                        variant="subtitle1"
-                                        fontWeight="bold"
-                                        gutterBottom
-                                    >
-                                        Basic Information
-                                    </Typography>
-                                    <Divider sx={{ mb: 2 }} />
-                                    <Grid container spacing={2}>
-                                        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                                            <Controller
-                                                name="title"
-                                                control={control}
-                                                render={({ field }) => (
-                                                    <TextField
-                                                        {...field}
-                                                        label="Title"
-                                                        variant="outlined"
-                                                        fullWidth
-                                                    />
-                                                )}
-                                            />
-                                        </Grid>
-                                        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                                            <Controller
-                                                name="unfilled"
-                                                control={control}
-                                                render={({ field }) => (
-                                                    <Autocomplete
-                                                        {...field}
-                                                        options={[
-                                                            {
-                                                                label: 'Any',
-                                                                id: 'any',
-                                                            },
-                                                            {
-                                                                label: 'Open',
-                                                                id: 'unfilled',
-                                                            },
-                                                            isAdmin
-                                                                ? {
-                                                                      label: 'Filled',
-                                                                      id: 'filled',
-                                                                  }
-                                                                : {
-                                                                      label: 'Mine',
-                                                                      id: 'mine',
-                                                                  },
-                                                        ]}
-                                                        isOptionEqualToValue={(
-                                                            option,
-                                                            value
-                                                        ) =>
-                                                            option.id ===
-                                                            value.id
-                                                        }
-                                                        getOptionLabel={(
-                                                            option
-                                                        ) =>
-                                                            option?.label || ''
-                                                        }
-                                                        onChange={(_, value) =>
-                                                            field.onChange(
-                                                                value
-                                                            )
-                                                        }
-                                                        renderInput={(
-                                                            params
-                                                        ) => (
-                                                            <TextField
-                                                                {...params}
-                                                                label="Status"
-                                                                placeholder="Choose One"
-                                                            />
-                                                        )}
-                                                    />
-                                                )}
-                                            />
-                                        </Grid>
+            {/* Filter Modal */}
+            <Dialog
+                open={modalOpen}
+                onClose={handleCloseModal}
+                fullWidth
+                maxWidth="md"
+                aria-labelledby="filter-dialog-title"
+            >
+                <DialogTitle id="filter-dialog-title">
+                    <Box display="flex" alignItems="center">
+                        <Box flexGrow={1}>
+                            <Typography variant="h6">
+                                Filter Shifts
+                            </Typography>
+                        </Box>
+                        <IconButton
+                            edge="end"
+                            color="inherit"
+                            onClick={handleCloseModal}
+                            aria-label="close"
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
+                </DialogTitle>
+                <DialogContent dividers>
+                    <form onSubmit={handleSubmit(handleApplyFilters)}>
+                        <Grid container spacing={3}>
+                            {/* Basic Information Group */}
+                            <Grid size={{ xs: 12 }}>
+                                <Typography
+                                    variant="subtitle1"
+                                    fontWeight="bold"
+                                    gutterBottom
+                                >
+                                    Basic Information
+                                </Typography>
+                                <Divider sx={{ mb: 2 }} />
+                                <Grid container spacing={2}>
+                                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                                        <Controller
+                                            name="title"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <TextField
+                                                    {...field}
+                                                    label="Title"
+                                                    variant="outlined"
+                                                    fullWidth
+                                                />
+                                            )}
+                                        />
                                     </Grid>
-                                </Grid>
-
-                                {/* Location Group */}
-                                <Grid size={{ xs: 12 }}>
-                                    <Typography
-                                        variant="subtitle1"
-                                        fontWeight="bold"
-                                        gutterBottom
-                                    >
-                                        Location
-                                    </Typography>
-                                    <Divider sx={{ mb: 2 }} />
-                                    <Grid container spacing={2}>
-                                        <Grid size={{ xs: 12, sm: 6 }}>
-                                            <Controller
-                                                name="locationIds"
-                                                control={control}
-                                                render={({ field }) => (
-                                                    <Autocomplete
-                                                        {...field}
-                                                        multiple
-                                                        options={locations}
-                                                        isOptionEqualToValue={(
-                                                            option,
+                                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                                        <Controller
+                                            name="unfilled"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <Autocomplete
+                                                    {...field}
+                                                    options={[
+                                                        {
+                                                            label: 'Any',
+                                                            id: 'any',
+                                                        },
+                                                        {
+                                                            label: 'Open',
+                                                            id: 'unfilled',
+                                                        },
+                                                        isAdmin
+                                                            ? {
+                                                                  label: 'Filled',
+                                                                  id: 'filled',
+                                                              }
+                                                            : {
+                                                                  label: 'Mine',
+                                                                  id: 'mine',
+                                                              },
+                                                    ]}
+                                                    isOptionEqualToValue={(
+                                                        option,
+                                                        value
+                                                    ) =>
+                                                        option.id ===
+                                                        value.id
+                                                    }
+                                                    getOptionLabel={(
+                                                        option
+                                                    ) =>
+                                                        option?.label || ''
+                                                    }
+                                                    onChange={(_, value) =>
+                                                        field.onChange(
                                                             value
-                                                        ) =>
-                                                            option.id ===
-                                                            value.id
-                                                        }
-                                                        getOptionLabel={(
-                                                            option
-                                                        ) => option.name || ''}
-                                                        onChange={(_, value) =>
-                                                            field.onChange(
-                                                                value
-                                                            )
-                                                        }
-                                                        renderInput={(
-                                                            params
-                                                        ) => (
-                                                            <TextField
-                                                                {...params}
-                                                                label="Locations"
-                                                                placeholder="Select locations"
-                                                            />
-                                                        )}
-                                                    />
-                                                )}
-                                            />
-                                        </Grid>
-                                        <Grid size={{ xs: 12, sm: 6 }}>
-                                            <Controller
-                                                name="locationGroupIds"
-                                                control={control}
-                                                render={({ field }) => (
-                                                    <Autocomplete
-                                                        {...field}
-                                                        multiple
-                                                        options={locationGroups}
-                                                        isOptionEqualToValue={(
-                                                            option,
-                                                            value
-                                                        ) =>
-                                                            option.id ===
-                                                            value.id
-                                                        }
-                                                        getOptionLabel={(
-                                                            option
-                                                        ) => option.name || ''}
-                                                        onChange={(_, value) =>
-                                                            field.onChange(
-                                                                value
-                                                            )
-                                                        }
-                                                        renderInput={(
-                                                            params
-                                                        ) => (
-                                                            <TextField
-                                                                {...params}
-                                                                label="Location Groups"
-                                                                placeholder="Select location groups"
-                                                            />
-                                                        )}
-                                                    />
-                                                )}
-                                            />
-                                        </Grid>
-                                    </Grid>
-                                </Grid>
-
-                                {/* Date Range Group */}
-                                <Grid size={{ xs: 12 }}>
-                                    <Typography
-                                        variant="subtitle1"
-                                        fontWeight="bold"
-                                        gutterBottom
-                                    >
-                                        Date Range
-                                    </Typography>
-                                    <Divider sx={{ mb: 2 }} />
-                                    <Grid container spacing={2}>
-                                        <Grid size={{ xs: 12, sm: 6 }}>
-                                            <Controller
-                                                name="startDate"
-                                                control={control}
-                                                render={({ field }) => (
-                                                    <DatePicker
-                                                        {...field}
-                                                        value={
-                                                            field.value
-                                                                ? dayjs.utc(
-                                                                      field.value
-                                                                  )
-                                                                : null
-                                                        }
-                                                        onChange={(date) =>
-                                                            field.onChange(
-                                                                date?.toDate()
-                                                            )
-                                                        }
-                                                        slotProps={{
-                                                            field: {
-                                                                clearable: true,
-                                                            },
-                                                            textField: {
-                                                                fullWidth: true,
-                                                            },
-                                                        }}
-                                                        label="Start Date"
-                                                    />
-                                                )}
-                                            />
-                                        </Grid>
-                                        <Grid size={{ xs: 12, sm: 6 }}>
-                                            <Controller
-                                                name="endDate"
-                                                control={control}
-                                                render={({ field }) => (
-                                                    <DatePicker
-                                                        {...field}
-                                                        value={
-                                                            (field.value ||
-                                                                null) as
-                                                                | PickerValue
-                                                                | undefined
-                                                        }
-                                                        onChange={(date) =>
-                                                            field.onChange(date)
-                                                        }
-                                                        slotProps={{
-                                                            field: {
-                                                                clearable: true,
-                                                            },
-                                                            textField: {
-                                                                fullWidth: true,
-                                                            },
-                                                        }}
-                                                        label="End Date"
-                                                    />
-                                                )}
-                                            />
-                                        </Grid>
-                                    </Grid>
-                                </Grid>
-
-                                {/* Assignment Group (Admin only) */}
-                                {isAdmin && (
-                                    <Grid size={{ xs: 12 }}>
-                                        <Typography
-                                            variant="subtitle1"
-                                            fontWeight="bold"
-                                            gutterBottom
-                                        >
-                                            Assignment
-                                        </Typography>
-                                        <Divider sx={{ mb: 2 }} />
-                                        <Grid container spacing={2}>
-                                            <Grid size={{ xs: 12, sm: 6 }}>
-                                                <Controller
-                                                    name="assigned"
-                                                    control={control}
-                                                    render={({ field }) => (
-                                                        <Autocomplete
-                                                            {...field}
-                                                            multiple
-                                                            options={
-                                                                teamMembers ||
-                                                                []
-                                                            }
-                                                            isOptionEqualToValue={(
-                                                                option,
-                                                                value
-                                                            ) =>
-                                                                option.id ===
-                                                                value.id
-                                                            }
-                                                            getOptionLabel={(
-                                                                option
-                                                            ) =>
-                                                                option.name ||
-                                                                ''
-                                                            }
-                                                            onChange={(
-                                                                _,
-                                                                value
-                                                            ) =>
-                                                                field.onChange(
-                                                                    value
-                                                                )
-                                                            }
-                                                            renderInput={(
-                                                                params
-                                                            ) => (
-                                                                <TextField
-                                                                    {...params}
-                                                                    label="Assigned To"
-                                                                    placeholder="Select users"
-                                                                    fullWidth
-                                                                />
-                                                            )}
+                                                        )
+                                                    }
+                                                    renderInput={(
+                                                        params
+                                                    ) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Status"
+                                                            placeholder="Choose One"
                                                         />
                                                     )}
                                                 />
-                                            </Grid>
-                                        </Grid>
+                                            )}
+                                        />
                                     </Grid>
-                                )}
-
-                                {/* Action Buttons */}
-                                <Grid size={{ xs: 12 }}>
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            gap: 2,
-                                            justifyContent: 'flex-end',
-                                        }}
-                                    >
-                                        <Button
-                                            variant="contained"
-                                            color="primary"
-                                            type="submit"
-                                        >
-                                            Apply Filters
-                                        </Button>
-
-                                        {isFormDirty && (
-                                            <Button
-                                                variant="outlined"
-                                                color="secondary"
-                                                onClick={() =>
-                                                    reset(filters, {
-                                                        keepDirty: false,
-                                                        keepSubmitCount: true,
-                                                    })
-                                                }
-                                            >
-                                                Cancel
-                                            </Button>
-                                        )}
-
-                                        {!isFormEmpty && !isFormDirty && (
-                                            <Button
-                                                variant="outlined"
-                                                color="secondary"
-                                                onClick={handleRemoveFilters}
-                                            >
-                                                Remove All Filters
-                                            </Button>
-                                        )}
-                                    </Box>
                                 </Grid>
                             </Grid>
-                        </form>
-                    </Box>
-                )}
-            </Paper>
+
+                            {/* Location Group */}
+                            <Grid size={{ xs: 12 }}>
+                                <Typography
+                                    variant="subtitle1"
+                                    fontWeight="bold"
+                                    gutterBottom
+                                >
+                                    Location
+                                </Typography>
+                                <Divider sx={{ mb: 2 }} />
+                                <Grid container spacing={2}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                        <Controller
+                                            name="locationIds"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <Autocomplete
+                                                    {...field}
+                                                    multiple
+                                                    options={locations}
+                                                    isOptionEqualToValue={(
+                                                        option,
+                                                        value
+                                                    ) =>
+                                                        option.id ===
+                                                        value.id
+                                                    }
+                                                    getOptionLabel={(
+                                                        option
+                                                    ) => option.name || ''}
+                                                    onChange={(_, value) =>
+                                                        field.onChange(
+                                                            value
+                                                        )
+                                                    }
+                                                    renderInput={(
+                                                        params
+                                                    ) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Locations"
+                                                            placeholder="Select locations"
+                                                        />
+                                                    )}
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                        <Controller
+                                            name="locationGroupIds"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <Autocomplete
+                                                    {...field}
+                                                    multiple
+                                                    options={locationGroups}
+                                                    isOptionEqualToValue={(
+                                                        option,
+                                                        value
+                                                    ) =>
+                                                        option.id ===
+                                                        value.id
+                                                    }
+                                                    getOptionLabel={(
+                                                        option
+                                                    ) => option.name || ''}
+                                                    onChange={(_, value) =>
+                                                        field.onChange(
+                                                            value
+                                                        )
+                                                    }
+                                                    renderInput={(
+                                                        params
+                                                    ) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Location Groups"
+                                                            placeholder="Select location groups"
+                                                        />
+                                                    )}
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+
+                            {/* Date Range Group */}
+                            <Grid size={{ xs: 12 }}>
+                                <Typography
+                                    variant="subtitle1"
+                                    fontWeight="bold"
+                                    gutterBottom
+                                >
+                                    Date Range
+                                </Typography>
+                                <Divider sx={{ mb: 2 }} />
+                                <Grid container spacing={2}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                        <Controller
+                                            name="startDate"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <DatePicker
+                                                    {...field}
+                                                    value={
+                                                        field.value
+                                                            ? dayjs.utc(
+                                                                  field.value
+                                                              )
+                                                            : null
+                                                    }
+                                                    onChange={(date) =>
+                                                        field.onChange(
+                                                            date?.toDate()
+                                                        )
+                                                    }
+                                                    slotProps={{
+                                                        field: {
+                                                            clearable: true,
+                                                        },
+                                                        textField: {
+                                                            fullWidth: true,
+                                                        },
+                                                    }}
+                                                    label="Start Date"
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                        <Controller
+                                            name="endDate"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <DatePicker
+                                                    {...field}
+                                                    value={
+                                                        (field.value ||
+                                                            null) as
+                                                            | PickerValue
+                                                            | undefined
+                                                    }
+                                                    onChange={(date) =>
+                                                        field.onChange(date)
+                                                    }
+                                                    slotProps={{
+                                                        field: {
+                                                            clearable: true,
+                                                        },
+                                                        textField: {
+                                                            fullWidth: true,
+                                                        },
+                                                    }}
+                                                    label="End Date"
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+
+                            {/* Assignment Group (Admin only) */}
+                            {isAdmin && (
+                                <Grid size={{ xs: 12 }}>
+                                    <Typography
+                                        variant="subtitle1"
+                                        fontWeight="bold"
+                                        gutterBottom
+                                    >
+                                        Assignment
+                                    </Typography>
+                                    <Divider sx={{ mb: 2 }} />
+                                    <Grid container spacing={2}>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
+                                            <Controller
+                                                name="assigned"
+                                                control={control}
+                                                render={({ field }) => (
+                                                    <Autocomplete
+                                                        {...field}
+                                                        multiple
+                                                        options={
+                                                            teamMembers ||
+                                                            []
+                                                        }
+                                                        isOptionEqualToValue={(
+                                                            option,
+                                                            value
+                                                        ) =>
+                                                            option.id ===
+                                                            value.id
+                                                        }
+                                                        getOptionLabel={(
+                                                            option
+                                                        ) =>
+                                                            option.name ||
+                                                            ''
+                                                        }
+                                                        onChange={(
+                                                            _,
+                                                            value
+                                                        ) =>
+                                                            field.onChange(
+                                                                value
+                                                            )
+                                                        }
+                                                        renderInput={(
+                                                            params
+                                                        ) => (
+                                                            <TextField
+                                                                {...params}
+                                                                label="Assigned To"
+                                                                placeholder="Select users"
+                                                                fullWidth
+                                                            />
+                                                        )}
+                                                    />
+                                                )}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </Grid>
+                            )}
+                        </Grid>
+                    </form>
+                </DialogContent>
+                <DialogActions>
+                    {!isFormEmpty && !isFormDirty && (
+                        <Button
+                            variant="outlined"
+                            color="secondary"
+                            onClick={handleRemoveFilters}
+                        >
+                            Remove All Filters
+                        </Button>
+                    )}
+
+                    {isFormDirty && (
+                        <Button
+                            variant="outlined"
+                            color="secondary"
+                            onClick={() =>
+                                reset(filters, {
+                                    keepDirty: false,
+                                    keepSubmitCount: true,
+                                })
+                            }
+                        >
+                            Reset
+                        </Button>
+                    )}
+
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleSubmit(handleApplyFilters)}
+                    >
+                        Apply Filters
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 }

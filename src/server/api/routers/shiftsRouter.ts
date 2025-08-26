@@ -164,8 +164,8 @@ export const shiftsRouter = router({
                     location: z.string().optional(),
                     locationIds: z.array(z.string()).optional(),
                     locationGroupIds: z.array(z.string()).optional(),
-                    startDate: z.date().optional(),
-                    endDate: z.date().optional(),
+                    startDate: z.string().optional(),
+                    endDate: z.string().optional(),
                     assigned: z.array(z.string()).optional(),
                     unfilled: z
                         .enum(['unfilled', 'filled', 'mine', 'any'])
@@ -213,8 +213,10 @@ export const shiftsRouter = router({
                     ];
 
                 // Handle locationIds and locationGroupIds filters
-                const hasLocationIds = input.locationIds && input.locationIds.length > 0;
-                const hasLocationGroupIds = input.locationGroupIds && input.locationGroupIds.length > 0;
+                const hasLocationIds =
+                    input.locationIds && input.locationIds.length > 0;
+                const hasLocationGroupIds =
+                    input.locationGroupIds && input.locationGroupIds.length > 0;
 
                 if (hasLocationIds && hasLocationGroupIds) {
                     // If both filters are provided, use OR condition to match either
@@ -243,8 +245,8 @@ export const shiftsRouter = router({
                     where.location = {
                         ...where.location,
                         groupId: {
-                            in: input.locationGroupIds,
-                        },
+                            in: input.locationGroupIds!,
+                        } as any,
                     };
                 }
 
@@ -282,7 +284,7 @@ export const shiftsRouter = router({
                     where.shiftAssignments = {
                         some: {
                             memberId: {
-                                in: input.assigned
+                                in: input.assigned,
                             },
                             outcome: 'assigned',
                         },

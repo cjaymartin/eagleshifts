@@ -78,7 +78,7 @@ export default function TeamMemberAutocomplete(
                 ? date.toISOString().split('T')[0]
                 : undefined,
             endDate: isValidDate ? date.toISOString().split('T')[0] : undefined,
-        },
+        } as any,
         {
             enabled: !!date && isValidDate,
         }
