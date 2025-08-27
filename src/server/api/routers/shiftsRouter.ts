@@ -371,6 +371,7 @@ export const shiftsRouter = router({
                             ? {
                                   include: {
                                       group: true,
+                                      defaultDepartment: true,
                                   },
                               }
                             : undefined,
@@ -479,6 +480,7 @@ export const shiftsRouter = router({
                     location: {
                         include: {
                             group: true,
+                            defaultDepartment: true,
                         },
                     },
                     department: true,
@@ -668,6 +670,7 @@ export const shiftsRouter = router({
                     location: {
                         include: {
                             group: true,
+                            defaultDepartment: true,
                         },
                     },
                     department: true,
@@ -922,6 +925,7 @@ export const shiftsRouter = router({
                         location: {
                             include: {
                                 group: true,
+                                defaultDepartment: true,
                             },
                         },
                         department: true,
@@ -974,6 +978,7 @@ export const shiftsRouter = router({
                         location: {
                             include: {
                                 group: true,
+                                defaultDepartment: true,
                             },
                         },
                         department: true,
@@ -1220,6 +1225,7 @@ export const shiftsRouter = router({
                             location: {
                                 include: {
                                     group: true,
+                                    defaultDepartment: true,
                                 },
                             },
                             department: true,
@@ -1288,7 +1294,11 @@ export const shiftsRouter = router({
                 },
                 include: {
                     shiftAssignments: true,
-                    location: true,
+                    location: {
+                        include: {
+                            defaultDepartment: true,
+                        }
+                    },
                 },
             });
 

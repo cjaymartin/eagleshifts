@@ -144,7 +144,9 @@ export default function DepartmentForm({
             <form onSubmit={handleSubmit(onFormSubmit)}>
                 <Stack spacing={3}>
                     <Typography variant="h6">
-                        {departmentId ? 'Edit Department' : 'Create New Department'}
+                        {departmentId
+                            ? 'Edit Department'
+                            : 'Create New Department'}
                     </Typography>
 
                     {/* Name */}
@@ -228,7 +230,7 @@ export default function DepartmentForm({
                                     <Box sx={{ mt: 2 }}>
                                         <MuiColorInput
                                             label="Custom Color"
-                                            value={field.value}
+                                            value={field.value as any}
                                             onChange={(newColor) => {
                                                 field.onChange(newColor);
                                             }}
@@ -250,7 +252,7 @@ export default function DepartmentForm({
                                                 p: 2,
                                                 backgroundColor: field.value,
                                                 color: getTextColor(
-                                                    field.value
+                                                    field.value as any
                                                 ),
                                                 borderRadius: 1,
                                                 textAlign: 'center',

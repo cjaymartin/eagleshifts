@@ -792,7 +792,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 render={({ field }) => {
                                     return (
                                         <DepartmentAutocomplete
-                                            value={field.value}
+                                            value={field.value as any}
                                             onChange={(departmentId) => {
                                                 field.onChange(departmentId);
                                             }}
