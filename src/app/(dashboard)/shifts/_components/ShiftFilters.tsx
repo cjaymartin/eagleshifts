@@ -24,12 +24,14 @@ import { useForm, Controller } from 'react-hook-form';
 import dayjs from 'dayjs';
 import { useAuthQuery, useTeamUsersQuery } from '@/queries/users';
 import { useLocationsQuery, useLocationGroupsQuery } from '@/queries/locations';
+import { useDepartmentsQuery } from '@/queries/departments';
 import { PickerValue } from '@mui/x-date-pickers/internals';
 
 const defaultFilters: ShiftFormFilterSchema = {
     title: '',
     locationIds: [],
     locationGroupIds: [],
+    departmentIds: [],
     startDate: null as Date | null,
     endDate: null as Date | null,
     assigned: [],
@@ -40,6 +42,7 @@ type ShiftFormFilterSchema = {
     title: string;
     locationIds: { id: string; name: string }[];
     locationGroupIds: { id: string; name: string }[];
+    departmentIds: { id: string; name: string }[];
     startDate: Date | null;
     endDate: Date | null;
     assigned: { id: string; name: string }[];
@@ -50,6 +53,7 @@ export type ShiftFilterSchema = {
     title: string;
     locationIds: string[];
     locationGroupIds: string[];
+    departmentIds: string[];
     startDate: Date | undefined;
     endDate: Date | undefined;
     assigned: string[];
@@ -85,6 +89,15 @@ export function ShiftFilters({
         }));
     }, [locationGroupsData]);
 
+    const { data: departmentsData } = useDepartmentsQuery();
+    const departments = useMemo(() => {
+        if (!departmentsData?.departments) return [];
+        return departmentsData.departments.map((department) => ({
+            id: department.id,
+            name: department.name,
+        }));
+    }, [departmentsData]);
+
     const { control, handleSubmit, reset, formState } =
         useForm<ShiftFormFilterSchema>({
             defaultValues: filters,
@@ -104,6 +117,7 @@ export function ShiftFilters({
             unfilled: data.unfilled?.id,
             locationIds: data.locationIds.map((loc) => loc.id),
             locationGroupIds: data.locationGroupIds.map((group) => group.id),
+            departmentIds: data.departmentIds.map((dept) => dept.id),
         };
         setFilters(formattedFilters);
         setTimeout(() => {
@@ -129,6 +143,7 @@ export function ShiftFilters({
         if (filters.title) count++;
         if (filters.locationIds.length > 0) count++;
         if (filters.locationGroupIds.length > 0) count++;
+        if (filters.departmentIds.length > 0) count++;
         if (filters.startDate) count++;
         if (filters.endDate) count++;
         if (filters.assigned && filters.assigned.length > 0) count++;
@@ -172,6 +187,17 @@ export function ShiftFilters({
                 <Chip
                     key="locationGroups"
                     label={`Location Groups: ${filters.locationGroupIds.length}`}
+                    size="small"
+                    variant="outlined"
+                />
+            );
+        }
+
+        if (filters.departmentIds.length > 0) {
+            filterChips.push(
+                <Chip
+                    key="departments"
+                    label={`Departments: ${filters.departmentIds.length}`}
                     size="small"
                     variant="outlined"
                 />
@@ -403,6 +429,57 @@ export function ShiftFilters({
                                                             {...params}
                                                             label="Status"
                                                             placeholder="Choose One"
+                                                        />
+                                                    )}
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+
+                            {/* Department Group */}
+                            <Grid size={{ xs: 12 }}>
+                                <Typography
+                                    variant="subtitle1"
+                                    fontWeight="bold"
+                                    gutterBottom
+                                >
+                                    Department
+                                </Typography>
+                                <Divider sx={{ mb: 2 }} />
+                                <Grid container spacing={2}>
+                                    <Grid size={{ xs: 12 }}>
+                                        <Controller
+                                            name="departmentIds"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <Autocomplete
+                                                    {...field}
+                                                    multiple
+                                                    options={departments}
+                                                    isOptionEqualToValue={(
+                                                        option,
+                                                        value
+                                                    ) =>
+                                                        option.id ===
+                                                        value.id
+                                                    }
+                                                    getOptionLabel={(
+                                                        option
+                                                    ) => option.name || ''}
+                                                    onChange={(_, value) =>
+                                                        field.onChange(
+                                                            value
+                                                        )
+                                                    }
+                                                    renderInput={(
+                                                        params
+                                                    ) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Departments"
+                                                            placeholder="Select departments"
                                                         />
                                                     )}
                                                 />

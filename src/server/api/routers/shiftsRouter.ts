@@ -245,9 +245,21 @@ export const shiftsRouter = router({
 
                 if (hasDepartmentIds) {
                     orConditions.push({
-                        departmentId: {
-                            in: input.departmentIds,
-                        },
+                        OR: [
+                            {
+                                departmentId: {
+                                    in: input.departmentIds,
+                                },
+                            },
+                            {
+                                departmentId: null,
+                                location: {
+                                    defaultDepartmentId: {
+                                        in: input.departmentIds,
+                                    },
+                                },
+                            },
+                        ],
                     });
                 }
 

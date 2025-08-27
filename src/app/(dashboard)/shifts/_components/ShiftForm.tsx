@@ -55,6 +55,7 @@ import {
 import LocationAutocomplete from '@/components/form/LocationAutocomplete';
 import LocationViewDialog from '@/components/locations/LocationViewDialog';
 import LocationForm from '@/components/locations/LocationForm';
+import DepartmentAutocomplete from '@/components/form/DepartmentAutocomplete';
 import { reset } from 'next/dist/lib/picocolors';
 
 dayjs.extend(customParseFormat);
@@ -66,6 +67,7 @@ type ShiftFormData = {
     id?: string;
     title: string;
     locationId: string | null;
+    departmentId?: string | null;
     legacyLocation?: string;
     date: Date | null;
     startTime: Date | null;
@@ -267,6 +269,7 @@ export default function ShiftForm(props: ShiftFormProps) {
 
               // Handle location fields
               locationId: shift.locationId || null,
+              departmentId: shift.departmentId || null,
               legacyLocation: shift.locationId
                   ? ''
                   : shift.legacyLocation || shift.location || '',
@@ -368,6 +371,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                 slots: Number(formData.slots),
                 timezone: timezone,
                 locationId: formData.locationId!,
+                departmentId: formData.departmentId || undefined,
                 legacyLocation: formData.locationId
                     ? undefined
                     : formData.legacyLocation,
@@ -480,6 +484,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                 slots: Number(formData.slots),
                 timezone: timezone,
                 locationId: formData.locationId!,
+                departmentId: formData.departmentId || undefined,
                 legacyLocation: formData.locationId
                     ? undefined
                     : formData.legacyLocation,
@@ -572,6 +577,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                 slots: Number(formData.slots || 1),
                 timezone: timezone,
                 locationId: formData.locationId || undefined,
+                departmentId: formData.departmentId || undefined,
                 legacyLocation: formData.locationId
                     ? undefined
                     : formData.legacyLocation,
@@ -774,6 +780,23 @@ export default function ShiftForm(props: ShiftFormProps) {
                                                 setViewLocationId(locationId);
                                                 setIsLocationViewOpen(true);
                                             }}
+                                        />
+                                    );
+                                }}
+                            />
+
+                            {/* Department Autocomplete */}
+                            <Controller
+                                name="departmentId"
+                                control={control}
+                                render={({ field }) => {
+                                    return (
+                                        <DepartmentAutocomplete
+                                            value={field.value}
+                                            onChange={(departmentId) => {
+                                                field.onChange(departmentId);
+                                            }}
+                                            disabled={!isAdmin}
                                         />
                                     );
                                 }}
