@@ -29,7 +29,7 @@ export const locationsRouter = router({
 
             if (input) {
                 if (input.search) {
-                    // Search by name, address, group name, or tags
+                    // Search by name, address, group name, department name, or tags
                     where.OR = [
                         {
                             name: {
@@ -52,6 +52,14 @@ export const locationsRouter = router({
                             },
                         },
                         {
+                            defaultDepartment: {
+                                name: {
+                                    contains: input.search,
+                                    mode: 'insensitive',
+                                },
+                            },
+                        },
+                        {
                             tags: {
                                 contains: input.search,
                             },
@@ -59,7 +67,7 @@ export const locationsRouter = router({
                     ];
                 }
                 if (input.name) {
-                    // Search by name OR address
+                    // Search by name, address, or department name
                     const nameConditions = [
                         {
                             name: {
@@ -71,6 +79,14 @@ export const locationsRouter = router({
                             address: {
                                 contains: input.name,
                                 mode: 'insensitive',
+                            },
+                        },
+                        {
+                            defaultDepartment: {
+                                name: {
+                                    contains: input.name,
+                                    mode: 'insensitive',
+                                },
                             },
                         },
                     ];
@@ -119,6 +135,7 @@ export const locationsRouter = router({
                 where,
                 include: {
                     group: true,
+                    defaultDepartment: true,
                 },
                 orderBy: { name: 'asc' },
                 skip,
@@ -154,6 +171,7 @@ export const locationsRouter = router({
                 },
                 include: {
                     group: true,
+                    defaultDepartment: true,
                 },
             });
 
@@ -180,6 +198,7 @@ export const locationsRouter = router({
                 latitude: z.number(),
                 longitude: z.number(),
                 groupId: z.string().optional(),
+                defaultDepartmentId: z.string().optional(),
                 tags: z.array(z.string()).optional(),
             })
         )
@@ -216,6 +235,23 @@ export const locationsRouter = router({
                 }
             }
 
+            // If defaultDepartmentId is provided, verify it exists and belongs to the organization
+            if (input.defaultDepartmentId) {
+                const department = await ctx.prisma.department.findFirst({
+                    where: {
+                        id: input.defaultDepartmentId,
+                        organizationId: ctx.user.organizationId,
+                    },
+                });
+
+                if (!department) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Department not found',
+                    });
+                }
+            }
+
             // Create the location
             const location = await ctx.prisma.location.create({
                 data: {
@@ -225,10 +261,12 @@ export const locationsRouter = router({
                     latitude: input.latitude,
                     longitude: input.longitude,
                     groupId: input.groupId,
+                    defaultDepartmentId: input.defaultDepartmentId,
                     tags: input.tags ? JSON.stringify(input.tags) : null,
                 },
                 include: {
                     group: true,
+                    defaultDepartment: true,
                 },
             });
 
@@ -249,6 +287,7 @@ export const locationsRouter = router({
                 latitude: z.number(),
                 longitude: z.number(),
                 groupId: z.string().optional(),
+                defaultDepartmentId: z.string().optional(),
                 tags: z.array(z.string()).optional(),
             })
         )
@@ -301,6 +340,23 @@ export const locationsRouter = router({
                 }
             }
 
+            // If defaultDepartmentId is provided, verify it exists and belongs to the organization
+            if (input.defaultDepartmentId) {
+                const department = await ctx.prisma.department.findFirst({
+                    where: {
+                        id: input.defaultDepartmentId,
+                        organizationId: ctx.user.organizationId,
+                    },
+                });
+
+                if (!department) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Department not found',
+                    });
+                }
+            }
+
             // Update the location
             const location = await ctx.prisma.location.update({
                 where: { id: input.id },
@@ -310,10 +366,12 @@ export const locationsRouter = router({
                     latitude: input.latitude,
                     longitude: input.longitude,
                     groupId: input.groupId,
+                    defaultDepartmentId: input.defaultDepartmentId,
                     tags: input.tags ? JSON.stringify(input.tags) : null,
                 },
                 include: {
                     group: true,
+                    defaultDepartment: true,
                 },
             });
 

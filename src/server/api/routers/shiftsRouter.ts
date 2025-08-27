@@ -164,6 +164,7 @@ export const shiftsRouter = router({
                     location: z.string().optional(),
                     locationIds: z.array(z.string()).optional(),
                     locationGroupIds: z.array(z.string()).optional(),
+                    departmentIds: z.array(z.string()).optional(),
                     startDate: z.string().optional(),
                     endDate: z.string().optional(),
                     assigned: z.array(z.string()).optional(),
@@ -171,6 +172,7 @@ export const shiftsRouter = router({
                         .enum(['unfilled', 'filled', 'mine', 'any'])
                         .optional(),
                     includeLocationGroup: z.boolean().optional(),
+                    includeDepartment: z.boolean().optional(),
                     isCancelled: z.boolean().optional(),
                 })
                 .optional()
@@ -212,42 +214,49 @@ export const shiftsRouter = router({
                         },
                     ];
 
-                // Handle locationIds and locationGroupIds filters
+                // Handle locationIds, locationGroupIds, and departmentIds filters
                 const hasLocationIds =
                     input.locationIds && input.locationIds.length > 0;
                 const hasLocationGroupIds =
                     input.locationGroupIds && input.locationGroupIds.length > 0;
+                const hasDepartmentIds =
+                    input.departmentIds && input.departmentIds.length > 0;
 
-                if (hasLocationIds && hasLocationGroupIds) {
-                    // If both filters are provided, use OR condition to match either
+                // Build OR conditions for location and department filters
+                const orConditions = [];
+
+                if (hasLocationIds) {
+                    orConditions.push({
+                        locationId: {
+                            in: input.locationIds,
+                        },
+                    });
+                }
+
+                if (hasLocationGroupIds) {
+                    orConditions.push({
+                        location: {
+                            groupId: {
+                                in: input.locationGroupIds,
+                            },
+                        },
+                    });
+                }
+
+                if (hasDepartmentIds) {
+                    orConditions.push({
+                        departmentId: {
+                            in: input.departmentIds,
+                        },
+                    });
+                }
+
+                // Apply the OR conditions if any exist
+                if (orConditions.length > 0) {
                     where.OR = [
                         ...(where.OR || []),
-                        {
-                            locationId: {
-                                in: input.locationIds,
-                            },
-                        },
-                        {
-                            location: {
-                                groupId: {
-                                    in: input.locationGroupIds,
-                                },
-                            },
-                        },
+                        ...orConditions,
                     ];
-                } else if (hasLocationIds) {
-                    // Only locationIds filter
-                    where.locationId = {
-                        in: input.locationIds,
-                    };
-                } else if (hasLocationGroupIds) {
-                    // Only locationGroupIds filter
-                    where.location = {
-                        ...where.location,
-                        groupId: {
-                            in: input.locationGroupIds!,
-                        } as any,
-                    };
                 }
 
                 if (input.startDate || input.endDate) {
@@ -353,6 +362,7 @@ export const shiftsRouter = router({
                                   },
                               }
                             : undefined,
+                    department: input?.includeDepartment !== false,
                 },
                 orderBy: { startTime: 'asc' },
             });
@@ -459,6 +469,7 @@ export const shiftsRouter = router({
                             group: true,
                         },
                     },
+                    department: true,
                 },
             });
 
@@ -539,6 +550,7 @@ export const shiftsRouter = router({
                 title: z.string(),
                 locationId: z.string().optional(),
                 legacyLocation: z.string().optional(),
+                departmentId: z.string().optional(),
                 startTime: z.string(), // ISO8601 date string
                 endTime: z.string(), // ISO8601 date string
                 slots: z.number(),
@@ -606,6 +618,18 @@ export const shiftsRouter = router({
                     console.error('Error checking problematic user:', error);
                 }
             }
+            // If locationId is provided and departmentId is not, check if the location has a default department
+            let departmentId = input.departmentId;
+            if (input.locationId && !departmentId) {
+                const location = await ctx.prisma.location.findUnique({
+                    where: { id: input.locationId },
+                    select: { defaultDepartmentId: true }
+                });
+                if (location?.defaultDepartmentId) {
+                    departmentId = location.defaultDepartmentId;
+                }
+            }
+
             const shift = await ctx.prisma.shift.create({
                 data: {
                     organizationId: ctx.user.organizationId,
@@ -614,6 +638,7 @@ export const shiftsRouter = router({
                     legacyLocation: input.locationId
                         ? undefined
                         : input.legacyLocation,
+                    departmentId: departmentId,
                     startTime: convertToTimezone(
                         input.startTime,
                         input.timezone
@@ -633,6 +658,7 @@ export const shiftsRouter = router({
                             group: true,
                         },
                     },
+                    department: true,
                 },
             });
 
@@ -852,6 +878,7 @@ export const shiftsRouter = router({
                 title: z.string(),
                 locationId: z.string().optional(),
                 legacyLocation: z.string().optional(),
+                departmentId: z.string().optional(),
                 startTime: z.string(), // ISO8601 date string
                 endTime: z.string(), // ISO8601 date string
                 slots: z.number(),
@@ -885,6 +912,7 @@ export const shiftsRouter = router({
                                 group: true,
                             },
                         },
+                        department: true,
                     },
                 });
 
@@ -893,6 +921,18 @@ export const shiftsRouter = router({
                         code: 'NOT_FOUND',
                         message: 'Shift not found',
                     });
+                }
+
+                // If locationId is provided and departmentId is not, check if the location has a default department
+                let departmentId = data.departmentId;
+                if (data.locationId && !departmentId) {
+                    const location = await ctx.prisma.location.findUnique({
+                        where: { id: data.locationId },
+                        select: { defaultDepartmentId: true }
+                    });
+                    if (location?.defaultDepartmentId) {
+                        departmentId = location.defaultDepartmentId;
+                    }
                 }
 
                 // First update the shift
@@ -906,6 +946,7 @@ export const shiftsRouter = router({
                         legacyLocation: data.locationId
                             ? undefined
                             : data.legacyLocation,
+                        departmentId: departmentId,
                         startTime: convertToTimezone(
                             data.startTime,
                             data.timezone
@@ -923,6 +964,7 @@ export const shiftsRouter = router({
                                 group: true,
                             },
                         },
+                        department: true,
                     },
                 });
 
@@ -1168,6 +1210,7 @@ export const shiftsRouter = router({
                                     group: true,
                                 },
                             },
+                            department: true,
                         },
                     });
 
