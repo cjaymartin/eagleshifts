@@ -67,7 +67,7 @@ export const locationsRouter = router({
                     ];
                 }
                 if (input.name) {
-                    // Search by name, address, or department name
+                    // Search by name OR address
                     const nameConditions = [
                         {
                             name: {
@@ -79,14 +79,6 @@ export const locationsRouter = router({
                             address: {
                                 contains: input.name,
                                 mode: 'insensitive',
-                            },
-                        },
-                        {
-                            defaultDepartment: {
-                                name: {
-                                    contains: input.name,
-                                    mode: 'insensitive',
-                                },
                             },
                         },
                     ];
