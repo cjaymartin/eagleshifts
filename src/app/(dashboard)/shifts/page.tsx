@@ -32,7 +32,10 @@ import { trpc } from '@/lib/trpc/client';
 import { useDialogs } from '@toolpad/core';
 import ShiftForm from '@/app/(dashboard)/shifts/_components/ShiftForm';
 import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
-import { useShiftDraftsListQuery, useShiftDraftDeleteMutation } from '@/queries/shiftDrafts';
+import {
+    useShiftDraftsListQuery,
+    useShiftDraftDeleteMutation,
+} from '@/queries/shiftDrafts';
 
 export default function Shifts() {
     //const { setNew: openAddShiftDialog } = useShiftDialogHelpers();
