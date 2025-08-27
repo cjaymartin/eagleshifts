@@ -24,12 +24,14 @@ import { useForm, Controller } from 'react-hook-form';
 import dayjs from 'dayjs';
 import { useAuthQuery, useTeamUsersQuery } from '@/queries/users';
 import { useLocationsQuery, useLocationGroupsQuery } from '@/queries/locations';
+import { useDepartmentsQuery } from '@/queries/departments';
 import { PickerValue } from '@mui/x-date-pickers/internals';
 
 const defaultFilters: ShiftFormFilterSchema = {
     title: '',
     locationIds: [],
     locationGroupIds: [],
+    departmentIds: [],
     startDate: null as Date | null,
     endDate: null as Date | null,
     assigned: [],
@@ -40,6 +42,7 @@ type ShiftFormFilterSchema = {
     title: string;
     locationIds: { id: string; name: string }[];
     locationGroupIds: { id: string; name: string }[];
+    departmentIds: { id: string; name: string }[];
     startDate: Date | null;
     endDate: Date | null;
     assigned: { id: string; name: string }[];
@@ -50,6 +53,7 @@ export type ShiftFilterSchema = {
     title: string;
     locationIds: string[];
     locationGroupIds: string[];
+    departmentIds: string[];
     startDate: Date | undefined;
     endDate: Date | undefined;
     assigned: string[];
@@ -85,6 +89,15 @@ export function ShiftFilters({
         }));
     }, [locationGroupsData]);
 
+    const { data: departmentsData } = useDepartmentsQuery();
+    const departments = useMemo(() => {
+        if (!departmentsData?.departments) return [];
+        return departmentsData.departments.map((department) => ({
+            id: department.id,
+            name: department.name,
+        }));
+    }, [departmentsData]);
+
     const { control, handleSubmit, reset, formState } =
         useForm<ShiftFormFilterSchema>({
             defaultValues: filters,
@@ -101,9 +114,10 @@ export function ShiftFilters({
                 ? dayjs.utc(data.endDate).toDate()
                 : undefined,
             assigned: data.assigned.map((user) => user.id),
-            unfilled: data.unfilled?.id,
+            unfilled: data.unfilled?.id ?? null,
             locationIds: data.locationIds.map((loc) => loc.id),
             locationGroupIds: data.locationGroupIds.map((group) => group.id),
+            departmentIds: data.departmentIds.map((dept) => dept.id),
         };
         setFilters(formattedFilters);
         setTimeout(() => {
@@ -129,10 +143,16 @@ export function ShiftFilters({
         if (filters.title) count++;
         if (filters.locationIds.length > 0) count++;
         if (filters.locationGroupIds.length > 0) count++;
+        if (filters.departmentIds.length > 0) count++;
         if (filters.startDate) count++;
         if (filters.endDate) count++;
         if (filters.assigned && filters.assigned.length > 0) count++;
-        if (filters.unfilled && filters.unfilled.id !== 'any') count++;
+        if (
+            filters.unfilled &&
+            (filters.unfilled as any) !== 'any' && // Dont ask...
+            filters.unfilled.id !== 'any'
+        )
+            count++;
         return count;
     };
 
@@ -213,11 +233,11 @@ export function ShiftFilters({
 
         console.log({ filters });
 
-        if (filters.unfilled && (filters as any).unfilled != 'any') {
+        if (filters.unfilled && filters.unfilled.id != 'any') {
             const filledLabel = {
                 unfilled: 'Open',
                 filled: 'Filled',
-            }[(filters as any).unfilled as string];
+            }[filters.unfilled.id];
             if (filledLabel) {
                 filterChips.push(
                     <Chip
@@ -295,6 +315,40 @@ export function ShiftFilters({
                     </Button>
                 </Box>
 
+                {/* Department filter directly in the summary box */}
+                <Box sx={{ mt: 2, mb: 2 }}>
+                    <Controller
+                        name="departmentIds"
+                        control={control}
+                        render={({ field }) => (
+                            <Autocomplete
+                                {...field}
+                                multiple
+                                options={departments}
+                                isOptionEqualToValue={(option, value) =>
+                                    option.id === value.id
+                                }
+                                getOptionLabel={(option) => option.name || ''}
+                                onChange={(_, value) => {
+                                    field.onChange(value);
+                                    // Submit the form to apply the filter immediately
+                                    setTimeout(() => {
+                                        handleSubmit(onSubmit)();
+                                    }, 0);
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Departments"
+                                        placeholder="Select departments"
+                                        size="small"
+                                    />
+                                )}
+                            />
+                        )}
+                    />
+                </Box>
+
                 {activeFilterCount > 0 && (
                     <Box sx={{ mt: 2 }}>{renderFilterSummary()}</Box>
                 )}
@@ -311,9 +365,7 @@ export function ShiftFilters({
                 <DialogTitle id="filter-dialog-title">
                     <Box display="flex" alignItems="center">
                         <Box flexGrow={1}>
-                            <Typography variant="h6">
-                                Filter Shifts
-                            </Typography>
+                            <Typography variant="h6">Filter Shifts</Typography>
                         </Box>
                         <IconButton
                             edge="end"
@@ -382,23 +434,14 @@ export function ShiftFilters({
                                                     isOptionEqualToValue={(
                                                         option,
                                                         value
-                                                    ) =>
-                                                        option.id ===
-                                                        value.id
-                                                    }
-                                                    getOptionLabel={(
-                                                        option
-                                                    ) =>
+                                                    ) => option.id === value.id}
+                                                    getOptionLabel={(option) =>
                                                         option?.label || ''
                                                     }
                                                     onChange={(_, value) =>
-                                                        field.onChange(
-                                                            value
-                                                        )
+                                                        field.onChange(value)
                                                     }
-                                                    renderInput={(
-                                                        params
-                                                    ) => (
+                                                    renderInput={(params) => (
                                                         <TextField
                                                             {...params}
                                                             label="Status"
@@ -435,21 +478,14 @@ export function ShiftFilters({
                                                     isOptionEqualToValue={(
                                                         option,
                                                         value
-                                                    ) =>
-                                                        option.id ===
-                                                        value.id
+                                                    ) => option.id === value.id}
+                                                    getOptionLabel={(option) =>
+                                                        option.name || ''
                                                     }
-                                                    getOptionLabel={(
-                                                        option
-                                                    ) => option.name || ''}
                                                     onChange={(_, value) =>
-                                                        field.onChange(
-                                                            value
-                                                        )
+                                                        field.onChange(value)
                                                     }
-                                                    renderInput={(
-                                                        params
-                                                    ) => (
+                                                    renderInput={(params) => (
                                                         <TextField
                                                             {...params}
                                                             label="Locations"
@@ -472,25 +508,48 @@ export function ShiftFilters({
                                                     isOptionEqualToValue={(
                                                         option,
                                                         value
-                                                    ) =>
-                                                        option.id ===
-                                                        value.id
+                                                    ) => option.id === value.id}
+                                                    getOptionLabel={(option) =>
+                                                        option.name || ''
                                                     }
-                                                    getOptionLabel={(
-                                                        option
-                                                    ) => option.name || ''}
                                                     onChange={(_, value) =>
-                                                        field.onChange(
-                                                            value
-                                                        )
+                                                        field.onChange(value)
                                                     }
-                                                    renderInput={(
-                                                        params
-                                                    ) => (
+                                                    renderInput={(params) => (
                                                         <TextField
                                                             {...params}
                                                             label="Location Groups"
                                                             placeholder="Select location groups"
+                                                        />
+                                                    )}
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                        <Controller
+                                            name="departmentIds"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <Autocomplete
+                                                    {...field}
+                                                    multiple
+                                                    options={departments}
+                                                    isOptionEqualToValue={(
+                                                        option,
+                                                        value
+                                                    ) => option.id === value.id}
+                                                    getOptionLabel={(option) =>
+                                                        option.name || ''
+                                                    }
+                                                    onChange={(_, value) =>
+                                                        field.onChange(value)
+                                                    }
+                                                    renderInput={(params) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Departments"
+                                                            placeholder="Select departments"
                                                         />
                                                     )}
                                                 />
@@ -596,8 +655,7 @@ export function ShiftFilters({
                                                         {...field}
                                                         multiple
                                                         options={
-                                                            teamMembers ||
-                                                            []
+                                                            teamMembers || []
                                                         }
                                                         isOptionEqualToValue={(
                                                             option,
@@ -608,14 +666,8 @@ export function ShiftFilters({
                                                         }
                                                         getOptionLabel={(
                                                             option
-                                                        ) =>
-                                                            option.name ||
-                                                            ''
-                                                        }
-                                                        onChange={(
-                                                            _,
-                                                            value
-                                                        ) =>
+                                                        ) => option.name || ''}
+                                                        onChange={(_, value) =>
                                                             field.onChange(
                                                                 value
                                                             )

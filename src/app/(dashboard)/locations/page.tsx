@@ -196,7 +196,7 @@ export default function LocationsPage() {
                             variant="outlined"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Search by name..."
+                            placeholder="Search by name, address, group, or department..."
                             sx={{ mb: 2 }}
                         />
 
@@ -207,6 +207,7 @@ export default function LocationsPage() {
                                         <TableCell>Name</TableCell>
                                         <TableCell>Address</TableCell>
                                         <TableCell>Group</TableCell>
+                                        <TableCell>Department</TableCell>
                                         <TableCell>Actions</TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -214,7 +215,7 @@ export default function LocationsPage() {
                                     {isLoading ? (
                                         <TableRow>
                                             <TableCell
-                                                colSpan={4}
+                                                colSpan={5}
                                                 align="center"
                                             >
                                                 Loading...
@@ -275,6 +276,35 @@ export default function LocationsPage() {
                                                             '-'
                                                         )}
                                                     </TableCell>
+                                                    <TableCell width={200}>
+                                                        {location.defaultDepartment ? (
+                                                            <Box
+                                                                component="span"
+                                                                sx={{
+                                                                    backgroundColor:
+                                                                        location
+                                                                            .defaultDepartment
+                                                                            .color || '#f0f0f0',
+                                                                    color: getTextColor(
+                                                                        location
+                                                                            .defaultDepartment
+                                                                            .color || '#f0f0f0'
+                                                                    ),
+                                                                    px: 1,
+                                                                    py: 0.5,
+                                                                    borderRadius: 1,
+                                                                }}
+                                                            >
+                                                                {
+                                                                    location
+                                                                        .defaultDepartment
+                                                                        .name
+                                                                }
+                                                            </Box>
+                                                        ) : (
+                                                            '-'
+                                                        )}
+                                                    </TableCell>
                                                     <TableCell width={134}>
                                                         <IconButton
                                                             onClick={() =>
@@ -318,7 +348,7 @@ export default function LocationsPage() {
                                     ) : (
                                         <TableRow>
                                             <TableCell
-                                                colSpan={4}
+                                                colSpan={5}
                                                 align="center"
                                             >
                                                 No locations found

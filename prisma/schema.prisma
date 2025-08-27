@@ -113,6 +113,7 @@ model Organization {
   uploadGroups   UploadGroup[]
   locations      Location[]
   locationGroups LocationGroup[]
+  departments    Department[]
 
   logEntries LogEntry[]
 
@@ -203,6 +204,7 @@ model Shift {
   title          String
   legacyLocation String?
   locationId     String?
+  departmentId   String?
   startTime      DateTime
   endTime        DateTime
   slots          Int
@@ -217,6 +219,7 @@ model Shift {
   // Relationships
   organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   location         Location?         @relation(fields: [locationId], references: [id])
+  department       Department?       @relation(fields: [departmentId], references: [id])
   // assignments   Member[]       @relation("ShiftAssignments")
   shiftAssignments shiftAssignment[]
   shiftRequests    ShiftRequest[]
@@ -285,6 +288,7 @@ model ShiftDraft {
   title          String
   legacyLocation String?
   locationId     String?
+  departmentId   String?
   date           DateTime
   startTime      DateTime?
   endTime        DateTime?
@@ -298,6 +302,7 @@ model ShiftDraft {
   // Relationships
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   location     Location?    @relation(fields: [locationId], references: [id])
+  department   Department?  @relation(fields: [departmentId], references: [id])
   member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@map("shift_draft")
@@ -381,23 +386,44 @@ model LocationGroup {
   @@map("location_group")
 }
 
-model Location {
+model Department {
   id             String   @id @default(cuid())
   organizationId String
   name           String
-  address        String
-  latitude       Float
-  longitude      Float
-  groupId        String?
-  tags           String? // Stored as JSON array
+  description    String?
+  color          String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   // Relationships
-  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  group        LocationGroup? @relation(fields: [groupId], references: [id])
-  shifts       Shift[]
-  ShiftDraft   ShiftDraft[]
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locations         Location[]
+  shifts            Shift[]
+  shiftDrafts       ShiftDraft[]
+
+  @@unique([organizationId, name])
+  @@map("department")
+}
+
+model Location {
+  id                  String   @id @default(cuid())
+  organizationId      String
+  name                String
+  address             String
+  latitude            Float
+  longitude           Float
+  groupId             String?
+  defaultDepartmentId String?
+  tags                String? // Stored as JSON array
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relationships
+  organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  group            LocationGroup? @relation(fields: [groupId], references: [id])
+  defaultDepartment Department?   @relation(fields: [defaultDepartmentId], references: [id])
+  shifts           Shift[]
+  ShiftDraft       ShiftDraft[]
 
   @@unique([organizationId, name])
   @@map("location")

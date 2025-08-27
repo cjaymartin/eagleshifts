@@ -245,41 +245,121 @@ export async function seedDatabase() {
             console.log(`Created location group: ${createdGroup.name} with color ${createdGroup.color}`);
         }
 
+        // Create Departments
+        const departments = [
+            {
+                name: 'Sales',
+                description: 'Sales and customer service department',
+                color: '#E91E63', // Pink
+            },
+            {
+                name: 'Marketing',
+                description: 'Marketing and advertising department',
+                color: '#9C27B0', // Purple
+            },
+            {
+                name: 'Operations',
+                description: 'Day-to-day operations and logistics',
+                color: '#3F51B5', // Indigo
+            },
+            {
+                name: 'Administration',
+                description: 'Administrative and support staff',
+                color: '#2196F3', // Blue
+            },
+            {
+                name: 'IT Support',
+                description: 'Technical support and infrastructure',
+                color: '#009688', // Teal
+            },
+            {
+                name: 'Safety Division',
+                description: 'Safety protocols and emergency response',
+                color: '#F44336', // Red
+            },
+            {
+                name: 'EMT',
+                description: 'Emergency Medical Technicians',
+                color: '#FF5722', // Deep Orange
+            },
+            {
+                name: 'San Diego',
+                description: 'San Diego regional team',
+                color: '#FFC107', // Amber
+            },
+        ];
+
+        const createdDepartments = [];
+        for (const department of departments) {
+            const createdDepartment = await prisma.department.create({
+                data: {
+                    id: uuidv4(),
+                    organizationId: testOrg.id,
+                    name: department.name,
+                    description: department.description,
+                    color: department.color,
+                },
+            });
+            createdDepartments.push(createdDepartment);
+            console.log(`Created department: ${createdDepartment.name} with color ${createdDepartment.color}`);
+        }
+
         // Assign locations to groups
         // Boston Area: Boston Downtown Office, Quincy Market Branch
         await prisma.location.update({
             where: { id: createdLocations[0].id }, // Boston Downtown Office
-            data: { groupId: createdLocationGroups[0].id },
+            data: { 
+                groupId: createdLocationGroups[0].id,
+                defaultDepartmentId: createdDepartments[0].id, // Sales
+            },
         });
         await prisma.location.update({
             where: { id: createdLocations[2].id }, // Quincy Market Branch
-            data: { groupId: createdLocationGroups[0].id },
+            data: { 
+                groupId: createdLocationGroups[0].id,
+                defaultDepartmentId: createdDepartments[1].id, // Marketing
+            },
         });
         console.log(`Assigned Boston Downtown Office and Quincy Market Branch to Boston Area group`);
 
         // Cambridge Area: Cambridge Innovation Center, Somerville Office
         await prisma.location.update({
             where: { id: createdLocations[1].id }, // Cambridge Innovation Center
-            data: { groupId: createdLocationGroups[1].id },
+            data: { 
+                groupId: createdLocationGroups[1].id,
+                defaultDepartmentId: createdDepartments[4].id, // IT Support
+            },
         });
         await prisma.location.update({
             where: { id: createdLocations[3].id }, // Somerville Office
-            data: { groupId: createdLocationGroups[1].id },
+            data: { 
+                groupId: createdLocationGroups[1].id,
+                defaultDepartmentId: createdDepartments[2].id, // Operations
+            },
         });
         console.log(`Assigned Cambridge Innovation Center and Somerville Office to Cambridge Area group`);
 
         // Suburban Offices: Brookline Store, Newton Center, Waltham Office Park
         await prisma.location.update({
             where: { id: createdLocations[4].id }, // Brookline Store
-            data: { groupId: createdLocationGroups[2].id },
+            data: { 
+                groupId: createdLocationGroups[2].id,
+                defaultDepartmentId: createdDepartments[3].id, // Administration
+            },
         });
         await prisma.location.update({
             where: { id: createdLocations[5].id }, // Newton Center
-            data: { groupId: createdLocationGroups[2].id },
+            data: { 
+                groupId: createdLocationGroups[2].id,
+                defaultDepartmentId: createdDepartments[5].id, // Safety Division
+            },
         });
         await prisma.location.update({
             where: { id: createdLocations[6].id }, // Waltham Office Park
-            data: { groupId: createdLocationGroups[2].id },
+            data: { 
+                groupId: createdLocationGroups[2].id,
+                defaultDepartmentId: createdDepartments[6].id, // EMT
+            },
         });
         console.log(`Assigned Brookline Store, Newton Center, and Waltham Office Park to Suburban Offices group`);
 
@@ -391,12 +471,30 @@ export async function seedDatabase() {
                 const endTime = new Date(startTime);
                 endTime.setHours(startTime.getHours() + durationHours);
 
+                // Determine if we should assign a department to this shift
+                let departmentId = null;
+                const assignDepartment = Math.random() > 0.3; // 70% chance of assigning a department
+
+                if (assignDepartment) {
+                    // 60% chance of using location's default department, 40% chance of using a random department
+                    const useDefaultDepartment = Math.random() > 0.4;
+
+                    if (useDefaultDepartment && location.defaultDepartmentId) {
+                        departmentId = location.defaultDepartmentId;
+                    } else {
+                        // Pick a random department
+                        const departmentIndex = Math.floor(Math.random() * createdDepartments.length);
+                        departmentId = createdDepartments[departmentIndex].id;
+                    }
+                }
+
                 const shift = await prisma.shift.create({
                     data: {
                         id: uuidv4(),
                         organizationId: testOrg.id,
                         title: `Shift at ${location.name}`,
                         locationId: location.id,
+                        departmentId: departmentId,
                         startTime: startTime,
                         endTime: endTime,
                         slots: Math.floor(Math.random() * 3) + 1, // 1-3 slots
