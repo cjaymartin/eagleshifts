@@ -60,6 +60,7 @@ export const shiftDraftRouter = router({
             },
             include: {
                 location: true,
+                department: true,
             },
             orderBy: {
                 updatedAt: 'desc',
@@ -85,6 +86,7 @@ export const shiftDraftRouter = router({
                 },
                 include: {
                     location: true,
+                    department: true,
                 },
             });
 
@@ -119,6 +121,7 @@ export const shiftDraftRouter = router({
                 title: z.string(),
                 locationId: z.string().optional(),
                 legacyLocation: z.string().optional(),
+                departmentId: z.string().optional(),
                 date: z.string(), // ISO8601 date string
                 startTime: z.string().nullable().optional(), // Optional time string
                 endTime: z.string().nullable().optional(), // Optional time string
@@ -138,6 +141,7 @@ export const shiftDraftRouter = router({
                     legacyLocation: input.locationId
                         ? undefined
                         : input.legacyLocation,
+                    departmentId: input.departmentId,
                     date: extractDateFromIso(input.date, input.timezone),
                     startTime: input.startTime 
                         ? convertToTimezone(input.startTime, input.timezone)
@@ -152,6 +156,7 @@ export const shiftDraftRouter = router({
                 },
                 include: {
                     location: true,
+                    department: true,
                 },
             });
 
@@ -172,6 +177,7 @@ export const shiftDraftRouter = router({
                 title: z.string(),
                 locationId: z.string().optional(),
                 legacyLocation: z.string().optional(),
+                departmentId: z.string().optional(),
                 date: z.string(), // ISO8601 date string
                 startTime: z.string().nullable().optional(), // Optional time string
                 endTime: z.string().nullable().optional(), // Optional time string
@@ -213,6 +219,7 @@ export const shiftDraftRouter = router({
                     legacyLocation: input.locationId
                         ? undefined
                         : input.legacyLocation,
+                    departmentId: input.departmentId,
                     date: extractDateFromIso(input.date, input.timezone),
                     startTime: input.startTime 
                         ? convertToTimezone(input.startTime, input.timezone)
@@ -227,6 +234,7 @@ export const shiftDraftRouter = router({
                 },
                 include: {
                     location: true,
+                    department: true,
                 },
             });
 

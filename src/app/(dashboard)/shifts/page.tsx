@@ -124,9 +124,9 @@ export default function Shifts() {
                             <TableRow>
                                 <TableCell>Title</TableCell>
                                 <TableCell>Location</TableCell>
-                                {!filters?.departmentIds?.length && (
-                                    <TableCell>Department</TableCell>
-                                )}
+                                {/*{!filters?.departmentIds?.length && (*/}
+                                {/*    <TableCell>Department</TableCell>*/}
+                                {/*)}*/}
                                 <TableCell>Date</TableCell>
                                 <TableCell>Time</TableCell>
                                 <TableCell>Slots</TableCell>
@@ -138,7 +138,12 @@ export default function Shifts() {
                             {draftShifts.map((draft) => {
                                 return (
                                     <TableRow key={`draft-${draft.id}`}>
-                                        <DraftRow draft={draft} isDepartmentFilterActive={!!filters?.departmentIds?.length} />
+                                        <DraftRow
+                                            draft={draft}
+                                            isDepartmentFilterActive={
+                                                !!filters?.departmentIds?.length
+                                            }
+                                        />
                                     </TableRow>
                                 );
                             })}
@@ -148,7 +153,13 @@ export default function Shifts() {
                                 ? shifts.map((shift) => {
                                       return (
                                           <TableRow key={shift.id}>
-                                              <ShiftRow shift={shift as any} isDepartmentFilterActive={!!filters?.departmentIds?.length} />
+                                              <ShiftRow
+                                                  shift={shift as any}
+                                                  isDepartmentFilterActive={
+                                                      !!filters?.departmentIds
+                                                          ?.length
+                                                  }
+                                              />
                                           </TableRow>
                                       );
                                   })

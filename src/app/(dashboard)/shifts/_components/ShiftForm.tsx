@@ -93,6 +93,7 @@ const shiftFormSchema = z
                 },
             })
             .min(1, 'Title is required'),
+        departmentId: z.string().optional(),
         locationId: z
             .string({
                 error: (issue) => {
@@ -371,13 +372,21 @@ export default function ShiftForm(props: ShiftFormProps) {
                 slots: Number(formData.slots),
                 timezone: timezone,
                 locationId: formData.locationId!,
-                departmentId: formData.departmentId || undefined,
+                departmentId: formData.departmentId,
                 legacyLocation: formData.locationId
                     ? undefined
                     : formData.legacyLocation,
                 notes: formData.notes,
                 adminNotes: formData.adminNotes,
-                assignments: formData.assignments || [],
+                assignments: (formData.assignments || []).map((assignment) => ({
+                    ...assignment,
+                    outcome:
+                        assignment.outcome === 'assigned' ||
+                        assignment.outcome === 'waiting' ||
+                        assignment.outcome === 'refused'
+                            ? assignment.outcome
+                            : 'waiting', // Default to 'waiting' if outcome is invalid
+                })),
             };
 
             // Create shift
@@ -476,6 +485,9 @@ export default function ShiftForm(props: ShiftFormProps) {
                 }
             );
 
+            console.log('SFHITUSBMIT');
+            console.log({ formData });
+
             const shiftData = {
                 id: shiftId,
                 title: formData.title,
@@ -484,13 +496,21 @@ export default function ShiftForm(props: ShiftFormProps) {
                 slots: Number(formData.slots),
                 timezone: timezone,
                 locationId: formData.locationId!,
-                departmentId: formData.departmentId || undefined,
+                departmentId: formData.departmentId,
                 legacyLocation: formData.locationId
                     ? undefined
                     : formData.legacyLocation,
                 notes: formData.notes,
                 adminNotes: formData.adminNotes,
-                assignments: formData.assignments || [],
+                assignments: (formData.assignments || []).map((assignment) => ({
+                    ...assignment,
+                    outcome:
+                        assignment.outcome === 'assigned' ||
+                        assignment.outcome === 'waiting' ||
+                        assignment.outcome === 'refused'
+                            ? assignment.outcome
+                            : 'waiting', // Default to 'waiting' if outcome is invalid
+                })),
             };
 
             await updateMutation.mutateAsync(shiftData);
@@ -577,7 +597,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                 slots: Number(formData.slots || 1),
                 timezone: timezone,
                 locationId: formData.locationId || undefined,
-                departmentId: formData.departmentId || undefined,
+                departmentId: formData.departmentId,
                 legacyLocation: formData.locationId
                     ? undefined
                     : formData.legacyLocation,
@@ -794,6 +814,8 @@ export default function ShiftForm(props: ShiftFormProps) {
                                         <DepartmentAutocomplete
                                             value={field.value as any}
                                             onChange={(departmentId) => {
+                                                console.log('PLUS CA CHANGE');
+                                                console.log({ departmentId });
                                                 field.onChange(departmentId);
                                             }}
                                             disabled={!isAdmin}

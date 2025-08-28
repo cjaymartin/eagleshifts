@@ -110,56 +110,56 @@ export function ShiftRow(props: ShiftRowProps) {
                 )}
             </TableCell>
 
-            {!props.isDepartmentFilterActive && (
-                <TableCell>
-                    {shift.department ? (
-                        <div
-                            style={{
-                                display: 'inline-block',
-                                backgroundColor: shift.department.color || '#f0f0f0',
-                                color: shift.department.color ? 
-                                    (shift.department.color.toLowerCase() === '#ffffff' ? '#000000' : 
-                                     shift.department.color.toLowerCase() === '#fff' ? '#000000' : 
-                                     shift.department.color.match(/^#[0-9a-f]{6}$/i) && 
-                                     (parseInt(shift.department.color.slice(1, 3), 16) * 0.299 + 
-                                      parseInt(shift.department.color.slice(3, 5), 16) * 0.587 + 
-                                      parseInt(shift.department.color.slice(5, 7), 16) * 0.114) > 186 ? 
-                                     '#000000' : '#ffffff') : 
-                                    '#000000',
-                                padding: '2px 8px',
-                                borderRadius: '4px',
-                                fontSize: '0.8125rem',
-                            }}
-                        >
-                            {shift.department.name}
-                        </div>
-                    ) : shift.location?.defaultDepartment ? (
-                        <div
-                            style={{
-                                display: 'inline-block',
-                                backgroundColor: shift.location.defaultDepartment.color || '#f0f0f0',
-                                color: shift.location.defaultDepartment.color ? 
-                                    (shift.location.defaultDepartment.color.toLowerCase() === '#ffffff' ? '#000000' : 
-                                     shift.location.defaultDepartment.color.toLowerCase() === '#fff' ? '#000000' : 
-                                     shift.location.defaultDepartment.color.match(/^#[0-9a-f]{6}$/i) && 
-                                     (parseInt(shift.location.defaultDepartment.color.slice(1, 3), 16) * 0.299 + 
-                                      parseInt(shift.location.defaultDepartment.color.slice(3, 5), 16) * 0.587 + 
-                                      parseInt(shift.location.defaultDepartment.color.slice(5, 7), 16) * 0.114) > 186 ? 
-                                     '#000000' : '#ffffff') : 
-                                    '#000000',
-                                padding: '2px 8px',
-                                borderRadius: '4px',
-                                fontSize: '0.8125rem',
-                                opacity: 0.7, // Slightly faded to indicate it's inherited from location
-                            }}
-                        >
-                            {shift.location.defaultDepartment.name}
-                        </div>
-                    ) : (
-                        '-'
-                    )}
-                </TableCell>
-            )}
+            {/*{!props.isDepartmentFilterActive && (*/}
+            {/*    <TableCell>*/}
+            {/*        {shift.department ? (*/}
+            {/*            <div*/}
+            {/*                style={{*/}
+            {/*                    display: 'inline-block',*/}
+            {/*                    backgroundColor: shift.department.color || '#f0f0f0',*/}
+            {/*                    color: shift.department.color ? */}
+            {/*                        (shift.department.color.toLowerCase() === '#ffffff' ? '#000000' : */}
+            {/*                         shift.department.color.toLowerCase() === '#fff' ? '#000000' : */}
+            {/*                         shift.department.color.match(/^#[0-9a-f]{6}$/i) && */}
+            {/*                         (parseInt(shift.department.color.slice(1, 3), 16) * 0.299 + */}
+            {/*                          parseInt(shift.department.color.slice(3, 5), 16) * 0.587 + */}
+            {/*                          parseInt(shift.department.color.slice(5, 7), 16) * 0.114) > 186 ? */}
+            {/*                         '#000000' : '#ffffff') : */}
+            {/*                        '#000000',*/}
+            {/*                    padding: '2px 8px',*/}
+            {/*                    borderRadius: '4px',*/}
+            {/*                    fontSize: '0.8125rem',*/}
+            {/*                }}*/}
+            {/*            >*/}
+            {/*                {shift.department.name}*/}
+            {/*            </div>*/}
+            {/*        ) : shift.location?.defaultDepartment ? (*/}
+            {/*            <div*/}
+            {/*                style={{*/}
+            {/*                    display: 'inline-block',*/}
+            {/*                    backgroundColor: shift.location.defaultDepartment.color || '#f0f0f0',*/}
+            {/*                    color: shift.location.defaultDepartment.color ? */}
+            {/*                        (shift.location.defaultDepartment.color.toLowerCase() === '#ffffff' ? '#000000' : */}
+            {/*                         shift.location.defaultDepartment.color.toLowerCase() === '#fff' ? '#000000' : */}
+            {/*                         shift.location.defaultDepartment.color.match(/^#[0-9a-f]{6}$/i) && */}
+            {/*                         (parseInt(shift.location.defaultDepartment.color.slice(1, 3), 16) * 0.299 + */}
+            {/*                          parseInt(shift.location.defaultDepartment.color.slice(3, 5), 16) * 0.587 + */}
+            {/*                          parseInt(shift.location.defaultDepartment.color.slice(5, 7), 16) * 0.114) > 186 ? */}
+            {/*                         '#000000' : '#ffffff') : */}
+            {/*                        '#000000',*/}
+            {/*                    padding: '2px 8px',*/}
+            {/*                    borderRadius: '4px',*/}
+            {/*                    fontSize: '0.8125rem',*/}
+            {/*                    opacity: 0.7, // Slightly faded to indicate it's inherited from location*/}
+            {/*                }}*/}
+            {/*            >*/}
+            {/*                {shift.location.defaultDepartment.name}*/}
+            {/*            </div>*/}
+            {/*        ) : (*/}
+            {/*            '-'*/}
+            {/*        )}*/}
+            {/*    </TableCell>*/}
+            {/*)}*/}
 
             <TableCell>
                 {shift.startTime &&

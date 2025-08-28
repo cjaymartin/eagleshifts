@@ -222,29 +222,29 @@ export const shiftsRouter = router({
                 const hasDepartmentIds =
                     input.departmentIds && input.departmentIds.length > 0;
 
-                // Build OR conditions for location and department filters
-                const orConditions = [];
-
+                // Apply location filters using AND logic
                 if (hasLocationIds) {
-                    orConditions.push({
-                        locationId: {
-                            in: input.locationIds,
-                        },
-                    });
+                    // If we have location IDs, filter by those directly
+                    where.locationId = {
+                        in: input.locationIds,
+                    };
                 }
 
                 if (hasLocationGroupIds) {
-                    orConditions.push({
-                        location: {
-                            groupId: {
-                                in: input.locationGroupIds,
-                            },
+                    // If we have location group IDs, filter by those
+                    where.location = {
+                        ...where.location,
+                        groupId: {
+                            in: input.locationGroupIds,
                         },
-                    });
+                    };
                 }
 
                 if (hasDepartmentIds) {
-                    orConditions.push({
+                    // For department filtering, we need to handle both direct department assignment
+                    // and default department from location
+                    // The department condition should be an OR between direct department and location's default department
+                    const departmentCondition = {
                         OR: [
                             {
                                 departmentId: {
@@ -260,15 +260,16 @@ export const shiftsRouter = router({
                                 },
                             },
                         ],
-                    });
-                }
+                    };
 
-                // Apply the OR conditions if any exist
-                if (orConditions.length > 0) {
-                    where.OR = [
-                        ...(where.OR || []),
-                        ...orConditions,
-                    ];
+                    // If we already have location filters, we need to AND them with the department condition
+                    if (hasLocationIds || hasLocationGroupIds) {
+                        // Merge the department condition with existing conditions
+                        Object.assign(where, departmentCondition);
+                    } else {
+                        // If no location filters, just use the department condition directly
+                        where.OR = departmentCondition.OR;
+                    }
                 }
 
                 if (input.startDate || input.endDate) {
@@ -359,6 +360,8 @@ export const shiftsRouter = router({
             if (!isAdmin) {
                 where.isCancelled = false;
             }
+
+            console.dir({ where }, { depth: 9 });
 
             // Get filtered shifts
             const shifts = await ctx.prisma.shift.findMany({
@@ -632,12 +635,13 @@ export const shiftsRouter = router({
                     console.error('Error checking problematic user:', error);
                 }
             }
-            // If locationId is provided and departmentId is not, check if the location has a default department
+            // If locationId is provided and departmentId is explicitly set to null or undefined,
+            // check if the location has a default department
             let departmentId = input.departmentId;
-            if (input.locationId && !departmentId) {
+            if (input.locationId && departmentId === undefined) {
                 const location = await ctx.prisma.location.findUnique({
                     where: { id: input.locationId },
-                    select: { defaultDepartmentId: true }
+                    select: { defaultDepartmentId: true },
                 });
                 if (location?.defaultDepartmentId) {
                     departmentId = location.defaultDepartmentId;
@@ -939,12 +943,13 @@ export const shiftsRouter = router({
                     });
                 }
 
-                // If locationId is provided and departmentId is not, check if the location has a default department
+                // If locationId is provided and departmentId is explicitly set to null or undefined,
+                // check if the location has a default department
                 let departmentId = data.departmentId;
-                if (data.locationId && !departmentId) {
+                if (data.locationId && departmentId === undefined) {
                     const location = await ctx.prisma.location.findUnique({
                         where: { id: data.locationId },
-                        select: { defaultDepartmentId: true }
+                        select: { defaultDepartmentId: true },
                     });
                     if (location?.defaultDepartmentId) {
                         departmentId = location.defaultDepartmentId;
@@ -1297,7 +1302,7 @@ export const shiftsRouter = router({
                     location: {
                         include: {
                             defaultDepartment: true,
-                        }
+                        },
                     },
                 },
             });
