@@ -44,11 +44,11 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
 
             // Convert back to display times
             const displayStart = utcToTimezone(
-                startTimeISO,
+                new Date(startTimeISO),
                 nyOptions.organizationTimezone
             );
             const displayEnd = utcToTimezone(
-                endTimeISO,
+                new Date(endTimeISO),
                 nyOptions.organizationTimezone
             );
 
@@ -323,10 +323,12 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
                         currentUTC,
                         nyOptions.organizationTimezone
                     );
-                    currentUTC = combineDateTime(
-                        loaded,
-                        dayjs(loaded).format('HH:mm:ss'),
-                        nyOptions
+                    currentUTC = new Date(
+                        combineDateTime(
+                            loaded,
+                            dayjs(loaded).format('HH:mm:ss'),
+                            nyOptions
+                        )
                     );
                 }
 
