@@ -567,7 +567,7 @@ export const shiftsRouter = router({
                 title: z.string(),
                 locationId: z.string().optional(),
                 legacyLocation: z.string().optional(),
-                departmentId: z.string().optional(),
+                departmentId: z.string().nullable().optional(),
                 startTime: z.string(), // ISO8601 date string
                 endTime: z.string(), // ISO8601 date string
                 slots: z.number(),
@@ -897,7 +897,7 @@ export const shiftsRouter = router({
                 title: z.string(),
                 locationId: z.string().optional(),
                 legacyLocation: z.string().optional(),
-                departmentId: z.string().optional(),
+                departmentId: z.string().nullable().optional(),
                 startTime: z.string(), // ISO8601 date string
                 endTime: z.string(), // ISO8601 date string
                 slots: z.number(),

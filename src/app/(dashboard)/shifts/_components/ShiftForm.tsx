@@ -93,7 +93,7 @@ const shiftFormSchema = z
                 },
             })
             .min(1, 'Title is required'),
-        departmentId: z.string().optional(),
+        departmentId: z.string().nullable().optional(),
         locationId: z
             .string({
                 error: (issue) => {
@@ -877,7 +877,9 @@ export default function ShiftForm(props: ShiftFormProps) {
                                         }
                                         onChange={(date) =>
                                             field.onChange(
-                                                date ? date.toDate() : null
+                                                date
+                                                    ? (date as any).toDate()
+                                                    : null
                                             )
                                         }
                                         slotProps={{
