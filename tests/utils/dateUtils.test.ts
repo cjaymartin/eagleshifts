@@ -6,8 +6,8 @@ import {
     orgTimezoneToUtc,
     combineDateTime,
     isValidTimezone,
-    DateTimeConversionOptions,
-} from '@/utils/dateUtils';
+    SlopDateTimeConversionOptions,
+} from '@/utils/slopDateUtils';
 
 // Extend dayjs with plugins
 dayjs.extend(utc);
@@ -30,7 +30,7 @@ describe('dateUtils', () => {
     });
 
     describe('utcToOrgTimezone', () => {
-        const options: DateTimeConversionOptions = {
+        const options: SlopDateTimeConversionOptions = {
             organizationTimezone: 'America/New_York',
             fallbackTimezone: 'America/New_York',
         };
@@ -70,7 +70,7 @@ describe('dateUtils', () => {
     });
 
     describe('orgTimezoneToUtc', () => {
-        const options: DateTimeConversionOptions = {
+        const options: SlopDateTimeConversionOptions = {
             organizationTimezone: 'America/New_York',
             fallbackTimezone: 'America/New_York',
         };
@@ -102,7 +102,7 @@ describe('dateUtils', () => {
     });
 
     describe('combineDateTime', () => {
-        const options: DateTimeConversionOptions = {
+        const options: SlopDateTimeConversionOptions = {
             organizationTimezone: 'America/New_York',
             fallbackTimezone: 'America/New_York',
         };
@@ -207,7 +207,7 @@ describe('dateUtils', () => {
     });
 
     describe('Load-Save Idempotency', () => {
-        const options: DateTimeConversionOptions = {
+        const options: SlopDateTimeConversionOptions = {
             organizationTimezone: 'America/New_York',
             fallbackTimezone: 'America/New_York',
         };
@@ -249,7 +249,7 @@ describe('dateUtils', () => {
     });
 
     describe('Edge Cases', () => {
-        const options: DateTimeConversionOptions = {
+        const options: SlopDateTimeConversionOptions = {
             organizationTimezone: 'America/New_York',
             fallbackTimezone: 'America/New_York',
         };
@@ -348,7 +348,7 @@ describe('dateUtils', () => {
 
     describe('Error Handling', () => {
         it('should throw error for invalid dates', () => {
-            const options: DateTimeConversionOptions = {
+            const options: SlopDateTimeConversionOptions = {
                 organizationTimezone: 'America/New_York',
                 fallbackTimezone: 'UTC',
             };
@@ -364,7 +364,7 @@ describe('dateUtils', () => {
             const testDate = new Date('2024-01-15');
             const testTime = new Date('2024-01-15T12:00:00');
 
-            const options: DateTimeConversionOptions = {
+            const options: SlopDateTimeConversionOptions = {
                 organizationTimezone: 'Invalid/Timezone',
                 fallbackTimezone: 'UTC',
             };
