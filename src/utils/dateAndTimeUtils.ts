@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { SlopDateTimeConversionOptions } from '@/utils/slopDateUtils';
 
 // Hours from "00" to "23"
 type HourIso =
@@ -99,4 +100,12 @@ export function utcToTimezone(utcDate: Date, timezone: string): Date {
     })
         .setZone(timezone)
         .toJSDate();
+}
+
+export function combineDateTime(
+    date: Date,
+    timeStr: TimeIso,
+    timezone: string
+): DateTime {
+    //const tzDate =
 }
