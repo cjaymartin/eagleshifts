@@ -94,7 +94,17 @@ type MinuteIso =
 // Final TimeIso type: HH:mm where HH is 00-23 and mm is 00-59
 export type TimeIso = `${HourIso}:${MinuteIso}`;
 
-export function utcToTimezone(utcDate: Date, timezone: string): Date {
+export function utcToTimezone(utcDate: Date | string, timezone: string): Date {
+    // Handle string input (ISO format)
+    if (typeof utcDate === 'string') {
+        return DateTime.fromISO(utcDate, {
+            zone: 'UTC',
+        })
+            .setZone(timezone)
+            .toJSDate();
+    }
+
+    // Handle Date object
     return DateTime.fromJSDate(utcDate, {
         zone: 'UTC',
     })
@@ -102,10 +112,10 @@ export function utcToTimezone(utcDate: Date, timezone: string): Date {
         .toJSDate();
 }
 
-export function combineDateTime(
-    date: Date,
-    timeStr: TimeIso,
-    timezone: string
-): DateTime {
-    //const tzDate =
-}
+// export function combineDateTime(
+//     date: Date,
+//     timeStr: TimeIso,
+//     timezone: string
+// ): DateTime {
+//     //const tzDate =
+// }

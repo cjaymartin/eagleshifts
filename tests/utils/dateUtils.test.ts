@@ -1,8 +1,8 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { utcToTimezone } from '@/utils/dateAndTimeUtils';
 import {
-    utcToOrgTimezone,
     orgTimezoneToUtc,
     combineDateTime,
     isValidTimezone,
@@ -29,7 +29,7 @@ describe('dateUtils', () => {
         });
     });
 
-    describe('utcToOrgTimezone', () => {
+    describe('utcToTimezone', () => {
         const options: SlopDateTimeConversionOptions = {
             organizationTimezone: 'America/New_York',
             fallbackTimezone: 'America/New_York',
@@ -38,7 +38,7 @@ describe('dateUtils', () => {
         it('should convert UTC to organization timezone correctly', () => {
             // 2 PM UTC in January (EST) should be 9 AM in New York
             const utcDate = new Date('2024-01-15T14:00:00.000Z');
-            const nyTime = utcToOrgTimezone(utcDate, options);
+            const nyTime = utcToTimezone(utcDate, options.organizationTimezone);
 
             expect(nyTime.getHours()).toBe(9); // 9 AM EST
         });
@@ -46,24 +46,25 @@ describe('dateUtils', () => {
         it('should handle daylight saving time correctly', () => {
             // 2 PM UTC in June (EDT) should be 10 AM in New York
             const utcDate = new Date('2024-06-15T14:00:00.000Z');
-            const nyTime = utcToOrgTimezone(utcDate, options);
+            const nyTime = utcToTimezone(utcDate, options.organizationTimezone);
 
             expect(nyTime.getHours()).toBe(10); // 10 AM EDT
         });
 
         it('should use fallback timezone when organization timezone is not provided', () => {
             const utcDate = new Date('2024-01-15T14:00:00.000Z');
-            const result = utcToOrgTimezone(utcDate, {
+            const fallbackOptions = {
                 organizationTimezone: '',
                 fallbackTimezone: 'America/New_York',
-            });
+            };
+            const result = utcToTimezone(utcDate, fallbackOptions.fallbackTimezone);
 
             expect(result.getHours()).toBe(9); // Should use fallback
         });
 
         it('should handle string input dates', () => {
             const utcDateString = '2024-01-15T14:00:00.000Z';
-            const nyTime = utcToOrgTimezone(utcDateString, options);
+            const nyTime = utcToTimezone(utcDateString, options.organizationTimezone);
 
             expect(nyTime.getHours()).toBe(9);
         });
@@ -216,7 +217,7 @@ describe('dateUtils', () => {
             const originalUTC = '2024-01-15T14:00:00.000Z';
 
             // Simulate loading from database (UTC) and converting to org timezone
-            const loadedTime = utcToOrgTimezone(originalUTC, options);
+            const loadedTime = utcToTimezone(originalUTC, options.organizationTimezone);
 
             // Simulate saving back to database (convert back to UTC)
             const savedUTC = combineDateTime(
@@ -236,7 +237,7 @@ describe('dateUtils', () => {
 
             // Perform multiple round-trips
             for (let i = 0; i < 5; i++) {
-                const loadedTime = utcToOrgTimezone(currentUTC, options);
+                const loadedTime = utcToTimezone(currentUTC, options.organizationTimezone);
                 currentUTC = combineDateTime(
                     loadedTime,
                     dayjs(loadedTime).format('HH:mm'),
