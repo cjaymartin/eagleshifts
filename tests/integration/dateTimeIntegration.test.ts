@@ -134,12 +134,10 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
 
             // Perform 10 conversion cycles
             for (let i = 0; i < 10; i++) {
-                console.log({ currentUTC });
                 const loaded = utcToTimezone(
                     currentUTC,
                     nyOptions.organizationTimezone
                 );
-                console.log({ loaded });
 
                 currentUTC = new Date(
                     combineDateTime(
@@ -346,50 +344,22 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
                 originalUTC,
                 nyOptions.organizationTimezone
             );
-            console.log('NY loaded:', nyLoaded);
-            console.log(
-                'NY loaded has _originalUTC:',
-                !!(nyLoaded as any)._originalUTC
-            );
-            console.log(
-                'NY loaded _originalUTC:',
-                (nyLoaded as any)._originalUTC
-            );
-            console.log(
-                'NY formatted time:',
-                dayjs(nyLoaded).format('HH:mm:ss')
-            );
             const nySaved = combineDateTime(
                 nyLoaded,
                 dayjs(nyLoaded).format('HH:mm:ss'),
                 nyOptions
             );
-            console.log('NY saved:', nySaved);
 
             // Test LA timezone round-trip
             const laLoaded = utcToTimezone(
                 originalUTC,
                 laOptions.organizationTimezone
             );
-            console.log('LA loaded:', laLoaded);
-            console.log(
-                'LA loaded has _originalUTC:',
-                !!(laLoaded as any)._originalUTC
-            );
-            console.log(
-                'LA loaded _originalUTC:',
-                (laLoaded as any)._originalUTC
-            );
-            console.log(
-                'LA formatted time:',
-                dayjs(laLoaded).format('HH:mm:ss')
-            );
             const laSaved = combineDateTime(
                 laLoaded,
                 dayjs(laLoaded).format('HH:mm:ss'),
                 laOptions
             );
-            console.log('LA saved:', laSaved);
 
             // Both should preserve original UTC time
             expect(new Date(nySaved).getTime()).toBe(originalUTC.getTime());
