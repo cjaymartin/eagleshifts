@@ -6,7 +6,7 @@ import { z } from 'zod';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-export interface DateTimeConversionOptions {
+export interface SlopDateTimeConversionOptions {
     organizationTimezone: string;
     fallbackTimezone?: string;
 }
@@ -16,7 +16,7 @@ export interface DateTimeConversionOptions {
  */
 export function utcToOrgTimezone(
     utcDate: Date | string,
-    options: DateTimeConversionOptions
+    options: SlopDateTimeConversionOptions
 ): Date {
     const tz =
         options.organizationTimezone || options.fallbackTimezone || 'UTC';
@@ -32,7 +32,7 @@ export function utcToOrgTimezone(
  */
 export function orgTimezoneToUtc(
     localDate: Date | string,
-    options: DateTimeConversionOptions
+    options: SlopDateTimeConversionOptions
 ): string {
     const tz =
         options.organizationTimezone || options.fallbackTimezone || 'UTC';
@@ -52,7 +52,7 @@ export function orgTimezoneToUtc(
 export function combineDateTime(
     date: Date,
     timeStr: string,
-    options: DateTimeConversionOptions
+    options: SlopDateTimeConversionOptions
 ): string {
     const tz =
         options.organizationTimezone || options.fallbackTimezone || 'UTC';
@@ -81,6 +81,9 @@ export function combineDateTime(
         militaryTime = dayjs(timeStr).format('HH:mm');
     } else {
         // Check if the time string is in the expected format
+
+        console.log({ timeStr });
+
         const timeRegex = /^(\d{2}):(\d{2})(?::(\d{2}))?$/;
         const match = timeStr.match(timeRegex);
 

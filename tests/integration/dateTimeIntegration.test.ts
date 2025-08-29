@@ -1,25 +1,25 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import { utcToTimezone } from '@/utils/dateAndTimeUtils';
 import {
-    utcToOrgTimezone,
     orgTimezoneToUtc,
     combineDateTime,
     isValidTimezone,
-    DateTimeConversionOptions,
-} from '@/utils/dateUtils';
+    SlopDateTimeConversionOptions,
+} from '@/utils/slopDateUtils';
 
 // Extend dayjs with plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 describe('Date/Time Integration Tests - PRD Edge Cases', () => {
-    const nyOptions: DateTimeConversionOptions = {
+    const nyOptions: SlopDateTimeConversionOptions = {
         organizationTimezone: 'America/New_York',
         fallbackTimezone: 'America/New_York',
     };
 
-    const laOptions: DateTimeConversionOptions = {
+    const laOptions: SlopDateTimeConversionOptions = {
         organizationTimezone: 'America/Los_Angeles',
         fallbackTimezone: 'America/New_York',
     };
@@ -43,8 +43,14 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
             );
 
             // Convert back to display times
-            const displayStart = utcToOrgTimezone(startTimeISO, nyOptions);
-            const displayEnd = utcToOrgTimezone(endTimeISO, nyOptions);
+            const displayStart = utcToTimezone(
+                startTimeISO,
+                nyOptions.organizationTimezone
+            );
+            const displayEnd = utcToTimezone(
+                endTimeISO,
+                nyOptions.organizationTimezone
+            );
 
             // Both should be on the same calendar day
             expect(displayStart.getDate()).toBe(displayEnd.getDate());
@@ -86,12 +92,18 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
     describe('Day Crossing Scenarios (PRD Requirement)', () => {
         it('should handle database → form → database conversion without day crossing issues', () => {
             // Test a shift that could potentially cross days during conversion
-            const originalStartUTC = '2024-01-15T05:00:00.000Z'; // Midnight EST
-            const originalEndUTC = '2024-01-15T13:00:00.000Z'; // 8 AM EST
+            const originalStartUTC = new Date('2024-01-15T05:00:00.000Z'); // Midnight EST
+            const originalEndUTC = new Date('2024-01-15T13:00:00.000Z'); // 8 AM EST
 
             // Simulate loading from database
-            const loadedStart = utcToOrgTimezone(originalStartUTC, nyOptions);
-            const loadedEnd = utcToOrgTimezone(originalEndUTC, nyOptions);
+            const loadedStart = utcToTimezone(
+                originalStartUTC,
+                nyOptions.organizationTimezone
+            );
+            const loadedEnd = utcToTimezone(
+                originalEndUTC,
+                nyOptions.organizationTimezone
+            );
 
             // Simulate form processing (combining date and time)
             const formDate = loadedStart; // Use start date as form date
@@ -107,27 +119,39 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
             );
 
             // Should preserve original UTC times
-            expect(savedStartUTC).toBe(originalStartUTC);
-            expect(savedEndUTC).toBe(originalEndUTC);
+            expect(new Date(savedStartUTC).getTime()).toBe(
+                originalStartUTC.getTime()
+            );
+            expect(new Date(savedEndUTC).getTime()).toBe(
+                originalEndUTC.getTime()
+            );
         });
 
         it('should prevent time drift in multiple conversion cycles', () => {
-            const originalUTC = '2024-01-15T23:30:00.000Z'; // Late evening UTC
+            const originalUTC = new Date('2024-01-15T23:30:00.000Z'); // Late evening UTC
 
             let currentUTC = originalUTC;
 
             // Perform 10 conversion cycles
             for (let i = 0; i < 10; i++) {
-                const loaded = utcToOrgTimezone(currentUTC, nyOptions);
-                currentUTC = combineDateTime(
-                    loaded,
-                    dayjs(loaded).format('HH:mm'),
-                    nyOptions
+                console.log({ currentUTC });
+                const loaded = utcToTimezone(
+                    currentUTC,
+                    nyOptions.organizationTimezone
+                );
+                console.log({ loaded });
+
+                currentUTC = new Date(
+                    combineDateTime(
+                        loaded,
+                        dayjs(loaded).format('HH:mm'),
+                        nyOptions
+                    )
                 );
             }
 
             // Should not drift from original time
-            expect(currentUTC).toBe(originalUTC);
+            expect(new Date(currentUTC).getTime()).toBe(originalUTC.getTime());
         });
     });
 
@@ -261,10 +285,13 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
 
         it('should maintain consistency across DST boundaries in load-save cycles', () => {
             // Test during DST transition
-            const dstTransitionUTC = '2024-03-10T07:00:00.000Z'; // During spring forward
+            const dstTransitionUTC = new Date('2024-03-10T07:00:00.000Z'); // During spring forward
 
             // Perform load-save cycle
-            const loaded = utcToOrgTimezone(dstTransitionUTC, nyOptions);
+            const loaded = utcToTimezone(
+                dstTransitionUTC,
+                nyOptions.organizationTimezone
+            );
             const saved = combineDateTime(
                 loaded,
                 dayjs(loaded).format('HH:mm'),
@@ -272,19 +299,19 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
             );
 
             // Should preserve original time
-            expect(saved).toBe(dstTransitionUTC);
+            expect(new Date(saved).getTime()).toBe(dstTransitionUTC.getTime());
         });
     });
 
     describe.skip('Form Round-Trip Tests (PRD Requirement)', () => {
         it('should prevent time drift in extensive database → form → database conversions', () => {
             const testCases = [
-                '2024-01-15T14:00:00.000Z', // Standard time
-                '2024-06-15T14:00:00.000Z', // Daylight time
-                '2024-03-10T07:00:00.000Z', // DST transition day
-                '2024-11-03T06:00:00.000Z', // DST fall back day
-                '2024-01-01T05:00:00.000Z', // New Year midnight EST
-                '2024-12-31T23:59:59.000Z', // End of year
+                new Date('2024-01-15T14:00:00.000Z'), // Standard time
+                new Date('2024-06-15T14:00:00.000Z'), // Daylight time
+                new Date('2024-03-10T07:00:00.000Z'), // DST transition day
+                new Date('2024-11-03T06:00:00.000Z'), // DST fall back day
+                new Date('2024-01-01T05:00:00.000Z'), // New Year midnight EST
+                new Date('2024-12-31T23:59:59.000Z'), // End of year
             ];
 
             testCases.forEach((originalUTC) => {
@@ -292,7 +319,10 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
                 let currentUTC = originalUTC;
 
                 for (let i = 0; i < 5; i++) {
-                    const loaded = utcToOrgTimezone(currentUTC, nyOptions);
+                    const loaded = utcToTimezone(
+                        currentUTC,
+                        nyOptions.organizationTimezone
+                    );
                     currentUTC = combineDateTime(
                         loaded,
                         dayjs(loaded).format('HH:mm:ss'),
@@ -300,15 +330,20 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
                     );
                 }
 
-                expect(currentUTC).toBe(originalUTC);
+                expect(new Date(currentUTC).getTime()).toBe(
+                    originalUTC.getTime()
+                );
             });
         });
 
         it('should handle form round-trips with different timezones', () => {
-            const originalUTC = '2024-01-15T17:00:00.000Z'; // 12 PM EST, 9 AM PST
+            const originalUTC = new Date('2024-01-15T17:00:00.000Z'); // 12 PM EST, 9 AM PST
 
             // Test NY timezone round-trip
-            const nyLoaded = utcToOrgTimezone(originalUTC, nyOptions);
+            const nyLoaded = utcToTimezone(
+                originalUTC,
+                nyOptions.organizationTimezone
+            );
             console.log('NY loaded:', nyLoaded);
             console.log(
                 'NY loaded has _originalUTC:',
@@ -330,7 +365,10 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
             console.log('NY saved:', nySaved);
 
             // Test LA timezone round-trip
-            const laLoaded = utcToOrgTimezone(originalUTC, laOptions);
+            const laLoaded = utcToTimezone(
+                originalUTC,
+                laOptions.organizationTimezone
+            );
             console.log('LA loaded:', laLoaded);
             console.log(
                 'LA loaded has _originalUTC:',
@@ -352,8 +390,8 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
             console.log('LA saved:', laSaved);
 
             // Both should preserve original UTC time
-            expect(nySaved).toBe(originalUTC);
-            expect(laSaved).toBe(originalUTC);
+            expect(new Date(nySaved).getTime()).toBe(originalUTC.getTime());
+            expect(new Date(laSaved).getTime()).toBe(originalUTC.getTime());
         });
     });
 
@@ -443,7 +481,7 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
             const testDate = new Date('2024-01-15');
             const testTime = new Date('2024-01-15T12:00:00');
 
-            const invalidOptions: DateTimeConversionOptions = {
+            const invalidOptions: SlopDateTimeConversionOptions = {
                 organizationTimezone: 'Invalid/Timezone',
                 fallbackTimezone: 'America/New_York',
             };
