@@ -121,7 +121,7 @@ export const shiftDraftRouter = router({
                 title: z.string(),
                 locationId: z.string().optional(),
                 legacyLocation: z.string().optional(),
-                departmentId: z.string().optional(),
+                departmentId: z.string().nullable().optional(),
                 date: z.string(), // ISO8601 date string
                 startTime: z.string().nullable().optional(), // Optional time string
                 endTime: z.string().nullable().optional(), // Optional time string
@@ -177,7 +177,7 @@ export const shiftDraftRouter = router({
                 title: z.string(),
                 locationId: z.string().optional(),
                 legacyLocation: z.string().optional(),
-                departmentId: z.string().optional(),
+                departmentId: z.string().nullable().optional(),
                 date: z.string(), // ISO8601 date string
                 startTime: z.string().nullable().optional(), // Optional time string
                 endTime: z.string().nullable().optional(), // Optional time string
