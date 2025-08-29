@@ -236,7 +236,7 @@ export const shiftsRouter = router({
                         ...where.location,
                         groupId: {
                             in: input.locationGroupIds,
-                        },
+                        } as any,
                     };
                 }
 

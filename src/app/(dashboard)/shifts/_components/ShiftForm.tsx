@@ -390,7 +390,7 @@ export default function ShiftForm(props: ShiftFormProps) {
             };
 
             // Create shift
-            await createMutation.mutateAsync(shiftData);
+            await createMutation.mutateAsync(shiftData as any);
             notifications.show('Shift created successfully', {
                 severity: 'success',
                 autoHideDuration: 3000,
@@ -513,7 +513,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                 })),
             };
 
-            await updateMutation.mutateAsync(shiftData);
+            await updateMutation.mutateAsync(shiftData as any);
             notifications.show('Shift updated successfully', {
                 severity: 'success',
                 autoHideDuration: 3000,
@@ -611,14 +611,14 @@ export default function ShiftForm(props: ShiftFormProps) {
                 await updateDraftMutation.mutateAsync({
                     id: shift.draftId,
                     ...draftData,
-                });
+                } as any);
                 notifications.show('Draft updated successfully', {
                     severity: 'success',
                     autoHideDuration: 3000,
                 });
             } else {
                 // Create new draft
-                await createDraftMutation.mutateAsync(draftData);
+                await createDraftMutation.mutateAsync(draftData as any);
                 notifications.show('Draft saved successfully', {
                     severity: 'success',
                     autoHideDuration: 3000,
