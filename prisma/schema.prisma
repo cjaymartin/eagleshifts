@@ -205,8 +205,8 @@ model Shift {
   legacyLocation String?
   locationId     String?
   departmentId   String?
-  startTime      DateTime
-  endTime        DateTime
+  startTime      DateTime @db.Timestamptz()
+  endTime        DateTime @db.Timestamptz()
   slots          Int
   notes          String?
   adminNotes     String?
@@ -231,8 +231,8 @@ model Shift {
 
 model Availability {
   id        String   @id @default(cuid())
-  startDate DateTime
-  endDate   DateTime
+  startDate DateTime @db.Timestamptz()
+  endDate   DateTime @db.Timestamptz()
   startTime Int?
   endTime   Int?
 
@@ -290,8 +290,8 @@ model ShiftDraft {
   locationId     String?
   departmentId   String?
   date           DateTime
-  startTime      DateTime?
-  endTime        DateTime?
+  startTime      DateTime? @db.Timestamptz()
+  endTime        DateTime? @db.Timestamptz()
   slots          Int
   notes          String?
   adminNotes     String?
@@ -396,10 +396,10 @@ model Department {
   updatedAt      DateTime @updatedAt
 
   // Relationships
-  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  locations         Location[]
-  shifts            Shift[]
-  shiftDrafts       ShiftDraft[]
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locations    Location[]
+  shifts       Shift[]
+  shiftDrafts  ShiftDraft[]
 
   @@unique([organizationId, name])
   @@map("department")
@@ -419,11 +419,11 @@ model Location {
   updatedAt           DateTime @updatedAt
 
   // Relationships
-  organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  group            LocationGroup? @relation(fields: [groupId], references: [id])
-  defaultDepartment Department?   @relation(fields: [defaultDepartmentId], references: [id])
-  shifts           Shift[]
-  ShiftDraft       ShiftDraft[]
+  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  group             LocationGroup? @relation(fields: [groupId], references: [id])
+  defaultDepartment Department?    @relation(fields: [defaultDepartmentId], references: [id])
+  shifts            Shift[]
+  ShiftDraft        ShiftDraft[]
 
   @@unique([organizationId, name])
   @@map("location")

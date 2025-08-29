@@ -18,7 +18,7 @@ import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import { combineDateTime } from '@/utils/dateUtils';
+import { combineDateTime } from '@/utils/slopDateUtils';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { useDialogs } from '@toolpad/core';

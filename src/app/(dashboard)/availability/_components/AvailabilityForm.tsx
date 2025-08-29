@@ -15,7 +15,7 @@ import { TimePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import utc from 'dayjs/plugin/utc';
-import { combineDateTime } from '@/utils/dateUtils';
+import { combineDateTime } from '@/utils/slopDateUtils';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
