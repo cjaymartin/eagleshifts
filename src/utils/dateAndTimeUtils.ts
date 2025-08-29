@@ -92,7 +92,28 @@ type MinuteIso =
     | '59';
 
 // Final TimeIso type: HH:mm where HH is 00-23 and mm is 00-59
+export type UnkDate = Date;
+export type UtcDate = Date & { utcDateBrand: void };
 export type TimeIso = `${HourIso}:${MinuteIso}`;
+
+export function castUtcDate(date: Date): UtcDate {
+    const incomingDateTime = DateTime.fromJSDate(date);
+    if (incomingDateTime.isValid) {
+        // If the date contains timezone info, convert and enforce UTC
+        if (
+            incomingDateTime.zone.type === 'fixed' ||
+            incomingDateTime.offset !== 0
+        ) {
+            return DateTime.fromJSDate(date).toUTC().toJSDate() as UtcDate;
+        }
+
+        // If no timezone info is present, assume it's already UTC
+        return date as UtcDate;
+    } else {
+        throw new Error('Invalid Date provided to castUtcDate');
+    }
+}
+
 
 export function utcToTimezone(utcDate: Date | string, timezone: string): Date {
     // Handle string input (ISO format)
