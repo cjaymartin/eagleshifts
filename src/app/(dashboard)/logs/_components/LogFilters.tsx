@@ -177,7 +177,7 @@ export function LogFilters({
                                     : null
                             }
                             onChange={(date) =>
-                                handleDateChange('startDate', date)
+                                handleDateChange('startDate', date as any)
                             }
                             slotProps={{
                                 textField: { size: 'small', fullWidth: true },
@@ -194,7 +194,7 @@ export function LogFilters({
                                 filters.endDate ? dayjs(filters.endDate) : null
                             }
                             onChange={(date) =>
-                                handleDateChange('endDate', date)
+                                handleDateChange('endDate', date as any)
                             }
                             slotProps={{
                                 textField: { size: 'small', fullWidth: true },
