@@ -12,16 +12,15 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { TimePicker } from '@mui/x-date-pickers';
-import dayjs from 'dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
-import utc from 'dayjs/plugin/utc';
-import { combineDateTime } from '@/utils/slopDateUtils';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon';
+import { DateTime, Settings } from 'luxon';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-// Extend dayjs with plugins
-dayjs.extend(customParseFormat);
-dayjs.extend(utc);
+// Set default timezone to UTC
+Settings.defaultZone = 'UTC';
+
 import { useForm, Controller } from 'react-hook-form';
 import { useNotifications } from '@/components/providers/NotificationsProvider';
 import { useAuthQuery } from '@/queries/users';
@@ -86,23 +85,30 @@ const availabilityFormSchema = z
             // Skip validation if either date is missing
             if (!data.startDate || !data.endDate) return true;
 
-            // Create datetime objects for comparison
-            const startDateTime = data.startTime
-                ? dayjs
-                      .utc(data.startDate)
-                      .hour(dayjs(data.startTime).hour())
-                      .minute(dayjs(data.startTime).minute())
-                : dayjs.utc(data.startDate).startOf('day');
+            // Create datetime objects for comparison using native Date objects
+            const startDateTime = new Date(data.startDate);
+            if (data.startTime) {
+                // Use Luxon to help with proper UTC handling
+                const luxonStartTime = DateTime.fromJSDate(data.startTime);
+                startDateTime.setHours(
+                    luxonStartTime.hour,
+                    luxonStartTime.minute
+                );
+            } else {
+                startDateTime.setHours(0, 0, 0, 0); // Start of day
+            }
 
-            const endDateTime = data.endTime
-                ? dayjs
-                      .utc(data.endDate)
-                      .hour(dayjs(data.endTime).hour())
-                      .minute(dayjs(data.endTime).minute())
-                : dayjs.utc(data.endDate).endOf('day');
+            const endDateTime = new Date(data.endDate);
+            if (data.endTime) {
+                // Use Luxon to help with proper UTC handling
+                const luxonEndTime = DateTime.fromJSDate(data.endTime);
+                endDateTime.setHours(luxonEndTime.hour, luxonEndTime.minute);
+            } else {
+                endDateTime.setHours(23, 59, 59, 999); // End of day
+            }
 
             // Validate that start datetime is before end datetime
-            return !startDateTime.isAfter(endDateTime);
+            return startDateTime <= endDateTime;
         },
         {
             message: 'End date/time must be after start date/time',
@@ -146,26 +152,36 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
         ? {
               ...availability,
               startDate: availability.startDate
-                  ? dayjs.utc(availability.startDate).startOf('day').toDate()
+                  ? DateTime.fromISO(availability.startDate.toString())
+                        .toUTC()
+                        .startOf('day')
+                        .toJSDate() // Convert to native Date
                   : null,
               endDate: availability.endDate
-                  ? dayjs.utc(availability.endDate).startOf('day').toDate()
+                  ? DateTime.fromISO(availability.endDate.toString())
+                        .toUTC()
+                        .startOf('day')
+                        .toJSDate() // Convert to native Date
                   : null,
               // For startTime and endTime, convert from 4-digit integers to Date objects
               // Only show time if it's not the default value (0 for startTime, 2359 for endTime)
               startTime:
                   availability.startTime && availability.startTime !== 0
-                      ? dayjs()
-                            .hour(Math.floor(availability.startTime / 100))
-                            .minute(availability.startTime % 100)
-                            .toDate()
+                      ? DateTime.now()
+                            .set({
+                                hour: Math.floor(availability.startTime / 100),
+                                minute: availability.startTime % 100,
+                            })
+                            .toJSDate()
                       : null,
               endTime:
                   availability.endTime && availability.endTime !== 2359
-                      ? dayjs()
-                            .hour(Math.floor(availability.endTime / 100))
-                            .minute(availability.endTime % 100)
-                            .toDate()
+                      ? DateTime.now()
+                            .set({
+                                hour: Math.floor(availability.endTime / 100),
+                                minute: availability.endTime % 100,
+                            })
+                            .toJSDate()
                       : null,
           }
         : defaultValues;
@@ -209,20 +225,18 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
         try {
             // Convert time selections to 4-digit integers (e.g., 0600 for 6:00 AM)
             const startTimeInt = formData.startTime
-                ? parseInt(dayjs(formData.startTime).format('HHmm'))
+                ? formData.startTime.getHours() * 100 +
+                  formData.startTime.getMinutes()
                 : 0;
 
             const endTimeInt = formData.endTime
-                ? parseInt(dayjs(formData.endTime).format('HHmm'))
+                ? formData.endTime.getHours() * 100 +
+                  formData.endTime.getMinutes()
                 : 2359;
 
-            // Format data for API - ensure dates are in UTC with no time component
-            const utcStartDate = dayjs.utc(formData.startDate).startOf('day');
-            const utcEndDate = dayjs.utc(formData.endDate).startOf('day');
-
             const availabilityData = {
-                startDate: utcStartDate.toDate(),
-                endDate: utcEndDate.toDate(),
+                startDate: formData.startDate, // Already a native Date object
+                endDate: formData.endDate, // Already a native Date object
                 startTime: startTimeInt,
                 endTime: endTimeInt,
                 desc: formData.desc || '',
@@ -260,47 +274,21 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                 return;
             }
 
-            // Create datetime strings by combining the date with the time
-            // Use centralized date utility to combine date and time, convert to UTC
-            const startTimeISO = combineDateTime(
-                formData.startDate!,
-                formData.startTime
-                    ? dayjs(formData.startTime).format('HH:mm')
-                    : '00:00',
-                {
-                    organizationTimezone: 'UTC',
-                    fallbackTimezone: 'UTC',
-                }
-            );
-
-            const endTimeISO = combineDateTime(
-                formData.endDate!,
-                formData.endTime
-                    ? dayjs(formData.endTime).format('HH:mm')
-                    : '23:59',
-                {
-                    organizationTimezone: 'UTC',
-                    fallbackTimezone: 'UTC',
-                }
-            );
-
             // Convert time selections to 4-digit integers (e.g., 0600 for 6:00 AM)
             const startTimeInt = formData.startTime
-                ? parseInt(dayjs(formData.startTime).format('HHmm'))
+                ? formData.startTime.getHours() * 100 +
+                  formData.startTime.getMinutes()
                 : 0;
 
             const endTimeInt = formData.endTime
-                ? parseInt(dayjs(formData.endTime).format('HHmm'))
+                ? formData.endTime.getHours() * 100 +
+                  formData.endTime.getMinutes()
                 : 2359;
-
-            // Format data for API - ensure dates are in UTC with no time component
-            const utcStartDate = dayjs.utc(formData.startDate).startOf('day');
-            const utcEndDate = dayjs.utc(formData.endDate).startOf('day');
 
             const availabilityData = {
                 id: availabilityId,
-                startDate: utcStartDate.toDate(),
-                endDate: utcEndDate.toDate(),
+                startDate: formData.startDate, // Already a native Date object
+                endDate: formData.endDate, // Already a native Date object
                 startTime: startTimeInt,
                 endTime: endTimeInt,
                 desc: formData.desc || '',
@@ -308,7 +296,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
             };
 
             // Update availability
-            await updateMutation.mutateAsync(availabilityData);
+            await updateMutation.mutateAsync(availabilityData as any);
             notifications.show('Availability updated successfully', {
                 severity: 'success',
                 autoHideDuration: 3000,
@@ -365,116 +353,152 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
         <Container>
             <form onSubmit={onSubmit}>
                 <Stack spacing={2}>
-                    {/* Date fields */}
-                    <Stack direction="row" spacing={2}>
-                        <Controller
-                            name="startDate"
-                            control={control}
-                            render={({ field }) => (
-                                <DatePicker
-                                    label="Start Date"
-                                    value={
-                                        field.value
-                                            ? dayjs.utc(field.value)
-                                            : null
-                                    }
-                                    onChange={(date) =>
-                                        field.onChange(
-                                            date ? date.toDate() : null
-                                        )
-                                    }
-                                    slotProps={{
-                                        textField: {
-                                            error: !!errors.startDate,
-                                            helperText:
-                                                errors.startDate?.message,
-                                            fullWidth: true,
-                                        },
-                                    }}
-                                />
-                            )}
-                        />
+                    <LocalizationProvider dateAdapter={AdapterLuxon}>
+                        {/* Date fields */}
+                        <Stack direction="row" spacing={2}>
+                            <Controller
+                                name="startDate"
+                                control={control}
+                                render={({ field }) => (
+                                    <DatePicker
+                                        label="Start Date"
+                                        value={
+                                            field.value
+                                                ? DateTime.fromJSDate(
+                                                      field.value
+                                                  ).toUTC()
+                                                : null
+                                        }
+                                        onChange={(date) => {
+                                            // Convert Luxon DateTime to native Date if needed
+                                            if (date && 'toJSDate' in date) {
+                                                field.onChange(
+                                                    (date as any).toJSDate()
+                                                );
+                                            } else {
+                                                field.onChange(date);
+                                            }
+                                        }}
+                                        slotProps={{
+                                            textField: {
+                                                error: !!errors.startDate,
+                                                helperText:
+                                                    errors.startDate?.message,
+                                                fullWidth: true,
+                                            },
+                                        }}
+                                    />
+                                )}
+                            />
 
-                        <Controller
-                            name="startTime"
-                            control={control}
-                            render={({ field }) => (
-                                <TimePicker
-                                    label="Start Time (optional)"
-                                    value={
-                                        field.value ? dayjs(field.value) : null
-                                    }
-                                    onChange={(date) =>
-                                        field.onChange(
-                                            date ? date.toDate() : null
-                                        )
-                                    }
-                                    slotProps={{
-                                        textField: {
-                                            error: !!errors.startTime,
-                                            helperText:
-                                                errors.startTime?.message,
-                                            fullWidth: true,
-                                        },
-                                    }}
-                                />
-                            )}
-                        />
-                    </Stack>
+                            <Controller
+                                name="startTime"
+                                control={control}
+                                render={({ field }) => (
+                                    <TimePicker
+                                        label="Start Time (optional)"
+                                        value={
+                                            field.value
+                                                ? DateTime.fromJSDate(
+                                                      field.value
+                                                  ).toUTC()
+                                                : null
+                                        }
+                                        onChange={(time) => {
+                                            // Convert Luxon DateTime to native Date if needed
+                                            if (time && 'toJSDate' in time) {
+                                                field.onChange(
+                                                    (time as any).toJSDate()
+                                                );
+                                            } else {
+                                                field.onChange(time);
+                                            }
+                                        }}
+                                        slotProps={{
+                                            textField: {
+                                                error: !!errors.startTime,
+                                                helperText:
+                                                    errors.startTime?.message,
+                                                fullWidth: true,
+                                            },
+                                        }}
+                                    />
+                                )}
+                            />
+                        </Stack>
 
-                    {/* Time fields */}
-                    <Stack direction="row" spacing={2}>
-                        <Controller
-                            name="endDate"
-                            control={control}
-                            render={({ field }) => (
-                                <DatePicker
-                                    label="End Date"
-                                    value={
-                                        field.value
-                                            ? dayjs.utc(field.value)
-                                            : null
-                                    }
-                                    onChange={(date) =>
-                                        field.onChange(
-                                            date ? date.toDate() : null
-                                        )
-                                    }
-                                    slotProps={{
-                                        textField: {
-                                            error: !!errors.endDate,
-                                            helperText: errors.endDate?.message,
-                                            fullWidth: true,
-                                        },
-                                    }}
-                                />
-                            )}
-                        />
-                        <Controller
-                            name="endTime"
-                            control={control}
-                            render={({ field }) => (
-                                <TimePicker
-                                    label="End Time (optional)"
-                                    value={
-                                        field.value ? dayjs(field.value) : null
-                                    }
-                                    onChange={(date) =>
-                                        field.onChange(
-                                            date ? date.toDate() : null
-                                        )
-                                    }
-                                    slotProps={{
-                                        textField: {
-                                            error: !!errors.endTime,
-                                            helperText: errors.endTime?.message,
-                                            fullWidth: true,
-                                        },
-                                    }}
-                                />
-                            )}
-                        />
-                    </Stack>
+                        {/* Time fields */}
+                        <Stack direction="row" spacing={2}>
+                            <Controller
+                                name="endDate"
+                                control={control}
+                                render={({ field }) => (
+                                    <DatePicker
+                                        label="End Date"
+                                        value={
+                                            field.value
+                                                ? DateTime.fromJSDate(
+                                                      field.value
+                                                  ).toUTC()
+                                                : null
+                                        }
+                                        onChange={(date) => {
+                                            // Convert Luxon DateTime to native Date if needed
+                                            if (date && 'toJSDate' in date) {
+                                                field.onChange(
+                                                    (date as any).toJSDate()
+                                                );
+                                            } else {
+                                                field.onChange(date);
+                                            }
+                                        }}
+                                        slotProps={{
+                                            textField: {
+                                                error: !!errors.endDate,
+                                                helperText:
+                                                    errors.endDate?.message,
+                                                fullWidth: true,
+                                            },
+                                        }}
+                                    />
+                                )}
+                            />
+                            <Controller
+                                name="endTime"
+                                control={control}
+                                render={({ field }) => (
+                                    <TimePicker
+                                        label="End Time (optional)"
+                                        value={
+                                            field.value
+                                                ? DateTime.fromJSDate(
+                                                      field.value
+                                                  ).toUTC()
+                                                : null
+                                        }
+                                        onChange={(time) => {
+                                            // Convert Luxon DateTime to native Date if needed
+                                            if (time && 'toJSDate' in time) {
+                                                field.onChange(
+                                                    (time as any).toJSDate()
+                                                );
+                                            } else {
+                                                field.onChange(time);
+                                            }
+                                        }}
+                                        slotProps={{
+                                            textField: {
+                                                error: !!errors.endTime,
+                                                helperText:
+                                                    errors.endTime?.message,
+                                                fullWidth: true,
+                                            },
+                                        }}
+                                    />
+                                )}
+                            />
+                        </Stack>
+                    </LocalizationProvider>
 
                     <Controller
                         name="isAvailable"

@@ -15,12 +15,7 @@ import {
     TextField,
     Alert,
 } from '@mui/material';
-import dayjs from 'dayjs';
-import {
-    Calendar as BigCalendar,
-    luxonLocalizer,
-    Views,
-} from 'react-big-calendar';
+import { Calendar as BigCalendar, luxonLocalizer } from 'react-big-calendar';
 import { DateTime, Settings } from 'luxon';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import {
@@ -88,6 +83,8 @@ export default function Availability() {
     const updateDefaultAvailability = useUpdateDefaultAvailabilityMutation();
     const notifications = useNotifications();
 
+    const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
+
     // Update selected member ID when user changes
     useEffect(() => {
         if (selectedUserId && teamUsers.length > 0) {
@@ -140,9 +137,9 @@ export default function Availability() {
     };
 
     // Fetch availability data
-    const { data: availabilities } = trpc.availability.list.useQuery({
-        memberId: selectedMemberId!,
-    });
+    const { data: availabilities } = trpc.availability.list.useQuery(
+        selectedMemberId ? { memberId: selectedMemberId } : {}
+    );
 
     // Create a lookup object for availabilities by ID
     const availabilityLookup = React.useMemo(() => {
@@ -232,12 +229,15 @@ export default function Availability() {
     }> =
         availabilities?.map((availability) => {
             // Parse dates in UTC to avoid timezone issues
-            const startDate = dayjs.utc(availability.startDate, 'YYYY-MM-DD');
+            const startDate = DateTime.fromISO(
+                availability.startDate.toString(),
+                { zone: 'UTC' }
+            );
             // For the end date, we need to add 1 day to make it inclusive in the calendar
             // but we need to ensure we stay in UTC to avoid timezone issues
-            const endDate = dayjs
-                .utc(availability.endDate, 'YYYY-MM-DD')
-                .add(1, 'day');
+            const endDate = DateTime.fromISO(availability.endDate.toString(), {
+                zone: 'UTC',
+            }).plus({ days: 1 });
 
             return {
                 id: availability.id,
@@ -245,9 +245,9 @@ export default function Availability() {
                     availability.desc ||
                     (availability.isAvailable ? 'Available' : 'Unavailable'),
                 allDay: true,
-                // Use toDate() at the last moment to convert to JavaScript Date
-                start: startDate.toDate(),
-                end: endDate.toDate(),
+                // Use toJSDate() at the last moment to convert to JavaScript Date
+                start: startDate.toJSDate(),
+                end: endDate.toJSDate(),
             };
         }) || [];
 
@@ -324,6 +324,10 @@ export default function Availability() {
                                 timeslots={4}
                                 views={['month', 'week', 'day']}
                                 defaultView="month"
+                                date={currentDate as any}
+                                onNavigate={(date) => {
+                                    setCurrentDate(date);
+                                }}
                             />
                         </Grid>
                     </Grid>
@@ -351,7 +355,8 @@ export default function Availability() {
             ) : (
                 <Container sx={{ mt: 4 }}>
                     <Alert severity="info">
-                        Please choose a member of your team to access availability
+                        Please choose a member of your team to access
+                        availability
                     </Alert>
                 </Container>
             )}
