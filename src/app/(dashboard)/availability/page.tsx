@@ -178,9 +178,13 @@ export default function Availability() {
             if (action === 'doubleClick') {
                 // Create a new availability entry starting on the selected date
                 // Set endDate to be the same as startDate
+                // Convert native Date to Luxon DateTime and back to ensure proper formatting
+                const startDateTime = DateTime.fromJSDate(start).toUTC();
+                const jsDate = startDateTime.toJSDate();
+
                 const newAvailability = {
-                    startDate: start,
-                    endDate: start, // Set to same day as startDate
+                    startDate: jsDate,
+                    endDate: jsDate, // Set to same day as startDate
                     memberId: selectedMemberId,
                     isAvailable: true,
                 };
@@ -336,9 +340,14 @@ export default function Availability() {
                     <Container sx={{ m: 5 }}>
                         <IconButton
                             onClick={() => {
+                                // Convert native Date to Luxon DateTime and back to ensure proper formatting
+                                const now = DateTime.now().toUTC();
+                                const jsStartDate = now.toJSDate();
+                                const jsEndDate = now.toJSDate();
+
                                 const newAvailability = {
-                                    startDate: new Date(),
-                                    endDate: new Date(),
+                                    startDate: jsStartDate,
+                                    endDate: jsEndDate,
                                     memberId: selectedMemberId,
                                     isAvailable: true,
                                 };

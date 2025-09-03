@@ -152,36 +152,66 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
         ? {
               ...availability,
               startDate: availability.startDate
-                  ? DateTime.fromISO(availability.startDate.toString())
-                        .toUTC()
-                        .startOf('day')
-                        .toJSDate() // Convert to native Date
+                  ? (() => {
+                        // Check if startDate is already a Date object
+                        if (availability.startDate instanceof Date) {
+                            const luxonDate = DateTime.fromJSDate(availability.startDate);
+                            const utcDate = luxonDate.toUTC();
+                            const dayStart = utcDate.startOf('day');
+                            const jsDate = dayStart.toJSDate();
+                            return jsDate;
+                        } else {
+                            // Fallback to ISO parsing if it's a string
+                            const luxonDate = DateTime.fromISO(availability.startDate.toString());
+                            const utcDate = luxonDate.toUTC();
+                            const dayStart = utcDate.startOf('day');
+                            const jsDate = dayStart.toJSDate();
+                            return jsDate;
+                        }
+                    })()
                   : null,
               endDate: availability.endDate
-                  ? DateTime.fromISO(availability.endDate.toString())
-                        .toUTC()
-                        .startOf('day')
-                        .toJSDate() // Convert to native Date
+                  ? (() => {
+                        // Check if endDate is already a Date object
+                        if (availability.endDate instanceof Date) {
+                            const luxonDate = DateTime.fromJSDate(availability.endDate);
+                            const utcDate = luxonDate.toUTC();
+                            const dayStart = utcDate.startOf('day');
+                            const jsDate = dayStart.toJSDate();
+                            return jsDate;
+                        } else {
+                            // Fallback to ISO parsing if it's a string
+                            const luxonDate = DateTime.fromISO(availability.endDate.toString());
+                            const utcDate = luxonDate.toUTC();
+                            const dayStart = utcDate.startOf('day');
+                            const jsDate = dayStart.toJSDate();
+                            return jsDate;
+                        }
+                    })()
                   : null,
               // For startTime and endTime, convert from 4-digit integers to Date objects
               // Only show time if it's not the default value (0 for startTime, 2359 for endTime)
               startTime:
                   availability.startTime && availability.startTime !== 0
-                      ? DateTime.now()
-                            .set({
+                      ? (() => {
+                            const timeDate = DateTime.now().set({
                                 hour: Math.floor(availability.startTime / 100),
                                 minute: availability.startTime % 100,
-                            })
-                            .toJSDate()
+                            });
+                            const jsDate = timeDate.toJSDate();
+                            return jsDate;
+                        })()
                       : null,
               endTime:
                   availability.endTime && availability.endTime !== 2359
-                      ? DateTime.now()
-                            .set({
+                      ? (() => {
+                            const timeDate = DateTime.now().set({
                                 hour: Math.floor(availability.endTime / 100),
                                 minute: availability.endTime % 100,
-                            })
-                            .toJSDate()
+                            });
+                            const jsDate = timeDate.toJSDate();
+                            return jsDate;
+                        })()
                       : null,
           }
         : defaultValues;
@@ -359,36 +389,36 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                             <Controller
                                 name="startDate"
                                 control={control}
-                                render={({ field }) => (
-                                    <DatePicker
-                                        label="Start Date"
-                                        value={
-                                            field.value
-                                                ? DateTime.fromJSDate(
-                                                      field.value
-                                                  ).toUTC()
-                                                : null
-                                        }
-                                        onChange={(date) => {
-                                            // Convert Luxon DateTime to native Date if needed
-                                            if (date && 'toJSDate' in date) {
-                                                field.onChange(
-                                                    (date as any).toJSDate()
-                                                );
-                                            } else {
-                                                field.onChange(date);
-                                            }
-                                        }}
-                                        slotProps={{
-                                            textField: {
-                                                error: !!errors.startDate,
-                                                helperText:
-                                                    errors.startDate?.message,
-                                                fullWidth: true,
-                                            },
-                                        }}
-                                    />
-                                )}
+                                render={({ field }) => {
+                                    let luxonValue = null;
+                                    if (field.value) {
+                                        luxonValue = DateTime.fromJSDate(field.value).toUTC();
+                                    }
+
+                                    return (
+                                        <DatePicker
+                                            label="Start Date"
+                                            value={luxonValue}
+                                            onChange={(date) => {
+                                                // Convert Luxon DateTime to native Date if needed
+                                                if (date && 'toJSDate' in date) {
+                                                    const jsDate = (date as any).toJSDate();
+                                                    field.onChange(jsDate);
+                                                } else {
+                                                    field.onChange(date);
+                                                }
+                                            }}
+                                            slotProps={{
+                                                textField: {
+                                                    error: !!errors.startDate,
+                                                    helperText:
+                                                        errors.startDate?.message,
+                                                    fullWidth: true,
+                                                },
+                                            }}
+                                        />
+                                    );
+                                }}
                             />
 
                             <Controller
@@ -432,36 +462,36 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                             <Controller
                                 name="endDate"
                                 control={control}
-                                render={({ field }) => (
-                                    <DatePicker
-                                        label="End Date"
-                                        value={
-                                            field.value
-                                                ? DateTime.fromJSDate(
-                                                      field.value
-                                                  ).toUTC()
-                                                : null
-                                        }
-                                        onChange={(date) => {
-                                            // Convert Luxon DateTime to native Date if needed
-                                            if (date && 'toJSDate' in date) {
-                                                field.onChange(
-                                                    (date as any).toJSDate()
-                                                );
-                                            } else {
-                                                field.onChange(date);
-                                            }
-                                        }}
-                                        slotProps={{
-                                            textField: {
-                                                error: !!errors.endDate,
-                                                helperText:
-                                                    errors.endDate?.message,
-                                                fullWidth: true,
-                                            },
-                                        }}
-                                    />
-                                )}
+                                render={({ field }) => {
+                                    let luxonValue = null;
+                                    if (field.value) {
+                                        luxonValue = DateTime.fromJSDate(field.value).toUTC();
+                                    }
+
+                                    return (
+                                        <DatePicker
+                                            label="End Date"
+                                            value={luxonValue}
+                                            onChange={(date) => {
+                                                // Convert Luxon DateTime to native Date if needed
+                                                if (date && 'toJSDate' in date) {
+                                                    const jsDate = (date as any).toJSDate();
+                                                    field.onChange(jsDate);
+                                                } else {
+                                                    field.onChange(date);
+                                                }
+                                            }}
+                                            slotProps={{
+                                                textField: {
+                                                    error: !!errors.endDate,
+                                                    helperText:
+                                                        errors.endDate?.message,
+                                                    fullWidth: true,
+                                                },
+                                            }}
+                                        />
+                                    );
+                                }}
                             />
                             <Controller
                                 name="endTime"
