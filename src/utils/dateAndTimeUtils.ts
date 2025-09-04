@@ -114,7 +114,6 @@ export function castUtcDate(date: Date): UtcDate {
     }
 }
 
-
 export function utcToTimezone(utcDate: Date | string, timezone: string): Date {
     // Handle string input (ISO format)
     if (typeof utcDate === 'string') {
@@ -131,6 +130,50 @@ export function utcToTimezone(utcDate: Date | string, timezone: string): Date {
     })
         .setZone(timezone)
         .toJSDate();
+}
+
+export function getTimeInZone(dateInTimezone: Date, timezone: string): TimeIso {
+    // Convert the date to a Luxon DateTime object with the specified timezone
+    const dateTime = DateTime.fromJSDate(dateInTimezone).setZone(timezone);
+
+    // Format the time as "HH:mm" to match the TimeIso type
+    const formattedTime = dateTime.toFormat('HH:mm');
+
+    // Return the formatted time as TimeIso
+    return formattedTime as TimeIso;
+}
+
+export function combineDateAndTime(
+    date: Date,
+    timeIso: string, //would be TimeIso but that's crazy
+    timezone: string
+): string {
+    // Parse the provided UTC date to a Luxon DateTime in the requested timezone
+    const dateInTimezone = DateTime.fromJSDate(date, {
+        zone: timezone,
+    });
+
+    // Extract hours and minutes from the timeIso string
+    const [hours, minutes] = timeIso.split(':').map(Number);
+
+    // Set the time on the DateTime instance
+    const dateAndTimeInZone = dateInTimezone.set({
+        hour: hours,
+        minute: minutes,
+    });
+
+    const combinedDateTime = dateAndTimeInZone.toUTC();
+
+    console.log({
+        date,
+        timeIso,
+        timezone,
+        dateInTimezone: dateInTimezone.toString(),
+        dateAndTimeInZone: dateAndTimeInZone.toString(),
+        combinedDateTime: combinedDateTime.toString(),
+    });
+
+    return combinedDateTime.toString();
 }
 
 // export function combineDateTime(

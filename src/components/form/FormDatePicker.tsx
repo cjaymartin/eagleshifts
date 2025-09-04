@@ -2,7 +2,7 @@ import React from 'react';
 import { useMemo } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import dayjs from 'dayjs';
+import { DateTime } from 'luxon';
 
 type FormDatePickerProps = {
     name: string;
@@ -25,8 +25,8 @@ export default function FormDatePicker({
     const error = errors[name];
 
     const dateValue = watch('date');
-    const dayjsDate = useMemo(
-        () => (dateValue ? dayjs.utc(dateValue) : null),
+    const luxonDate = useMemo(
+        () => (dateValue ? DateTime.fromJSDate(dateValue, { zone: 'utc' }) : null),
         [dateValue]
     );
 
@@ -39,11 +39,11 @@ export default function FormDatePicker({
                     {...field}
                     label={label}
                     disabled={disabled}
-                    // Ensure value is a valid dayjs object or null
-                    value={dayjsDate}
+                    // Ensure value is a valid DateTime object or null
+                    value={luxonDate}
                     onChange={(date) =>
                         // Pass a standard JS Date object or null back to the form
-                        field.onChange(date ? date.toDate() : null)
+                        field.onChange(date ? date.toJSDate() : null)
                     }
                     slotProps={{
                         textField: {

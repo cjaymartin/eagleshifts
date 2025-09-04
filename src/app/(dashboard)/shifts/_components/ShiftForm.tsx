@@ -15,11 +15,15 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import { DateTime, Settings } from 'luxon';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import { combineDateTime } from '@/utils/slopDateUtils';
+import { combineDateAndTime, getTimeInZone } from '@/utils/dateAndTimeUtils';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+
+// Set default timezone to UTC
+Settings.defaultZone = 'UTC';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { useDialogs } from '@toolpad/core';
 import { useNotifications } from '@/components/providers/NotificationsProvider';
@@ -145,11 +149,11 @@ const shiftFormSchema = z
             if (!data.startTime || !data.endTime) return true;
 
             // Create datetime objects for comparison
-            const startDateTime = dayjs(data.startTime);
-            const endDateTime = dayjs(data.endTime);
+            const startDateTime = DateTime.fromJSDate(data.startTime);
+            const endDateTime = DateTime.fromJSDate(data.endTime);
 
             // Validate that start time is before end time
-            return !startDateTime.isAfter(endDateTime);
+            return startDateTime <= endDateTime;
         },
         {
             message: 'End time must be after start time',
@@ -179,11 +183,6 @@ type ShiftFormProps = {
 };
 
 export default function ShiftForm(props: ShiftFormProps) {
-    console.log('ShiftForm render', {
-        props,
-        timestamp: new Date().toISOString(),
-    });
-
     const { reset: handleClose } = useShiftDialogHelpers();
     const {
         shiftId,
@@ -226,6 +225,7 @@ export default function ShiftForm(props: ShiftFormProps) {
     const { data: businessProfile } = useBusinessProfileQuery();
 
     // Transform shiftAssignments to the format expected by the form
+
     const transformedShift = shift
         ? {
               ...shift,
@@ -236,37 +236,67 @@ export default function ShiftForm(props: ShiftFormProps) {
               // Parse dates from ISO format
               // For drafts, use the date field directly
               date: (shift as any)?.date
-                  ? dayjs((shift as any).date)
-                        .tz(
-                            shift.timezone || businessProfile?.timezone || 'UTC'
-                        )
-                        .toDate()
+                  ? (() => {
+                        // Check if date is already a Date object
+                        const isDateObject =
+                            (shift as any).date instanceof Date;
+
+                        let dateTime;
+                        if (isDateObject) {
+                            dateTime = DateTime.fromJSDate(
+                                (shift as any).date
+                            ).setZone(
+                                shift.timezone ||
+                                    businessProfile?.timezone ||
+                                    'UTC'
+                            );
+                        } else {
+                            // Assume it's an ISO string
+                            dateTime = DateTime.fromISO(
+                                (shift as any).date
+                            ).setZone(
+                                shift.timezone ||
+                                    businessProfile?.timezone ||
+                                    'UTC'
+                            );
+                        }
+
+                        return dateTime.isValid ? dateTime.toJSDate() : null;
+                    })()
                   : shift.startTime
-                    ? dayjs(shift.startTime)
-                          .tz(
-                              shift.timezone ||
-                                  businessProfile?.timezone ||
-                                  'UTC'
-                          )
-                          .startOf('day')
-                          .toDate()
+                    ? (() => {
+                          // Check if startTime is already a Date object
+                          const isDateObject = shift.startTime instanceof Date;
+
+                          let dateTime;
+                          if (isDateObject) {
+                              dateTime = DateTime.fromJSDate(shift.startTime)
+                                  .setZone(
+                                      shift.timezone ||
+                                          businessProfile?.timezone ||
+                                          'UTC'
+                                  )
+                                  .startOf('day');
+                          } else {
+                              // Assume it's an ISO string
+                              dateTime = DateTime.fromISO(
+                                  shift.startTime as any
+                              )
+                                  .setZone(
+                                      shift.timezone ||
+                                          businessProfile?.timezone ||
+                                          'UTC'
+                                  )
+                                  .startOf('day');
+                          }
+
+                          return dateTime.isValid ? dateTime.toJSDate() : null;
+                      })()
                     : null,
               // Handle startTime and endTime which may be strings or null for drafts
               //
-              startTime: shift.startTime
-                  ? dayjs(shift.startTime)
-                        .tz(
-                            shift.timezone || businessProfile?.timezone || 'UTC'
-                        )
-                        .toDate()
-                  : null,
-              endTime: shift.endTime
-                  ? dayjs(shift.endTime)
-                        .tz(
-                            shift.timezone || businessProfile?.timezone || 'UTC'
-                        )
-                        .toDate()
-                  : null,
+              startTime: shift.startTime ?? null,
+              endTime: shift.endTime ?? null,
 
               // Handle location fields
               locationId: shift.locationId || null,
@@ -297,13 +327,12 @@ export default function ShiftForm(props: ShiftFormProps) {
         getValues,
         setError,
         setValue,
+        watch,
     } = methods;
     //const [date,setDate] = useState<Date | null>(null);
 
-    console.log('ShiftForm after useForm', {
-        formState: { errors, isSubmitting },
-        timestamp: new Date().toISOString(),
-    });
+    // Watch all form values for debugging
+    const allValues = watch();
 
     // // Helper for setting form errors
     // const setErrors = (errorList: any) => {
@@ -322,7 +351,6 @@ export default function ShiftForm(props: ShiftFormProps) {
     // Determine if this is a new shift based on props, shiftId, or shift.id
     const isNew = propsIsNew ?? (!shiftId && !shift?.id);
 
-    console.log({ isNew, propsIsNew, shiftId, bah: shift?.id });
     const role = user?.role || 'member';
     const isAdmin = ['admin', 'owner'].includes(role);
 
@@ -337,8 +365,6 @@ export default function ShiftForm(props: ShiftFormProps) {
     // Form submission handlers
     async function onNewFormSubmit(formData: ShiftFormData) {
         try {
-            console.log({ formData });
-
             // Use the shift's timezone, or organization's timezone, or default to UTC
             const timezone =
                 shift?.timezone || businessProfile?.timezone || 'UTC';
@@ -346,22 +372,16 @@ export default function ShiftForm(props: ShiftFormProps) {
             // Create datetime strings by combining the date with the time
             // We need to work with the local time directly to avoid double timezone conversion
             // Use centralized date utility to combine date and time, convert to UTC
-            const startTimeISO = combineDateTime(
+            const startTimeISO = combineDateAndTime(
                 formData.date!,
-                dayjs(formData.startTime).format('HH:mm'),
-                {
-                    organizationTimezone: timezone,
-                    fallbackTimezone: 'America/New_York',
-                }
+                getTimeInZone(formData.startTime!, timezone),
+                timezone
             );
 
-            const endTimeISO = combineDateTime(
+            const endTimeISO = combineDateAndTime(
                 formData.date!,
-                dayjs(formData.endTime).format('HH:mm'),
-                {
-                    organizationTimezone: timezone,
-                    fallbackTimezone: 'America/New_York',
-                }
+                getTimeInZone(formData.endTime!, timezone),
+                timezone
             );
 
             // Format data for API - note that we're not including the date field
@@ -402,7 +422,6 @@ export default function ShiftForm(props: ShiftFormProps) {
                     await deleteDraftMutation.mutateAsync({
                         id: shift.draftId,
                     });
-                    console.log('Draft deleted after creating shift');
                 } catch (error) {
                     console.error(
                         'Error deleting draft after creating shift:',
@@ -467,26 +486,26 @@ export default function ShiftForm(props: ShiftFormProps) {
                 shift?.timezone || businessProfile?.timezone || 'UTC';
 
             // Use centralized date utility to combine date and time, convert to UTC
-            const startTimeISO = combineDateTime(
+            const startTimeISO = combineDateAndTime(
                 formData.date!,
-                dayjs(formData.startTime).format('HH:mm'),
-                {
-                    organizationTimezone: timezone,
-                    fallbackTimezone: 'America/New_York',
-                }
+                getTimeInZone(formData.startTime!, timezone),
+                timezone
             );
 
-            const endTimeISO = combineDateTime(
+            const endTimeISO = combineDateAndTime(
                 formData.date!,
-                dayjs(formData.endTime).format('HH:mm'),
-                {
-                    organizationTimezone: timezone,
-                    fallbackTimezone: 'America/New_York',
-                }
+                getTimeInZone(formData.endTime!, timezone),
+                timezone
             );
 
-            console.log('SFHITUSBMIT');
-            console.log({ formData });
+            console.log('WHOAH');
+            console.log({
+                startTimeISO,
+                endTimeISO,
+                date: formData.date,
+                startTime: formData.startTime,
+                endTime: formData.endTime,
+            });
 
             const shiftData = {
                 id: shiftId,
@@ -558,7 +577,9 @@ export default function ShiftForm(props: ShiftFormProps) {
                 shift?.timezone || businessProfile?.timezone || 'UTC';
 
             // Get the date in ISO format
-            const dateISO = dayjs(formData.date).format('YYYY-MM-DD');
+            const dateISO = DateTime.fromJSDate(formData.date!).toFormat(
+                'yyyy-MM-dd'
+            );
 
             // Create datetime strings by combining the date with the time
             // We need to work with the local time directly to avoid double timezone conversion
@@ -567,24 +588,18 @@ export default function ShiftForm(props: ShiftFormProps) {
             let endTimeISO = null;
 
             if (formData.startTime) {
-                startTimeISO = combineDateTime(
+                startTimeISO = combineDateAndTime(
                     formData.date!,
-                    dayjs(formData.startTime).format('HH:mm'),
-                    {
-                        organizationTimezone: timezone,
-                        fallbackTimezone: 'America/New_York',
-                    }
+                    getTimeInZone(formData.startTime, timezone),
+                    timezone
                 );
             }
 
             if (formData.endTime) {
-                endTimeISO = combineDateTime(
+                endTimeISO = combineDateAndTime(
                     formData.date!,
-                    dayjs(formData.endTime).format('HH:mm'),
-                    {
-                        organizationTimezone: timezone,
-                        fallbackTimezone: 'America/New_York',
-                    }
+                    getTimeInZone(formData.endTime, timezone),
+                    timezone
                 );
             }
 
@@ -757,27 +772,10 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 name="locationId"
                                 control={control}
                                 render={({ field }) => {
-                                    console.log(
-                                        'ShiftForm LocationAutocomplete Controller render',
-                                        {
-                                            fieldValue: field.value,
-                                            timestamp: new Date().toISOString(),
-                                            fieldRef: field,
-                                        }
-                                    );
-
                                     return (
                                         <LocationAutocomplete
                                             value={field.value}
                                             onChange={(locationId) => {
-                                                console.log(
-                                                    'ShiftForm LocationAutocomplete onChange',
-                                                    {
-                                                        locationId,
-                                                        timestamp:
-                                                            new Date().toISOString(),
-                                                    }
-                                                );
                                                 field.onChange(locationId);
                                                 // Clear legacy location when a location is selected
                                                 if (locationId) {
@@ -814,8 +812,6 @@ export default function ShiftForm(props: ShiftFormProps) {
                                         <DepartmentAutocomplete
                                             value={field.value as any}
                                             onChange={(departmentId) => {
-                                                console.log('PLUS CA CHANGE');
-                                                console.log({ departmentId });
                                                 field.onChange(departmentId);
                                             }}
                                             disabled={!isAdmin}
@@ -859,70 +855,140 @@ export default function ShiftForm(props: ShiftFormProps) {
                             {/*        />*/}
                             {/*    )}*/}
                             {/*/>*/}
-                            <Controller
-                                name="startTime"
-                                control={control}
-                                render={({ field }) => (
-                                    <TimePicker
-                                        disabled={!isAdmin}
-                                        label="Start Time"
-                                        value={
-                                            field.value
-                                                ? dayjs(field.value).tz(
-                                                      shift?.timezone ||
-                                                          businessProfile?.timezone ||
-                                                          'UTC'
-                                                  )
-                                                : null
+                            {/*<LocalizationProvider dateAdapter={AdapterLuxon}>*/}
+                            {businessProfile && (
+                                <Controller
+                                    name="startTime"
+                                    control={control}
+                                    render={({ field }) => {
+                                        let luxonValue = null;
+                                        if (field.value) {
+                                            luxonValue = DateTime.fromJSDate(
+                                                field.value
+                                            ).toUTC();
                                         }
-                                        onChange={(date) =>
-                                            field.onChange(
-                                                date
-                                                    ? (date as any).toDate()
-                                                    : null
-                                            )
+
+                                        return (
+                                            <TimePicker
+                                                disabled={!isAdmin}
+                                                label="Start Time"
+                                                value={luxonValue}
+                                                timezone={
+                                                    businessProfile.timezone
+                                                }
+                                                onChange={(time) => {
+                                                    // Convert Luxon DateTime to native Date if needed
+                                                    if (
+                                                        time &&
+                                                        typeof time ===
+                                                            'object' &&
+                                                        'toJSDate' in time
+                                                    ) {
+                                                        try {
+                                                            const jsDate = (
+                                                                time as any
+                                                            ).toJSDate();
+                                                            field.onChange(
+                                                                jsDate
+                                                            );
+                                                        } catch (error) {
+                                                            console.error(
+                                                                'Error converting to JS Date:',
+                                                                {
+                                                                    error,
+                                                                    time,
+                                                                    timestamp:
+                                                                        new Date().toISOString(),
+                                                                }
+                                                            );
+                                                            field.onChange(
+                                                                null
+                                                            );
+                                                        }
+                                                    } else {
+                                                        field.onChange(time);
+                                                    }
+                                                }}
+                                                slotProps={{
+                                                    textField: {
+                                                        error: !!errors.startTime,
+                                                        helperText: errors
+                                                            .startTime
+                                                            ?.message as any,
+                                                    },
+                                                }}
+                                            />
+                                        );
+                                    }}
+                                />
+                            )}
+                            {businessProfile && (
+                                <Controller
+                                    name="endTime"
+                                    control={control}
+                                    render={({ field }) => {
+                                        let luxonValue = null;
+                                        if (field.value) {
+                                            luxonValue = DateTime.fromJSDate(
+                                                field.value
+                                            ).toUTC();
                                         }
-                                        slotProps={{
-                                            textField: {
-                                                error: !!errors.startTime,
-                                                helperText: errors.startTime
-                                                    ?.message as any,
-                                            },
-                                        }}
-                                    />
-                                )}
-                            />
-                            <Controller
-                                name="endTime"
-                                control={control}
-                                render={({ field }) => (
-                                    <TimePicker
-                                        {...field}
-                                        label="End Time"
-                                        disabled={!isAdmin}
-                                        // Ensure value is a valid dayjs object or null
-                                        value={
-                                            field.value
-                                                ? dayjs(field.value)
-                                                : null
-                                        }
-                                        onChange={(date) =>
-                                            // Pass a standard JS Date object or null back to the form
-                                            field.onChange(
-                                                date ? date.toDate() : null
-                                            )
-                                        }
-                                        // Set to mobile view mode
-                                        slotProps={{
-                                            textField: {
-                                                error: !!errors.endTime,
-                                                helperText: errors.endTime
-                                                    ?.message as any,
-                                            },
-                                        }}
-                                    />
-                                )}
-                            />
+
+                                        return (
+                                            <TimePicker
+                                                label="End Time"
+                                                disabled={!isAdmin}
+                                                value={luxonValue}
+                                                timezone={
+                                                    businessProfile.timezone
+                                                }
+                                                onChange={(time) => {
+                                                    // Convert Luxon DateTime to native Date if needed
+                                                    if (
+                                                        time &&
+                                                        typeof time ===
+                                                            'object' &&
+                                                        'toJSDate' in time
+                                                    ) {
+                                                        try {
+                                                            const jsDate = (
+                                                                time as any
+                                                            ).toJSDate();
+                                                            field.onChange(
+                                                                jsDate
+                                                            );
+                                                        } catch (error) {
+                                                            console.error(
+                                                                'Error converting to JS Date:',
+                                                                {
+                                                                    error,
+                                                                    time,
+                                                                    timestamp:
+                                                                        new Date().toISOString(),
+                                                                }
+                                                            );
+                                                            field.onChange(
+                                                                null
+                                                            );
+                                                        }
+                                                    } else {
+                                                        field.onChange(time);
+                                                    }
+                                                }}
+                                                slotProps={{
+                                                    textField: {
+                                                        error: !!errors.endTime,
+                                                        helperText: errors
+                                                            .endTime
+                                                            ?.message as any,
+                                                    },
+                                                }}
+                                            />
+                                        );
+                                    }}
+                                />
+                            )}
+                            {/*</LocalizationProvider>*/}
                             <Grid container spacing={2} alignItems="center">
                                 <Grid>
                                     <Typography variant="h6">
