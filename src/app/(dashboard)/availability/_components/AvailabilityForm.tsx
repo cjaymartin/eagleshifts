@@ -17,9 +17,10 @@ import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon';
 import { DateTime, Settings } from 'luxon';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { combineDateAndTime, getTimeInZone } from '@/utils/dateAndTimeUtils';
 
 // Set default timezone to UTC
-Settings.defaultZone = 'UTC';
+//Settings.defaultZone = 'UTC';
 
 import { useForm, Controller } from 'react-hook-form';
 import { useNotifications } from '@/components/providers/NotificationsProvider';
@@ -151,44 +152,46 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
     const transformedAvailability = availability
         ? {
               ...availability,
-              startDate: availability.startDate
-                  ? (() => {
-                        // Check if startDate is already a Date object
-                        if (availability.startDate instanceof Date) {
-                            const luxonDate = DateTime.fromJSDate(availability.startDate);
-                            const utcDate = luxonDate.toUTC();
-                            const dayStart = utcDate.startOf('day');
-                            const jsDate = dayStart.toJSDate();
-                            return jsDate;
-                        } else {
-                            // Fallback to ISO parsing if it's a string
-                            const luxonDate = DateTime.fromISO(availability.startDate.toString());
-                            const utcDate = luxonDate.toUTC();
-                            const dayStart = utcDate.startOf('day');
-                            const jsDate = dayStart.toJSDate();
-                            return jsDate;
-                        }
-                    })()
-                  : null,
-              endDate: availability.endDate
-                  ? (() => {
-                        // Check if endDate is already a Date object
-                        if (availability.endDate instanceof Date) {
-                            const luxonDate = DateTime.fromJSDate(availability.endDate);
-                            const utcDate = luxonDate.toUTC();
-                            const dayStart = utcDate.startOf('day');
-                            const jsDate = dayStart.toJSDate();
-                            return jsDate;
-                        } else {
-                            // Fallback to ISO parsing if it's a string
-                            const luxonDate = DateTime.fromISO(availability.endDate.toString());
-                            const utcDate = luxonDate.toUTC();
-                            const dayStart = utcDate.startOf('day');
-                            const jsDate = dayStart.toJSDate();
-                            return jsDate;
-                        }
-                    })()
-                  : null,
+              startDate:
+                  availability.startDate ??
+                  // ? (() => {
+                  //       // Check if startDate is already a Date object
+                  //       if (availability.startDate instanceof Date) {
+                  //           const luxonDate = DateTime.fromJSDate(availability.startDate);
+                  //           const utcDate = luxonDate.toUTC();
+                  //           const dayStart = utcDate.startOf('day');
+                  //           const jsDate = dayStart.toJSDate();
+                  //           return jsDate;
+                  //       } else {
+                  //           // Fallback to ISO parsing if it's a string
+                  //           const luxonDate = DateTime.fromISO(availability.startDate.toString());
+                  //           const utcDate = luxonDate.toUTC();
+                  //           const dayStart = utcDate.startOf('day');
+                  //           const jsDate = dayStart.toJSDate();
+                  //           return jsDate;
+                  //       }
+                  //   })()
+                  null,
+              endDate:
+                  availability.endDate ??
+                  // ? (() => {
+                  //       // Check if endDate is already a Date object
+                  //       if (availability.endDate instanceof Date) {
+                  //           const luxonDate = DateTime.fromJSDate(availability.endDate);
+                  //           const utcDate = luxonDate.toUTC();
+                  //           const dayStart = utcDate.startOf('day');
+                  //           const jsDate = dayStart.toJSDate();
+                  //           return jsDate;
+                  //       } else {
+                  //           // Fallback to ISO parsing if it's a string
+                  //           const luxonDate = DateTime.fromISO(availability.endDate.toString());
+                  //           const utcDate = luxonDate.toUTC();
+                  //           const dayStart = utcDate.startOf('day');
+                  //           const jsDate = dayStart.toJSDate();
+                  //           return jsDate;
+                  //       }
+                  //   })()
+                  null,
               // For startTime and endTime, convert from 4-digit integers to Date objects
               // Only show time if it's not the default value (0 for startTime, 2359 for endTime)
               startTime:
@@ -224,7 +227,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
     } = useForm<AvailabilityFormData>({
         resolver: zodResolver(availabilityFormSchema) as any,
         defaultValues: availability
-            ? {
+            ? ({
                   id: transformedAvailability.id,
                   startDate: transformedAvailability.startDate,
                   endDate: transformedAvailability.endDate,
@@ -233,8 +236,8 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                   isAvailable: transformedAvailability.isAvailable,
                   desc: transformedAvailability.desc,
                   memberId: transformedAvailability.memberId,
-              }
-            : defaultValues,
+              } as any)
+            : (defaultValues as any),
     });
 
     const { data: session } = useAuthQuery();
@@ -253,16 +256,29 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
     // Form submission handlers
     async function onNewFormSubmit(formData: AvailabilityFormData) {
         try {
-            // Convert time selections to 4-digit integers (e.g., 0600 for 6:00 AM)
-            const startTimeInt = formData.startTime
-                ? formData.startTime.getHours() * 100 +
-                  formData.startTime.getMinutes()
-                : 0;
+            // Always use UTC timezone for availability
+            const timezone = 'UTC';
 
-            const endTimeInt = formData.endTime
-                ? formData.endTime.getHours() * 100 +
-                  formData.endTime.getMinutes()
-                : 2359;
+            // Convert time selections to 4-digit integers (e.g., 0600 for 6:00 AM)
+            let startTimeInt = 0;
+            let endTimeInt = 2359;
+
+            if (formData.startTime) {
+                // Use the utility function to get time in the specified timezone
+                const startTimeIso = getTimeInZone(
+                    formData.startTime,
+                    timezone
+                );
+                const [hours, minutes] = startTimeIso.split(':').map(Number);
+                startTimeInt = hours * 100 + minutes;
+            }
+
+            if (formData.endTime) {
+                // Use the utility function to get time in the specified timezone
+                const endTimeIso = getTimeInZone(formData.endTime, timezone);
+                const [hours, minutes] = endTimeIso.split(':').map(Number);
+                endTimeInt = hours * 100 + minutes;
+            }
 
             const availabilityData = {
                 startDate: formData.startDate, // Already a native Date object
@@ -304,16 +320,29 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                 return;
             }
 
-            // Convert time selections to 4-digit integers (e.g., 0600 for 6:00 AM)
-            const startTimeInt = formData.startTime
-                ? formData.startTime.getHours() * 100 +
-                  formData.startTime.getMinutes()
-                : 0;
+            // Always use UTC timezone for availability
+            const timezone = 'UTC';
 
-            const endTimeInt = formData.endTime
-                ? formData.endTime.getHours() * 100 +
-                  formData.endTime.getMinutes()
-                : 2359;
+            // Convert time selections to 4-digit integers (e.g., 0600 for 6:00 AM)
+            let startTimeInt = 0;
+            let endTimeInt = 2359;
+
+            if (formData.startTime) {
+                // Use the utility function to get time in the specified timezone
+                const startTimeIso = getTimeInZone(
+                    formData.startTime,
+                    timezone
+                );
+                const [hours, minutes] = startTimeIso.split(':').map(Number);
+                startTimeInt = hours * 100 + minutes;
+            }
+
+            if (formData.endTime) {
+                // Use the utility function to get time in the specified timezone
+                const endTimeIso = getTimeInZone(formData.endTime, timezone);
+                const [hours, minutes] = endTimeIso.split(':').map(Number);
+                endTimeInt = hours * 100 + minutes;
+            }
 
             const availabilityData = {
                 id: availabilityId,
@@ -392,17 +421,25 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                                 render={({ field }) => {
                                     let luxonValue = null;
                                     if (field.value) {
-                                        luxonValue = DateTime.fromJSDate(field.value).toUTC();
+                                        luxonValue = DateTime.fromJSDate(
+                                            field.value
+                                        ).toUTC();
                                     }
 
                                     return (
                                         <DatePicker
                                             label="Start Date"
                                             value={luxonValue}
+                                            timezone="UTC"
                                             onChange={(date) => {
                                                 // Convert Luxon DateTime to native Date if needed
-                                                if (date && 'toJSDate' in date) {
-                                                    const jsDate = (date as any).toJSDate();
+                                                if (
+                                                    date &&
+                                                    'toJSDate' in date
+                                                ) {
+                                                    const jsDate = (
+                                                        date as any
+                                                    ).toJSDate();
                                                     field.onChange(jsDate);
                                                 } else {
                                                     field.onChange(date);
@@ -412,7 +449,8 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                                                 textField: {
                                                     error: !!errors.startDate,
                                                     helperText:
-                                                        errors.startDate?.message,
+                                                        errors.startDate
+                                                            ?.message,
                                                     fullWidth: true,
                                                 },
                                             }}
@@ -434,6 +472,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                                                   ).toUTC()
                                                 : null
                                         }
+                                        timezone="UTC"
                                         onChange={(time) => {
                                             // Convert Luxon DateTime to native Date if needed
                                             if (time && 'toJSDate' in time) {
@@ -465,17 +504,25 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                                 render={({ field }) => {
                                     let luxonValue = null;
                                     if (field.value) {
-                                        luxonValue = DateTime.fromJSDate(field.value).toUTC();
+                                        luxonValue = DateTime.fromJSDate(
+                                            field.value
+                                        ).toUTC();
                                     }
 
                                     return (
                                         <DatePicker
                                             label="End Date"
                                             value={luxonValue}
+                                            timezone="UTC"
                                             onChange={(date) => {
                                                 // Convert Luxon DateTime to native Date if needed
-                                                if (date && 'toJSDate' in date) {
-                                                    const jsDate = (date as any).toJSDate();
+                                                if (
+                                                    date &&
+                                                    'toJSDate' in date
+                                                ) {
+                                                    const jsDate = (
+                                                        date as any
+                                                    ).toJSDate();
                                                     field.onChange(jsDate);
                                                 } else {
                                                     field.onChange(date);
@@ -506,6 +553,7 @@ export default function AvailabilityForm(props: AvailabilityFormProps) {
                                                   ).toUTC()
                                                 : null
                                         }
+                                        timezone="UTC"
                                         onChange={(time) => {
                                             // Convert Luxon DateTime to native Date if needed
                                             if (time && 'toJSDate' in time) {

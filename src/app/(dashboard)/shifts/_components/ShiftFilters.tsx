@@ -231,8 +231,6 @@ export function ShiftFilters({
             );
         }
 
-        console.log({ filters });
-
         if (filters.unfilled && filters.unfilled.id != 'any') {
             const filledLabel = {
                 unfilled: 'Open',
@@ -578,15 +576,17 @@ export function ShiftFilters({
                                                 <DatePicker
                                                     {...field}
                                                     value={
-                                                        field.value
-                                                            ? dayjs.utc(
-                                                                  field.value
-                                                              )
-                                                            : null
+                                                        (field.value as any) ??
+                                                        // ? dayjs.utc(
+                                                        //       field.value
+                                                        //   )
+                                                        // :
+                                                        (null as any)
                                                     }
                                                     onChange={(date) =>
                                                         field.onChange(
-                                                            date?.toDate()
+                                                            //    date?.toDate()
+                                                            date
                                                         )
                                                     }
                                                     slotProps={{

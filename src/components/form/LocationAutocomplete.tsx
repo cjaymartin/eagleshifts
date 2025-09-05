@@ -41,11 +41,7 @@ export type LocationAutocompleteProps = Omit<
     helperText?: React.ReactNode;
 };
 
-// Counter to track render calls
-let renderCount = 0;
-
 export default function LocationAutocomplete(props: LocationAutocompleteProps) {
-
     const {
         value,
         onChange,
@@ -170,7 +166,6 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
                 </MenuItem>
             )}
             renderInput={(params) => {
-
                 // If a location is selected, show the pin and name and address view
                 if (selectedLocation) {
                     return (

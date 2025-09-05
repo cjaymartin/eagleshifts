@@ -54,8 +54,6 @@ export function ShiftRow(props: ShiftRowProps) {
     const isAdmin = ['admin', 'owner'].includes(role);
 
     function handleEdit() {
-        console.log('CLICKED EDIT');
-        console.dir({ shift });
         dialogs.open(ShiftDialog, shift);
     }
 

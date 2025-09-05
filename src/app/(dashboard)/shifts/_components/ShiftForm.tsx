@@ -23,7 +23,7 @@ import { combineDateAndTime, getTimeInZone } from '@/utils/dateAndTimeUtils';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 
 // Set default timezone to UTC
-Settings.defaultZone = 'UTC';
+//Settings.defaultZone = 'UTC';
 import { useForm, Controller, FormProvider } from 'react-hook-form';
 import { useDialogs } from '@toolpad/core';
 import { useNotifications } from '@/components/providers/NotificationsProvider';
@@ -498,14 +498,6 @@ export default function ShiftForm(props: ShiftFormProps) {
                 timezone
             );
 
-            console.log('WHOAH');
-            console.log({
-                startTimeISO,
-                endTimeISO,
-                date: formData.date,
-                startTime: formData.startTime,
-                endTime: formData.endTime,
-            });
 
             const shiftData = {
                 id: shiftId,

@@ -16,7 +16,7 @@ import {
     Alert,
 } from '@mui/material';
 import { Calendar as BigCalendar, luxonLocalizer } from 'react-big-calendar';
-import { DateTime, Settings } from 'luxon';
+import { DateTime } from 'luxon';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import {
     useAuthQuery,
@@ -30,9 +30,7 @@ import { useNotifications } from '@/components/providers/NotificationsProvider';
 import AddIcon from '@mui/icons-material/Add';
 import AvailabilityDialog from './_components/AvailabilityDialog';
 
-// Create a localizer for the calendar
-const localizer = luxonLocalizer(DateTime);
-Settings.defaultZone = 'UTC'; // Set default timezone to UTC
+const localizer = luxonLocalizer(DateTime); // or globalizeLocalizer
 
 // Colored wrapper for date cells
 const ColoredDateCellWrapper: React.FC<{ children: React.ReactElement }> = ({
@@ -159,7 +157,7 @@ export default function Availability() {
         (calEvent: { id: string }) => {
             const availability = availabilityLookup[calEvent.id];
             if (availability) {
-                dialogs.open(AvailabilityDialog, availability);
+                dialogs.open(AvailabilityDialog, availability as any);
             }
         },
         [dialogs, availabilityLookup]
@@ -232,16 +230,20 @@ export default function Availability() {
         end: Date;
     }> =
         availabilities?.map((availability) => {
-            // Parse dates in UTC to avoid timezone issues
-            const startDate = DateTime.fromISO(
-                availability.startDate.toString(),
-                { zone: 'UTC' }
-            );
-            // For the end date, we need to add 1 day to make it inclusive in the calendar
-            // but we need to ensure we stay in UTC to avoid timezone issues
-            const endDate = DateTime.fromISO(availability.endDate.toString(), {
-                zone: 'UTC',
-            }).plus({ days: 1 });
+            // Parse start date in UTC then adjust to the current timezone
+            const startDate = DateTime.fromJSDate(availability.startDate, {
+                zone: 'utc',
+            })
+                .setZone(DateTime.local().zoneName) // Convert to local timezone
+                .startOf('day');
+
+            // Parse end date in UTC, adjust to the current timezone, and add 1 day for inclusivity
+            const endDate = DateTime.fromJSDate(availability.endDate, {
+                zone: 'utc',
+            })
+                .setZone(DateTime.local().zoneName) // Convert to local timezone
+                .endOf('day');
+
 
             return {
                 id: availability.id,
@@ -249,7 +251,7 @@ export default function Availability() {
                     availability.desc ||
                     (availability.isAvailable ? 'Available' : 'Unavailable'),
                 allDay: true,
-                // Use toJSDate() at the last moment to convert to JavaScript Date
+                // Use toJSDate() to convert Luxon DateTime to JavaScript Date
                 start: startDate.toJSDate(),
                 end: endDate.toJSDate(),
             };

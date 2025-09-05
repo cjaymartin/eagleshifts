@@ -164,14 +164,6 @@ export function combineDateAndTime(
 
     const combinedDateTime = dateAndTimeInZone.toUTC();
 
-    console.log({
-        date,
-        timeIso,
-        timezone,
-        dateInTimezone: dateInTimezone.toString(),
-        dateAndTimeInZone: dateAndTimeInZone.toString(),
-        combinedDateTime: combinedDateTime.toString(),
-    });
 
     return combinedDateTime.toString();
 }
