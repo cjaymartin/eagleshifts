@@ -1,5 +1,4 @@
 import { DateTime } from 'luxon';
-import { SlopDateTimeConversionOptions } from '@/utils/slopDateUtils';
 
 // Hours from "00" to "23"
 type HourIso =
@@ -114,23 +113,7 @@ export function castUtcDate(date: Date): UtcDate {
     }
 }
 
-export function utcToTimezone(utcDate: Date | string, timezone: string): Date {
-    // Handle string input (ISO format)
-    if (typeof utcDate === 'string') {
-        return DateTime.fromISO(utcDate, {
-            zone: 'UTC',
-        })
-            .setZone(timezone)
-            .toJSDate();
-    }
-
-    // Handle Date object
-    return DateTime.fromJSDate(utcDate, {
-        zone: 'UTC',
-    })
-        .setZone(timezone)
-        .toJSDate();
-}
+// utcToTimezone function has been removed as it's no longer needed
 
 export function getTimeInZone(dateInTimezone: Date, timezone: string): TimeIso {
     // Convert the date to a Luxon DateTime object with the specified timezone
@@ -163,7 +146,6 @@ export function combineDateAndTime(
     });
 
     const combinedDateTime = dateAndTimeInZone.toUTC();
-
 
     return combinedDateTime.toString();
 }
