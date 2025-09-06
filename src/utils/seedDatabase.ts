@@ -538,16 +538,16 @@ export async function seedDatabase() {
             for (let i = 0; i < numAvailabilities; i++) {
                 // Random start date within the next 30 days
                 const startDay = Math.floor(Math.random() * 25); // Leave room for multi-day availabilities
-                const startDate = new Date(
+                const startDate = new Date(Date.UTC(
                     currentYear,
                     currentMonth,
                     currentDate.getDate() + startDay
-                );
+                ));
 
                 // Random duration between 1-5 days
                 const durationDays = Math.floor(Math.random() * 5) + 1;
-                const endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + durationDays);
+                const endDate = new Date(startDate.getTime()); // Clone startDate
+                endDate.setUTCDate(startDate.getUTCDate() + durationDays);
 
                 // Random start and end times (in minutes from midnight)
                 const startTime = Math.floor(Math.random() * 12) * 60 + 480; // 8am to 8pm in minutes from midnight
