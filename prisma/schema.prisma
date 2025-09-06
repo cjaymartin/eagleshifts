@@ -108,10 +108,12 @@ model Organization {
   members        Member[]
   invitations    Invitation[]
   Shift          Shift[]
+  ShiftDraft     ShiftDraft[]
   profile        OrganizationProfile?
   uploadGroups   UploadGroup[]
   locations      Location[]
   locationGroups LocationGroup[]
+  departments    Department[]
 
   logEntries LogEntry[]
   Checklist  Checklist[]
@@ -159,6 +161,7 @@ model Member {
   availabilities          Availability[]
   shiftAssignments        shiftAssignment[]
   shiftRequests           ShiftRequest[]
+  shiftDrafts             ShiftDraft[]
   uploads                 Upload[]                  @relation("Uploader")
   deletedUploads          Upload[]                  @relation("Deleter")
   ChecklistItemCompletion ChecklistItemCompletion[]
@@ -203,8 +206,9 @@ model Shift {
   title          String
   legacyLocation String?
   locationId     String?
-  startTime      DateTime
-  endTime        DateTime
+  departmentId   String?
+  startTime      DateTime @db.Timestamptz()
+  endTime        DateTime @db.Timestamptz()
   slots          Int
   notes          String?
   adminNotes     String?
@@ -215,8 +219,9 @@ model Shift {
   isCancelled Boolean @default(false)
 
   // Relationships
-  organization            Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  location                Location?                 @relation(fields: [locationId], references: [id])
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location         Location?         @relation(fields: [locationId], references: [id])
+  department       Department?       @relation(fields: [departmentId], references: [id])
   // assignments   Member[]       @relation("ShiftAssignments")
   shiftAssignments        shiftAssignment[]
   shiftRequests           ShiftRequest[]
@@ -231,8 +236,8 @@ model Shift {
 
 model Availability {
   id        String   @id @default(cuid())
-  startDate DateTime
-  endDate   DateTime
+  startDate DateTime @db.Timestamptz()
+  endDate   DateTime @db.Timestamptz()
   startTime Int?
   endTime   Int?
 
@@ -278,6 +283,34 @@ model ShiftRequest {
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@map("shift_request")
+}
+
+model ShiftDraft {
+  id             String @id @default(cuid())
+  organizationId String
+  memberId       String // Required field - draft belongs to a specific member
+
+  title          String
+  legacyLocation String?
+  locationId     String?
+  departmentId   String?
+  date           DateTime
+  startTime      DateTime? @db.Timestamptz()
+  endTime        DateTime? @db.Timestamptz()
+  slots          Int
+  notes          String?
+  adminNotes     String?
+  timezone       String    @default("America/New_York")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relationships
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location     Location?    @relation(fields: [locationId], references: [id])
+  department   Department?  @relation(fields: [departmentId], references: [id])
+  member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("shift_draft")
 }
 
 model LogEntry {
@@ -359,22 +392,44 @@ model LocationGroup {
   @@map("location_group")
 }
 
-model Location {
+model Department {
   id             String   @id @default(cuid())
   organizationId String
   name           String
-  address        String
-  latitude       Float
-  longitude      Float
-  groupId        String?
-  tags           String? // Stored as JSON array
+  description    String?
+  color          String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   // Relationships
-  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  group        LocationGroup? @relation(fields: [groupId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locations    Location[]
   shifts       Shift[]
+  shiftDrafts  ShiftDraft[]
+
+  @@unique([organizationId, name])
+  @@map("department")
+}
+
+model Location {
+  id                  String   @id @default(cuid())
+  organizationId      String
+  name                String
+  address             String
+  latitude            Float
+  longitude           Float
+  groupId             String?
+  defaultDepartmentId String?
+  tags                String? // Stored as JSON array
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relationships
+  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  group             LocationGroup? @relation(fields: [groupId], references: [id])
+  defaultDepartment Department?    @relation(fields: [defaultDepartmentId], references: [id])
+  shifts            Shift[]
+  ShiftDraft        ShiftDraft[]
 
   @@unique([organizationId, name])
   @@map("location")

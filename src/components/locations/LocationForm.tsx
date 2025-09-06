@@ -24,6 +24,7 @@ import {
     useLocationQuery,
     useLocationUpdateMutation,
 } from '@/queries/locations';
+import DepartmentAutocomplete from '@/components/form/DepartmentAutocomplete';
 import LocationPickerMap from './LocationPickerMap';
 
 // Type for the form data
@@ -34,6 +35,7 @@ type LocationFormData = {
     latitude: number;
     longitude: number;
     groupId?: string;
+    defaultDepartmentId?: string;
     tags?: string[];
 };
 
@@ -80,6 +82,7 @@ export default function LocationForm({
             latitude: 40.7128, // Default to New York City
             longitude: -74.006,
             groupId: undefined,
+            defaultDepartmentId: undefined,
             tags: [],
         },
     });
@@ -97,6 +100,7 @@ export default function LocationForm({
                 latitude: location.latitude,
                 longitude: location.longitude,
                 groupId: location.groupId || undefined,
+                defaultDepartmentId: location.defaultDepartmentId || undefined,
                 tags: location.tags || [],
             });
             setSelectedTags(location.tags || []);
@@ -379,6 +383,18 @@ export default function LocationForm({
                                         variant="outlined"
                                     />
                                 )}
+                            />
+                        )}
+                    />
+
+                    {/* Default Department */}
+                    <Controller
+                        name="defaultDepartmentId"
+                        control={control}
+                        render={({ field }) => (
+                            <DepartmentAutocomplete
+                                value={field.value || null}
+                                onChange={(value) => field.onChange(value)}
                             />
                         )}
                     />

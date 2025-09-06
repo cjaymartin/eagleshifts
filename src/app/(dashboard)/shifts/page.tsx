@@ -14,17 +14,13 @@ import {
     TableRow,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
+import { DateTime } from 'luxon';
 import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
 import Download from '@mui/icons-material/Download';
 import { useBusinessProfileQuery } from '@/queries/team';
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 import { ShiftRow } from './_components/ShiftRow';
+import { DraftRow } from './_components/DraftRow';
 import { useAuthQuery, useTeamUsersLookupQuery } from '@/queries/users';
 import { ShiftFilters, ShiftFilterSchema } from './_components/ShiftFilters';
 import { trpc } from '@/lib/trpc/client';
@@ -32,11 +28,14 @@ import { useDialogs } from '@toolpad/core';
 import ShiftForm from '@/app/(dashboard)/shifts/_components/ShiftForm';
 import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
 import { useBatchCheckShiftChecklistsQuery } from '@/queries/shifts';
+import {
+    useShiftDraftsListQuery,
+    useShiftDraftDeleteMutation,
+} from '@/queries/shiftDrafts';
 
 export default function Shifts() {
     //const { setNew: openAddShiftDialog } = useShiftDialogHelpers();
     const dialogs = useDialogs();
-    function openAddShiftDialog() {}
 
     const { data: session } = useAuthQuery();
     const role = session?.user?.role ?? 'guest';
@@ -48,17 +47,19 @@ export default function Shifts() {
     // Get organization profile data for timezone
     const { data: businessProfile } = useBusinessProfileQuery();
     const { data: shifts } = trpc.shifts.list.useQuery(filters as any);
+    const { data: draftShifts = [] } = useShiftDraftsListQuery();
 
     // Get checklist completion status for all shifts in a single batch query
-    const shiftIds = shifts?.map(shift => shift.id) || [];
-    const { data: checklistStatuses } = useBatchCheckShiftChecklistsQuery(shiftIds);
+    const shiftIds = shifts?.map((shift) => shift.id) || [];
+    const { data: checklistStatuses } =
+        useBatchCheckShiftChecklistsQuery(shiftIds);
 
     const fileType =
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
     const fileExtension = '.xlsx';
 
     const exportToXLSX = () => {
-        const fileName = 'shifts-' + dayjs.utc().format('YYYY-MM-DD');
+        const fileName = 'shifts-' + DateTime.utc().toFormat('yyyy-MM-dd');
 
         const csvData = shifts?.map((x) => {
             const { title, location, startTime, endTime, slots } = x;
@@ -68,15 +69,15 @@ export default function Shifts() {
                 x.timezone || businessProfile?.timezone || 'UTC';
 
             // Format times using the appropriate timezone
-            const formattedDate = dayjs(startTime)
-                .tz(shiftTimezone)
-                .format('YYYY-MM-DD');
-            const formattedStartTime = dayjs(startTime)
-                .tz(shiftTimezone)
-                .format('hh:mm a');
-            const formattedEndTime = dayjs(endTime)
-                .tz(shiftTimezone)
-                .format('hh:mm a');
+            const formattedDate = DateTime.fromJSDate(startTime)
+                .setZone(shiftTimezone)
+                .toFormat('yyyy-MM-dd');
+            const formattedStartTime = DateTime.fromJSDate(startTime)
+                .setZone(shiftTimezone)
+                .toFormat('hh:mm a');
+            const formattedEndTime = DateTime.fromJSDate(endTime)
+                .setZone(shiftTimezone)
+                .toFormat('hh:mm a');
 
             const assignments = x.shiftAssignments
                 .map((assignment) => userLookup[assignment.memberId])
@@ -123,7 +124,9 @@ export default function Shifts() {
                             <TableRow>
                                 <TableCell>Title</TableCell>
                                 <TableCell>Location</TableCell>
-
+                                {/*{!filters?.departmentIds?.length && (*/}
+                                {/*    <TableCell>Department</TableCell>*/}
+                                {/*)}*/}
                                 <TableCell>Date</TableCell>
                                 <TableCell>Time</TableCell>
                                 <TableCell>Slots</TableCell>
@@ -131,13 +134,38 @@ export default function Shifts() {
                             </TableRow>
                         </TableHead>
                         <TableBody>
+                            {/* Draft shifts - shown at the TOP */}
+                            {draftShifts.map((draft) => {
+                                return (
+                                    <TableRow key={`draft-${draft.id}`}>
+                                        <DraftRow
+                                            draft={draft}
+                                            isDepartmentFilterActive={
+                                                !!filters?.departmentIds?.length
+                                            }
+                                        />
+                                    </TableRow>
+                                );
+                            })}
+
+                            {/* Regular shifts */}
                             {shifts
                                 ? shifts.map((shift) => {
                                       return (
                                           <TableRow key={shift.id}>
-                                              <ShiftRow 
-                                                  shift={shift as any} 
-                                                  isChecklistComplete={checklistStatuses ? checklistStatuses[shift.id] : false} 
+                                              <ShiftRow
+                                                  shift={shift as any}
+                                                  isDepartmentFilterActive={
+                                                      !!filters?.departmentIds
+                                                          ?.length
+                                                  }
+                                                  isChecklistComplete={
+                                                      checklistStatuses
+                                                          ? checklistStatuses[
+                                                                shift.id
+                                                            ]
+                                                          : false
+                                                  }
                                               />
                                           </TableRow>
                                       );

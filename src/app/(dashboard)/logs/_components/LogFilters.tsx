@@ -17,6 +17,9 @@ import ClearIcon from '@mui/icons-material/Clear';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { LogActionType } from '@/lib/logging';
 
+import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon';
+import 'luxon';
+
 // Define the filter state type
 export interface LogFilterState {
     actionType?: string;
@@ -137,7 +140,9 @@ export function LogFilters({
                 {/* User Filter */}
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <FormControl fullWidth size="small">
-                        <InputLabel id="user-label" shrink>User</InputLabel>
+                        <InputLabel id="user-label" shrink>
+                            User
+                        </InputLabel>
                         <Select
                             labelId="user-label"
                             id="user"
@@ -163,7 +168,7 @@ export function LogFilters({
 
                 {/* Date Range Filters */}
                 <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <LocalizationProvider dateAdapter={AdapterLuxon}>
                         <DatePicker
                             label="Start Date"
                             value={
@@ -172,7 +177,7 @@ export function LogFilters({
                                     : null
                             }
                             onChange={(date) =>
-                                handleDateChange('startDate', date)
+                                handleDateChange('startDate', date as any)
                             }
                             slotProps={{
                                 textField: { size: 'small', fullWidth: true },
@@ -189,7 +194,7 @@ export function LogFilters({
                                 filters.endDate ? dayjs(filters.endDate) : null
                             }
                             onChange={(date) =>
-                                handleDateChange('endDate', date)
+                                handleDateChange('endDate', date as any)
                             }
                             slotProps={{
                                 textField: { size: 'small', fullWidth: true },

@@ -18,6 +18,7 @@ import {
     UploadOutlined,
     History,
     LocationOn,
+    FolderOutlined,
 } from '@mui/icons-material';
 import { Badge } from '@mui/material';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -72,6 +73,11 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
                           title: 'Locations',
                           segment: 'locations',
                           icon: <LocationOn />,
+                      },
+                      {
+                          title: 'Departments',
+                          segment: 'departments',
+                          icon: <FolderOutlined />,
                       },
                       {
                           title: 'Uploads',

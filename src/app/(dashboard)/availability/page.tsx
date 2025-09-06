@@ -15,13 +15,8 @@ import {
     TextField,
     Alert,
 } from '@mui/material';
-import dayjs from 'dayjs';
-import {
-    Calendar as BigCalendar,
-    luxonLocalizer,
-    Views,
-} from 'react-big-calendar';
-import { DateTime, Settings } from 'luxon';
+import { Calendar as BigCalendar, luxonLocalizer } from 'react-big-calendar';
+import { DateTime } from 'luxon';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import {
     useAuthQuery,
@@ -35,9 +30,7 @@ import { useNotifications } from '@/components/providers/NotificationsProvider';
 import AddIcon from '@mui/icons-material/Add';
 import AvailabilityDialog from './_components/AvailabilityDialog';
 
-// Create a localizer for the calendar
-const localizer = luxonLocalizer(DateTime);
-Settings.defaultZone = 'UTC'; // Set default timezone to UTC
+const localizer = luxonLocalizer(DateTime); // or globalizeLocalizer
 
 // Colored wrapper for date cells
 const ColoredDateCellWrapper: React.FC<{ children: React.ReactElement }> = ({
@@ -87,6 +80,8 @@ export default function Availability() {
     // Mutation for updating default availability
     const updateDefaultAvailability = useUpdateDefaultAvailabilityMutation();
     const notifications = useNotifications();
+
+    const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
 
     // Update selected member ID when user changes
     useEffect(() => {
@@ -140,9 +135,9 @@ export default function Availability() {
     };
 
     // Fetch availability data
-    const { data: availabilities } = trpc.availability.list.useQuery({
-        memberId: selectedMemberId!,
-    });
+    const { data: availabilities } = trpc.availability.list.useQuery(
+        selectedMemberId ? { memberId: selectedMemberId } : {}
+    );
 
     // Create a lookup object for availabilities by ID
     const availabilityLookup = React.useMemo(() => {
@@ -162,7 +157,7 @@ export default function Availability() {
         (calEvent: { id: string }) => {
             const availability = availabilityLookup[calEvent.id];
             if (availability) {
-                dialogs.open(AvailabilityDialog, availability);
+                dialogs.open(AvailabilityDialog, availability as any);
             }
         },
         [dialogs, availabilityLookup]
@@ -181,9 +176,13 @@ export default function Availability() {
             if (action === 'doubleClick') {
                 // Create a new availability entry starting on the selected date
                 // Set endDate to be the same as startDate
+                // Convert native Date to Luxon DateTime and back to ensure proper formatting
+                const startDateTime = DateTime.fromJSDate(start).toUTC();
+                const jsDate = startDateTime.toJSDate();
+
                 const newAvailability = {
-                    startDate: start,
-                    endDate: start, // Set to same day as startDate
+                    startDate: jsDate,
+                    endDate: jsDate, // Set to same day as startDate
                     memberId: selectedMemberId,
                     isAvailable: true,
                 };
@@ -231,13 +230,38 @@ export default function Availability() {
         end: Date;
     }> =
         availabilities?.map((availability) => {
-            // Parse dates in UTC to avoid timezone issues
-            const startDate = dayjs.utc(availability.startDate, 'YYYY-MM-DD');
-            // For the end date, we need to add 1 day to make it inclusive in the calendar
-            // but we need to ensure we stay in UTC to avoid timezone issues
-            const endDate = dayjs
-                .utc(availability.endDate, 'YYYY-MM-DD')
-                .add(1, 'day');
+            const startDate = DateTime.fromObject(
+                {
+                    year: availability.startDate.getUTCFullYear(),
+                    month: availability.startDate.getUTCMonth() + 1, // Add 1 to convert from 0-indexed to 1-indexed
+                    day: availability.startDate.getUTCDate(),
+                },
+                { zone: 'local' }
+            ).startOf('day');
+
+            const endDate = DateTime.fromObject(
+                {
+                    year: availability.endDate.getUTCFullYear(),
+                    month: availability.endDate.getUTCMonth() + 1,
+                    day: availability.endDate.getUTCDate(),
+                },
+                { zone: 'local' }
+            ).endOf('day');
+            console.log({
+                startDate: startDate.toJSDate(),
+                originalStartDate: availability.startDate,
+            });
+
+            console.log({
+                id: availability.id,
+                title:
+                    availability.desc ||
+                    (availability.isAvailable ? 'Available' : 'Unavailable'),
+                allDay: true,
+                // Use toJSDate() to convert Luxon DateTime to JavaScript Date
+                start: startDate.toJSDate(),
+                end: endDate.toJSDate(),
+            });
 
             return {
                 id: availability.id,
@@ -245,9 +269,9 @@ export default function Availability() {
                     availability.desc ||
                     (availability.isAvailable ? 'Available' : 'Unavailable'),
                 allDay: true,
-                // Use toDate() at the last moment to convert to JavaScript Date
-                start: startDate.toDate(),
-                end: endDate.toDate(),
+                // Use toJSDate() to convert Luxon DateTime to JavaScript Date
+                start: startDate.toJSDate(),
+                end: endDate.toJSDate(),
             };
         }) || [];
 
@@ -324,6 +348,10 @@ export default function Availability() {
                                 timeslots={4}
                                 views={['month', 'week', 'day']}
                                 defaultView="month"
+                                date={currentDate as any}
+                                onNavigate={(date) => {
+                                    setCurrentDate(date);
+                                }}
                             />
                         </Grid>
                     </Grid>
@@ -332,9 +360,14 @@ export default function Availability() {
                     <Container sx={{ m: 5 }}>
                         <IconButton
                             onClick={() => {
+                                // Convert native Date to Luxon DateTime and back to ensure proper formatting
+                                const now = DateTime.now().toUTC();
+                                const jsStartDate = now.toJSDate();
+                                const jsEndDate = now.toJSDate();
+
                                 const newAvailability = {
-                                    startDate: new Date(),
-                                    endDate: new Date(),
+                                    startDate: jsStartDate,
+                                    endDate: jsEndDate,
                                     memberId: selectedMemberId,
                                     isAvailable: true,
                                 };
@@ -351,7 +384,8 @@ export default function Availability() {
             ) : (
                 <Container sx={{ mt: 4 }}>
                     <Alert severity="info">
-                        Please choose a member of your team to access availability
+                        Please choose a member of your team to access
+                        availability
                     </Alert>
                 </Container>
             )}

@@ -252,13 +252,17 @@ export const shiftsRouter = router({
                 .object({
                     title: z.string().optional(),
                     location: z.string().optional(),
+                    locationIds: z.array(z.string()).optional(),
+                    locationGroupIds: z.array(z.string()).optional(),
+                    departmentIds: z.array(z.string()).optional(),
                     startDate: z.string().optional(),
                     endDate: z.string().optional(),
-                    assigned: z.string().optional(),
+                    assigned: z.array(z.string()).optional(),
                     unfilled: z
                         .enum(['unfilled', 'filled', 'mine', 'any'])
                         .optional(),
                     includeLocationGroup: z.boolean().optional(),
+                    includeDepartment: z.boolean().optional(),
                     isCancelled: z.boolean().optional(),
                 })
                 .optional()
@@ -300,12 +304,69 @@ export const shiftsRouter = router({
                         },
                     ];
 
+                // Handle locationIds, locationGroupIds, and departmentIds filters
+                const hasLocationIds =
+                    input.locationIds && input.locationIds.length > 0;
+                const hasLocationGroupIds =
+                    input.locationGroupIds && input.locationGroupIds.length > 0;
+                const hasDepartmentIds =
+                    input.departmentIds && input.departmentIds.length > 0;
+
+                // Apply location filters using AND logic
+                if (hasLocationIds) {
+                    // If we have location IDs, filter by those directly
+                    where.locationId = {
+                        in: input.locationIds,
+                    };
+                }
+
+                if (hasLocationGroupIds) {
+                    // If we have location group IDs, filter by those
+                    where.location = {
+                        ...where.location,
+                        groupId: {
+                            in: input.locationGroupIds,
+                        } as any,
+                    };
+                }
+
+                if (hasDepartmentIds) {
+                    // For department filtering, we need to handle both direct department assignment
+                    // and default department from location
+                    // The department condition should be an OR between direct department and location's default department
+                    const departmentCondition = {
+                        OR: [
+                            {
+                                departmentId: {
+                                    in: input.departmentIds,
+                                },
+                            },
+                            {
+                                departmentId: null,
+                                location: {
+                                    defaultDepartmentId: {
+                                        in: input.departmentIds,
+                                    },
+                                },
+                            },
+                        ],
+                    };
+
+                    // If we already have location filters, we need to AND them with the department condition
+                    if (hasLocationIds || hasLocationGroupIds) {
+                        // Merge the department condition with existing conditions
+                        Object.assign(where, departmentCondition);
+                    } else {
+                        // If no location filters, just use the department condition directly
+                        where.OR = departmentCondition.OR;
+                    }
+                }
+
                 if (input.startDate || input.endDate) {
-                    // Filter based on startTime instead of date
+                    // Filter based on startTime for both startDate and endDate
                     if (input.startDate) {
-                        // Start of the day in the specified timezone
-                        const startOfDay = dayjs
-                            .tz(input.startDate, 'America/New_York')
+                        // Start of the day in UTC (most restrictive timezone)
+                        const startOfDay = dayjs(input.startDate)
                             .startOf('day')
                             .utc()
                             .toDate();
@@ -316,25 +377,27 @@ export const shiftsRouter = router({
                                 : { gte: startOfDay };
                     }
                     if (input.endDate) {
-                        // End of the day in the specified timezone
-                        const endOfDay = dayjs
-                            .tz(input.endDate, 'America/New_York')
+                        // End of the day in UTC (most inclusive timezone)
+                        const endOfDay = dayjs(input.endDate)
                             .endOf('day')
                             .utc()
                             .toDate();
-                        where.endTime =
-                            where.endTime && typeof where.endTime === 'object'
-                                ? { ...where.endTime, lte: endOfDay }
+                        where.startTime =
+                            where.startTime &&
+                            typeof where.startTime === 'object'
+                                ? { ...where.startTime, lte: endOfDay }
                                 : { lte: endOfDay };
                     }
                 }
 
                 // Handle assigned filter
-                if (input.assigned) {
-                    // Use the member ID directly
+                if (input.assigned && input.assigned.length > 0) {
+                    // Use the member IDs array
                     where.shiftAssignments = {
                         some: {
-                            memberId: input.assigned,
+                            memberId: {
+                                in: input.assigned,
+                            },
                             outcome: 'assigned',
                         },
                     };
@@ -388,6 +451,8 @@ export const shiftsRouter = router({
                 where.isCancelled = false;
             }
 
+            console.dir({ where }, { depth: 9 });
+
             // Get filtered shifts
             const shifts = await ctx.prisma.shift.findMany({
                 where,
@@ -399,9 +464,11 @@ export const shiftsRouter = router({
                             ? {
                                   include: {
                                       group: true,
+                                      defaultDepartment: true,
                                   },
                               }
                             : undefined,
+                    department: input?.includeDepartment !== false,
                 },
                 orderBy: { startTime: 'asc' },
             });
@@ -506,8 +573,10 @@ export const shiftsRouter = router({
                     location: {
                         include: {
                             group: true,
+                            defaultDepartment: true,
                         },
                     },
+                    department: true,
                     Checklist: true,
                 },
             });
@@ -589,6 +658,7 @@ export const shiftsRouter = router({
                 title: z.string(),
                 locationId: z.string().optional(),
                 legacyLocation: z.string().optional(),
+                departmentId: z.string().nullable().optional(),
                 startTime: z.string(), // ISO8601 date string
                 endTime: z.string(), // ISO8601 date string
                 slots: z.number(),
@@ -656,6 +726,19 @@ export const shiftsRouter = router({
                     console.error('Error checking problematic user:', error);
                 }
             }
+            // If locationId is provided and departmentId is explicitly set to null or undefined,
+            // check if the location has a default department
+            let departmentId = input.departmentId;
+            if (input.locationId && departmentId === undefined) {
+                const location = await ctx.prisma.location.findUnique({
+                    where: { id: input.locationId },
+                    select: { defaultDepartmentId: true },
+                });
+                if (location?.defaultDepartmentId) {
+                    departmentId = location.defaultDepartmentId;
+                }
+            }
+
             const shift = await ctx.prisma.shift.create({
                 data: {
                     organizationId: ctx.user.organizationId,
@@ -664,6 +747,7 @@ export const shiftsRouter = router({
                     legacyLocation: input.locationId
                         ? undefined
                         : input.legacyLocation,
+                    departmentId: departmentId,
                     startTime: convertToTimezone(
                         input.startTime,
                         input.timezone
@@ -681,8 +765,10 @@ export const shiftsRouter = router({
                     location: {
                         include: {
                             group: true,
+                            defaultDepartment: true,
                         },
                     },
+                    department: true,
                 },
             });
 
@@ -902,6 +988,7 @@ export const shiftsRouter = router({
                 title: z.string(),
                 locationId: z.string().optional(),
                 legacyLocation: z.string().optional(),
+                departmentId: z.string().nullable().optional(),
                 startTime: z.string(), // ISO8601 date string
                 endTime: z.string(), // ISO8601 date string
                 slots: z.number(),
@@ -933,8 +1020,10 @@ export const shiftsRouter = router({
                         location: {
                             include: {
                                 group: true,
+                                defaultDepartment: true,
                             },
                         },
+                        department: true,
                     },
                 });
 
@@ -943,6 +1032,19 @@ export const shiftsRouter = router({
                         code: 'NOT_FOUND',
                         message: 'Shift not found',
                     });
+                }
+
+                // If locationId is provided and departmentId is explicitly set to null or undefined,
+                // check if the location has a default department
+                let departmentId = data.departmentId;
+                if (data.locationId && departmentId === undefined) {
+                    const location = await ctx.prisma.location.findUnique({
+                        where: { id: data.locationId },
+                        select: { defaultDepartmentId: true },
+                    });
+                    if (location?.defaultDepartmentId) {
+                        departmentId = location.defaultDepartmentId;
+                    }
                 }
 
                 // First update the shift
@@ -956,6 +1058,7 @@ export const shiftsRouter = router({
                         legacyLocation: data.locationId
                             ? undefined
                             : data.legacyLocation,
+                        departmentId: departmentId,
                         startTime: convertToTimezone(
                             data.startTime,
                             data.timezone
@@ -971,8 +1074,10 @@ export const shiftsRouter = router({
                         location: {
                             include: {
                                 group: true,
+                                defaultDepartment: true,
                             },
                         },
+                        department: true,
                     },
                 });
 
@@ -1216,8 +1321,10 @@ export const shiftsRouter = router({
                             location: {
                                 include: {
                                     group: true,
+                                    defaultDepartment: true,
                                 },
                             },
+                            department: true,
                         },
                     });
 
@@ -1283,7 +1390,11 @@ export const shiftsRouter = router({
                 },
                 include: {
                     shiftAssignments: true,
-                    location: true,
+                    location: {
+                        include: {
+                            defaultDepartment: true,
+                        },
+                    },
                 },
             });
 

@@ -13,6 +13,7 @@ import { ClientLocalizationProvider } from '@/components/providers/ClientLocaliz
 import { DialogsProvider } from '@toolpad/core';
 import { NotificationsProvider } from '@/components/providers/NotificationsProvider';
 import { TRPCProvider } from '@/lib/trpc/Provider';
+import { seedDatabase } from '@/utils/seedDatabase';
 
 const roboto = Roboto({
     weight: ['300', '400', '500', '700'],
@@ -36,11 +37,14 @@ export const metadata: Metadata = {
     description: 'Go shift your work',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    // Call seedDatabase function on server-side
+    await seedDatabase();
+
     return (
         <html lang="en" className={roboto.variable} suppressHydrationWarning>
             {/*<CssBaseline />*/}
