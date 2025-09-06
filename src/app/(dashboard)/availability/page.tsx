@@ -230,20 +230,38 @@ export default function Availability() {
         end: Date;
     }> =
         availabilities?.map((availability) => {
-            // Parse start date in UTC then adjust to the current timezone
-            const startDate = DateTime.fromJSDate(availability.startDate, {
-                zone: 'utc',
-            })
-                .setZone(DateTime.local().zoneName) // Convert to local timezone
-                .startOf('day');
+            const startDate = DateTime.fromObject(
+                {
+                    year: availability.startDate.getUTCFullYear(),
+                    month: availability.startDate.getUTCMonth() + 1, // Add 1 to convert from 0-indexed to 1-indexed
+                    day: availability.startDate.getUTCDate(),
+                },
+                { zone: 'local' }
+            ).startOf('day');
 
-            // Parse end date in UTC, adjust to the current timezone, and add 1 day for inclusivity
-            const endDate = DateTime.fromJSDate(availability.endDate, {
-                zone: 'utc',
-            })
-                .setZone(DateTime.local().zoneName) // Convert to local timezone
-                .endOf('day');
+            const endDate = DateTime.fromObject(
+                {
+                    year: availability.endDate.getUTCFullYear(),
+                    month: availability.endDate.getUTCMonth() + 1,
+                    day: availability.endDate.getUTCDate(),
+                },
+                { zone: 'local' }
+            ).endOf('day');
+            console.log({
+                startDate: startDate.toJSDate(),
+                originalStartDate: availability.startDate,
+            });
 
+            console.log({
+                id: availability.id,
+                title:
+                    availability.desc ||
+                    (availability.isAvailable ? 'Available' : 'Unavailable'),
+                allDay: true,
+                // Use toJSDate() to convert Luxon DateTime to JavaScript Date
+                start: startDate.toJSDate(),
+                end: endDate.toJSDate(),
+            });
 
             return {
                 id: availability.id,
