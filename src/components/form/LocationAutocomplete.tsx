@@ -41,16 +41,7 @@ export type LocationAutocompleteProps = Omit<
     helperText?: React.ReactNode;
 };
 
-// Counter to track render calls
-let renderCount = 0;
-
 export default function LocationAutocomplete(props: LocationAutocompleteProps) {
-    console.log('LocationAutocomplete render', {
-        value: props.value,
-        timestamp: new Date().toISOString(),
-        propsRef: props,
-    });
-
     const {
         value,
         onChange,
@@ -146,7 +137,6 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
             onInputChange={(event, newInputValue, reason) => {
                 // Only update the input value if it's a user input event
                 // This prevents the component from resetting when options are loaded
-                console.log({ reason });
                 if (reason === 'input') {
                     setInputValue(newInputValue);
                 }
@@ -176,11 +166,6 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
                 </MenuItem>
             )}
             renderInput={(params) => {
-                console.log('LocationAutocomplete renderInput called', {
-                    timestamp: new Date().toISOString(),
-                    renderCount: ++renderCount,
-                });
-
                 // If a location is selected, show the pin and name and address view
                 if (selectedLocation) {
                     return (

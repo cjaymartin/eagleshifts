@@ -1,47 +1,6 @@
 // Jest setup file
 require('jest-environment-jsdom');
 
-// Mock timezone to ensure consistent test results
-// This ensures tests run with the same timezone regardless of environment
-const originalDateTimeFormat = Intl.DateTimeFormat;
-const originalDate = global.Date;
-
-// Save the original timezone for debugging
-const originalTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-console.log(`Original timezone before mocking: ${originalTimezone}`);
-
-// Mock the timezone to America/New_York for tests
-const mockTimezone = 'America/New_York';
-
-// Mock Intl.DateTimeFormat to always return the mocked timezone
-// Intl.DateTimeFormat = function (locales, options) {
-//     if (options && options.timeZone) {
-//         console.log(`DateTimeFormat requested timezone: ${options.timeZone}`);
-//     }
-//     return new originalDateTimeFormat(locales, {
-//         ...options,
-//         timeZone: mockTimezone,
-//     });
-// };
-
-// Ensure DateTimeFormat.prototype methods work
-Intl.DateTimeFormat.prototype = originalDateTimeFormat.prototype;
-
-// Mock Date.prototype.getTimezoneOffset to return EST offset (-300 minutes or -240 minutes during DST)
-const originalGetTimezoneOffset = Date.prototype.getTimezoneOffset;
-Date.prototype.getTimezoneOffset = function () {
-    // Determine if date is in DST for Eastern Time
-    // Simple approximation: DST is from March to November
-    const month = this.getMonth(); // 0-11
-    const isDST = month > 2 && month < 11; // March (2) through October (10)
-    return isDST ? -240 : -300; // -240 minutes (-4 hours) for EDT, -300 minutes (-5 hours) for EST
-};
-
-console.log(`Mocked timezone for tests: ${mockTimezone}`);
-console.log(
-    `Current timezone after mocking: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`
-);
-
 // Mock Next.js router
 jest.mock('next/router', () => ({
     useRouter() {

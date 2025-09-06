@@ -73,8 +73,8 @@ export const availabilityRouter = router({
                 include: {
                     member: {
                         include: {
-                            settings: true
-                        }
+                            settings: true,
+                        },
                     },
                 },
                 orderBy: {
@@ -86,8 +86,8 @@ export const availabilityRouter = router({
             // startTime and endTime are already 4-digit integers
             return availabilities.map((availability) => ({
                 ...availability,
-                startDate: availability.startDate.toISOString(),
-                endDate: availability.endDate.toISOString(),
+                //startDate: availability.startDate.toISOString(),
+                //endDate: availability.endDate.toISOString(),
             }));
         }),
 
@@ -148,7 +148,7 @@ export const availabilityRouter = router({
         )
         .query(async ({ ctx, input }) => {
             const availability = await ctx.prisma.availability.findFirst({
-                where: { 
+                where: {
                     id: input.id,
                     member: {
                         organizationId: ctx.user.organizationId,
@@ -157,8 +157,8 @@ export const availabilityRouter = router({
                 include: {
                     member: {
                         include: {
-                            settings: true
-                        }
+                            settings: true,
+                        },
                     },
                 },
             });
@@ -211,8 +211,8 @@ export const availabilityRouter = router({
                     organizationId: ctx.user.organizationId,
                 },
                 include: {
-                    settings: true
-                }
+                    settings: true,
+                },
             });
 
             if (!member) {
@@ -223,7 +223,10 @@ export const availabilityRouter = router({
             }
 
             // Use the provided startDate and endDate - ensure UTC with 00:00:00.000 time
-            const startDate = dayjs.utc(input.startDate).startOf('day').toDate();
+            const startDate = dayjs
+                .utc(input.startDate)
+                .startOf('day')
+                .toDate();
             const endDate = dayjs.utc(input.endDate).startOf('day').toDate();
 
             // Use the provided startTime and endTime or default values
@@ -268,18 +271,18 @@ export const availabilityRouter = router({
             // Check if the availability record belongs to the user and their organization
             const existingAvailability =
                 await ctx.prisma.availability.findFirst({
-                    where: { 
+                    where: {
                         id,
                         member: {
                             organizationId: ctx.user.organizationId,
                         },
                     },
-                    select: { 
+                    select: {
                         memberId: true,
                         member: {
                             select: {
                                 organizationId: true,
-                                settings: true
+                                settings: true,
                             },
                         },
                     },
@@ -309,12 +312,18 @@ export const availabilityRouter = router({
 
             // Process startDate if provided - ensure UTC with 00:00:00.000 time
             if (updateData.startDate) {
-                updatePayload.startDate = dayjs.utc(updateData.startDate).startOf('day').toDate();
+                updatePayload.startDate = dayjs
+                    .utc(updateData.startDate)
+                    .startOf('day')
+                    .toDate();
             }
 
             // Process endDate if provided - ensure UTC with 00:00:00.000 time
             if (updateData.endDate) {
-                updatePayload.endDate = dayjs.utc(updateData.endDate).startOf('day').toDate();
+                updatePayload.endDate = dayjs
+                    .utc(updateData.endDate)
+                    .startOf('day')
+                    .toDate();
             }
 
             // Process startTime and endTime as is (they're already 4-digit integers)
@@ -343,13 +352,13 @@ export const availabilityRouter = router({
             // Check if the availability record belongs to the user and their organization
             const existingAvailability =
                 await ctx.prisma.availability.findFirst({
-                    where: { 
+                    where: {
                         id: input.id,
                         member: {
                             organizationId: ctx.user.organizationId,
                         },
                     },
-                    select: { 
+                    select: {
                         memberId: true,
                         member: {
                             select: {
@@ -381,7 +390,7 @@ export const availabilityRouter = router({
             // Use the same id but ensure we're only deleting from the user's organization
             // This is redundant with our check above, but provides an extra layer of security
             await ctx.prisma.availability.delete({
-                where: { 
+                where: {
                     id: input.id,
                 },
             });

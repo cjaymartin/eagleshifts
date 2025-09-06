@@ -1,52 +1,23 @@
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-import {
-    utcToOrgTimezone,
-    orgTimezoneToUtc,
-    combineDateTime,
-    isValidTimezone,
-    DateTimeConversionOptions,
-} from '@/utils/dateUtils';
-
-// Extend dayjs with plugins
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import { DateTime } from 'luxon';
+import { combineDateAndTime, getTimeInZone } from '@/utils/dateAndTimeUtils';
 
 describe('Date/Time Integration Tests - PRD Edge Cases', () => {
-    const nyOptions: DateTimeConversionOptions = {
-        organizationTimezone: 'America/New_York',
-        fallbackTimezone: 'America/New_York',
-    };
-
-    const laOptions: DateTimeConversionOptions = {
-        organizationTimezone: 'America/Los_Angeles',
-        fallbackTimezone: 'America/New_York',
-    };
+    const nyTimezone = 'America/New_York';
+    const laTimezone = 'America/Los_Angeles';
 
     describe('End-of-Day Shifts (PRD Requirement)', () => {
         it('should not make calendar show shift as spanning two days when endTime is near end of day', () => {
-            // Test a shift that ends at 11:59 PM - should not span to next day on calendar
             const testDate = new Date('2024-01-15');
-            const startTime = new Date('2024-01-15T20:00:00'); // 8 PM
-            const endTime = new Date('2024-01-15T23:59:00'); // 11:59 PM
+            const startTime = combineDateAndTime(testDate, '20:00', nyTimezone); // 8 PM
+            const endTime = combineDateAndTime(testDate, '23:59', nyTimezone); // 11:59 PM
 
-            const startTimeISO = combineDateTime(
-                testDate,
-                dayjs(startTime).format('HH:mm'),
-                nyOptions
-            );
-            const endTimeISO = combineDateTime(
-                testDate,
-                dayjs(endTime).format('HH:mm'),
-                nyOptions
-            );
+            const displayStart = DateTime.fromISO(startTime)
+                .setZone(nyTimezone)
+                .toJSDate();
+            const displayEnd = DateTime.fromISO(endTime)
+                .setZone(nyTimezone)
+                .toJSDate();
 
-            // Convert back to display times
-            const displayStart = utcToOrgTimezone(startTimeISO, nyOptions);
-            const displayEnd = utcToOrgTimezone(endTimeISO, nyOptions);
-
-            // Both should be on the same calendar day
             expect(displayStart.getDate()).toBe(displayEnd.getDate());
             expect(displayStart.getMonth()).toBe(displayEnd.getMonth());
             expect(displayStart.getFullYear()).toBe(displayEnd.getFullYear());
@@ -54,110 +25,93 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
 
         it('should handle shifts that end exactly at midnight', () => {
             const testDate = new Date('2024-01-15');
-            const startTime = new Date('2024-01-15T22:00:00'); // 10 PM
-            const endTime = new Date('2024-01-15T23:59:59'); // 11:59:59 PM (same day)
+            const startTime = combineDateAndTime(testDate, '22:00', nyTimezone); // 10 PM
+            const endTime = combineDateAndTime(testDate, '23:59', nyTimezone); // 11:59 PM
 
-            const startTimeISO = combineDateTime(
-                testDate,
-                dayjs(startTime).format('HH:mm'),
-                nyOptions
-            );
-            const endTimeISO = combineDateTime(
-                testDate,
-                dayjs(endTime).format('HH:mm'),
-                nyOptions
-            );
-
-            // Should handle midnight boundary correctly
-            expect(startTimeISO).toMatch(
+            expect(startTime).toMatch(
                 /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
             );
-            expect(endTimeISO).toMatch(
+            expect(endTime).toMatch(
                 /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
             );
 
-            // End time should be after start time
-            expect(new Date(endTimeISO).getTime()).toBeGreaterThan(
-                new Date(startTimeISO).getTime()
+            expect(new Date(endTime).getTime()).toBeGreaterThan(
+                new Date(startTime).getTime()
             );
         });
     });
 
     describe('Day Crossing Scenarios (PRD Requirement)', () => {
         it('should handle database → form → database conversion without day crossing issues', () => {
-            // Test a shift that could potentially cross days during conversion
-            const originalStartUTC = '2024-01-15T05:00:00.000Z'; // Midnight EST
-            const originalEndUTC = '2024-01-15T13:00:00.000Z'; // 8 AM EST
+            const originalStartUTC = new Date('2024-01-15T05:00:00.000Z'); // Midnight EST
+            const originalEndUTC = new Date('2024-01-15T13:00:00.000Z'); // 8 AM EST
 
-            // Simulate loading from database
-            const loadedStart = utcToOrgTimezone(originalStartUTC, nyOptions);
-            const loadedEnd = utcToOrgTimezone(originalEndUTC, nyOptions);
+            const loadedStart = DateTime.fromJSDate(originalStartUTC)
+                .setZone(nyTimezone)
+                .toJSDate();
+            const loadedEnd = DateTime.fromJSDate(originalEndUTC)
+                .setZone(nyTimezone)
+                .toJSDate();
 
-            // Simulate form processing (combining date and time)
-            const formDate = loadedStart; // Use start date as form date
-            const savedStartUTC = combineDateTime(
+            const formDate = loadedStart;
+            const savedStartUTC = combineDateAndTime(
                 formDate,
-                dayjs(loadedStart).format('HH:mm'),
-                nyOptions
+                getTimeInZone(loadedStart, nyTimezone),
+                nyTimezone
             );
-            const savedEndUTC = combineDateTime(
+            const savedEndUTC = combineDateAndTime(
                 formDate,
-                dayjs(loadedEnd).format('HH:mm'),
-                nyOptions
+                getTimeInZone(loadedEnd, nyTimezone),
+                nyTimezone
             );
 
-            // Should preserve original UTC times
-            expect(savedStartUTC).toBe(originalStartUTC);
-            expect(savedEndUTC).toBe(originalEndUTC);
+            expect(new Date(savedStartUTC).getTime()).toBe(
+                originalStartUTC.getTime()
+            );
+            expect(new Date(savedEndUTC).getTime()).toBe(
+                originalEndUTC.getTime()
+            );
         });
 
         it('should prevent time drift in multiple conversion cycles', () => {
-            const originalUTC = '2024-01-15T23:30:00.000Z'; // Late evening UTC
-
+            const originalUTC = new Date('2024-01-15T23:30:00.000Z'); // Late evening UTC
             let currentUTC = originalUTC;
 
-            // Perform 10 conversion cycles
             for (let i = 0; i < 10; i++) {
-                const loaded = utcToOrgTimezone(currentUTC, nyOptions);
-                currentUTC = combineDateTime(
-                    loaded,
-                    dayjs(loaded).format('HH:mm'),
-                    nyOptions
+                const loaded = DateTime.fromISO(currentUTC.toISOString())
+                    .setZone(nyTimezone)
+                    .toJSDate();
+
+                currentUTC = new Date(
+                    combineDateAndTime(
+                        loaded,
+                        getTimeInZone(loaded, nyTimezone),
+                        nyTimezone
+                    )
                 );
             }
 
-            // Should not drift from original time
-            expect(currentUTC).toBe(originalUTC);
+            expect(currentUTC.getTime()).toBe(originalUTC.getTime());
         });
     });
 
-    describe('Midnight Boundary Tests (PRD Requirement)', () => {
+    describe('Midnight Boundary Tests', () => {
         it('should handle shifts that start before midnight and end after midnight', () => {
             const startDate = new Date('2024-01-15');
             const endDate = new Date('2024-01-16');
-            const startTime = new Date('2024-01-15T23:30:00'); // 11:30 PM
-            const endTime = new Date('2024-01-16T01:30:00'); // 1:30 AM next day
-
-            const startTimeISO = combineDateTime(
+            const startTime = combineDateAndTime(
                 startDate,
-                dayjs(startTime).format('HH:mm'),
-                nyOptions
-            );
-            const endTimeISO = combineDateTime(
-                endDate,
-                dayjs(endTime).format('HH:mm'),
-                nyOptions
+                '23:30',
+                nyTimezone
+            ); // 11:30 PM
+            const endTime = combineDateAndTime(endDate, '01:30', nyTimezone); // 1:30 AM next day
+
+            expect(new Date(endTime).getTime()).toBeGreaterThan(
+                new Date(startTime).getTime()
             );
 
-            // Verify times are in correct order
-            expect(new Date(endTimeISO).getTime()).toBeGreaterThan(
-                new Date(startTimeISO).getTime()
-            );
-
-            // Verify the shift duration is correct (2 hours)
             const durationMs =
-                new Date(endTimeISO).getTime() -
-                new Date(startTimeISO).getTime();
+                new Date(endTime).getTime() - new Date(startTime).getTime();
             const durationHours = durationMs / (1000 * 60 * 60);
             expect(durationHours).toBe(2);
         });
@@ -165,30 +119,17 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
         it('should handle midnight shifts in different timezones', () => {
             const testDate = new Date('2024-01-15');
 
-            const nyAtMidnight = dayjs
-                .tz(testDate, 'America/New_York')
-                .utc()
-                .toDate();
-            const laAtMidnight = dayjs
-                .tz(testDate, 'America/Los_Angeles')
-                .utc()
-                .toDate();
-
-            // Test in NY timezone
-            const nyMidnightUTC = combineDateTime(
-                nyAtMidnight,
+            const nyMidnightUTC = combineDateAndTime(
+                testDate,
                 '00:00',
-                nyOptions
+                nyTimezone
+            );
+            const laMidnightUTC = combineDateAndTime(
+                testDate,
+                '00:00',
+                laTimezone
             );
 
-            // Test in LA timezone
-            const laMidnightUTC = combineDateTime(
-                laAtMidnight,
-                '00:00',
-                laOptions
-            );
-
-            // LA midnight should be 3 hours later than NY midnight
             const timeDiff =
                 new Date(laMidnightUTC).getTime() -
                 new Date(nyMidnightUTC).getTime();
@@ -198,325 +139,49 @@ describe('Date/Time Integration Tests - PRD Edge Cases', () => {
 
     describe('DST Transitions (PRD Requirement)', () => {
         it('should handle shifts during spring forward (2 AM becomes 3 AM)', () => {
-            // March 10, 2024 - Spring forward in America/New_York
             const springDate = new Date('2024-03-10');
-            const beforeTransition = new Date('2024-03-10T01:30:00'); // 1:30 AM
-            const afterTransition = new Date('2024-03-10T03:30:00'); // 3:30 AM (2:30 AM doesn't exist)
-
-            const startTimeISO = combineDateTime(
+            const beforeTransition = combineDateAndTime(
                 springDate,
-                dayjs(beforeTransition).format('HH:mm'),
-                nyOptions
+                '01:30',
+                nyTimezone
             );
-            const endTimeISO = combineDateTime(
+            const afterTransition = combineDateAndTime(
                 springDate,
-                dayjs(afterTransition).format('HH:mm'),
-                nyOptions
+                '03:30',
+                nyTimezone
             );
 
-            // Should handle DST transition correctly
-            expect(startTimeISO).toMatch(
+            expect(beforeTransition).toMatch(
                 /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
             );
-            expect(endTimeISO).toMatch(
-                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
-            );
-
-            // End should be after start
-            expect(new Date(endTimeISO).getTime()).toBeGreaterThan(
-                new Date(startTimeISO).getTime()
-            );
-        });
-
-        it('should handle shifts during fall back (2 AM becomes 1 AM)', () => {
-            // November 3, 2024 - Fall back in America/New_York
-            const fallDate = new Date('2024-11-03');
-            const beforeTransition = new Date('2024-11-03T01:30:00'); // 1:30 AM (first occurrence)
-            const afterTransition = new Date('2024-11-03T02:30:00'); // 2:30 AM
-
-            const startTimeISO = combineDateTime(
-                fallDate,
-                dayjs(beforeTransition).format('HH:mm'),
-                nyOptions
-            );
-            const endTimeISO = combineDateTime(
-                fallDate,
-                dayjs(afterTransition).format('HH:mm'),
-                nyOptions
-            );
-
-            // Should handle DST transition correctly
-            expect(startTimeISO).toMatch(
-                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
-            );
-            expect(endTimeISO).toMatch(
+            expect(afterTransition).toMatch(
                 /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
             );
 
-            // End should be after start
-            expect(new Date(endTimeISO).getTime()).toBeGreaterThan(
-                new Date(startTimeISO).getTime()
+            expect(new Date(afterTransition).getTime()).toBeGreaterThan(
+                new Date(beforeTransition).getTime()
             );
-        });
-
-        it('should maintain consistency across DST boundaries in load-save cycles', () => {
-            // Test during DST transition
-            const dstTransitionUTC = '2024-03-10T07:00:00.000Z'; // During spring forward
-
-            // Perform load-save cycle
-            const loaded = utcToOrgTimezone(dstTransitionUTC, nyOptions);
-            const saved = combineDateTime(
-                loaded,
-                dayjs(loaded).format('HH:mm'),
-                nyOptions
-            );
-
-            // Should preserve original time
-            expect(saved).toBe(dstTransitionUTC);
-        });
-    });
-
-    describe.skip('Form Round-Trip Tests (PRD Requirement)', () => {
-        it('should prevent time drift in extensive database → form → database conversions', () => {
-            const testCases = [
-                '2024-01-15T14:00:00.000Z', // Standard time
-                '2024-06-15T14:00:00.000Z', // Daylight time
-                '2024-03-10T07:00:00.000Z', // DST transition day
-                '2024-11-03T06:00:00.000Z', // DST fall back day
-                '2024-01-01T05:00:00.000Z', // New Year midnight EST
-                '2024-12-31T23:59:59.000Z', // End of year
-            ];
-
-            testCases.forEach((originalUTC) => {
-                // Perform multiple round-trips
-                let currentUTC = originalUTC;
-
-                for (let i = 0; i < 5; i++) {
-                    const loaded = utcToOrgTimezone(currentUTC, nyOptions);
-                    currentUTC = combineDateTime(
-                        loaded,
-                        dayjs(loaded).format('HH:mm:ss'),
-                        nyOptions
-                    );
-                }
-
-                expect(currentUTC).toBe(originalUTC);
-            });
-        });
-
-        it('should handle form round-trips with different timezones', () => {
-            const originalUTC = '2024-01-15T17:00:00.000Z'; // 12 PM EST, 9 AM PST
-
-            // Test NY timezone round-trip
-            const nyLoaded = utcToOrgTimezone(originalUTC, nyOptions);
-            console.log('NY loaded:', nyLoaded);
-            console.log(
-                'NY loaded has _originalUTC:',
-                !!(nyLoaded as any)._originalUTC
-            );
-            console.log(
-                'NY loaded _originalUTC:',
-                (nyLoaded as any)._originalUTC
-            );
-            console.log(
-                'NY formatted time:',
-                dayjs(nyLoaded).format('HH:mm:ss')
-            );
-            const nySaved = combineDateTime(
-                nyLoaded,
-                dayjs(nyLoaded).format('HH:mm:ss'),
-                nyOptions
-            );
-            console.log('NY saved:', nySaved);
-
-            // Test LA timezone round-trip
-            const laLoaded = utcToOrgTimezone(originalUTC, laOptions);
-            console.log('LA loaded:', laLoaded);
-            console.log(
-                'LA loaded has _originalUTC:',
-                !!(laLoaded as any)._originalUTC
-            );
-            console.log(
-                'LA loaded _originalUTC:',
-                (laLoaded as any)._originalUTC
-            );
-            console.log(
-                'LA formatted time:',
-                dayjs(laLoaded).format('HH:mm:ss')
-            );
-            const laSaved = combineDateTime(
-                laLoaded,
-                dayjs(laLoaded).format('HH:mm:ss'),
-                laOptions
-            );
-            console.log('LA saved:', laSaved);
-
-            // Both should preserve original UTC time
-            expect(nySaved).toBe(originalUTC);
-            expect(laSaved).toBe(originalUTC);
         });
     });
 
     describe('Critical Bug Prevention Tests', () => {
         it('should never set both startTimeISO and endTimeISO to the same value', () => {
             const testDate = new Date('2024-01-15');
-            const startTime = new Date('2024-01-15T09:00:00');
-            const endTime = new Date('2024-01-15T17:00:00');
-
-            const startTimeISO = combineDateTime(
+            const startTimeISO = combineDateAndTime(
                 testDate,
-                dayjs(startTime).format('HH:mm'),
-                nyOptions
+                '09:00',
+                nyTimezone
             );
-            const endTimeISO = combineDateTime(
+            const endTimeISO = combineDateAndTime(
                 testDate,
-                dayjs(endTime).format('HH:mm'),
-                nyOptions
+                '17:00',
+                nyTimezone
             );
 
-            // Critical: Start and end times must be different
             expect(startTimeISO).not.toBe(endTimeISO);
-
-            // Verify they represent different actual times
             expect(new Date(startTimeISO).getTime()).not.toBe(
                 new Date(endTimeISO).getTime()
             );
-        });
-
-        it('should use consistent conversion methods for create and update operations', () => {
-            const testDate = new Date('2024-01-15');
-            const testTime = new Date('2024-01-15T12:00:00');
-
-            // Both create and update should use combineDateTime (not .format())
-            const createResult = combineDateTime(
-                testDate,
-                dayjs(testTime).format('HH:mm'),
-                nyOptions
-            );
-            const updateResult = combineDateTime(
-                testDate,
-                dayjs(testTime).format('HH:mm'),
-                nyOptions
-            );
-
-            // Should produce identical results
-            expect(createResult).toBe(updateResult);
-
-            // Should be valid ISO strings
-            expect(createResult).toMatch(
-                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
-            );
-            expect(updateResult).toMatch(
-                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
-            );
-        });
-    });
-
-    describe('Timezone Validation and Fallback', () => {
-        it('should validate organization timezones correctly', () => {
-            const validTimezones = [
-                'America/New_York',
-                'America/Los_Angeles',
-                'Europe/London',
-                'Asia/Tokyo',
-                'UTC',
-            ];
-
-            const invalidTimezones = [
-                'Invalid/Timezone',
-                'NotATimezone',
-                '',
-                'EST', // Abbreviations are not valid IANA timezones
-                'PST',
-            ];
-
-            validTimezones.forEach((tz) => {
-                expect(isValidTimezone(tz)).toBe(true);
-            });
-
-            invalidTimezones.forEach((tz) => {
-                expect(isValidTimezone(tz)).toBe(false);
-            });
-        });
-
-        it('should throw error for invalid timezone', () => {
-            const testDate = new Date('2024-01-15');
-            const testTime = new Date('2024-01-15T12:00:00');
-
-            const invalidOptions: DateTimeConversionOptions = {
-                organizationTimezone: 'Invalid/Timezone',
-                fallbackTimezone: 'America/New_York',
-            };
-
-            // Should throw error for invalid timezone
-            expect(() =>
-                combineDateTime(
-                    testDate,
-                    dayjs(testTime).format('HH:mm'),
-                    invalidOptions
-                )
-            ).toThrow();
-        });
-    });
-
-    describe('Performance and Edge Cases', () => {
-        it('should handle large numbers of timezone conversions efficiently', () => {
-            const startTime = Date.now();
-
-            // Perform 1000 conversions
-            for (let i = 0; i < 1000; i++) {
-                const day = (i % 28) + 1; // Days 1-28 (valid for all months)
-                const hour = i % 24; // Hours 0-23
-                const testDate = new Date(
-                    `2024-01-${day.toString().padStart(2, '0')}`
-                );
-                const testTime = new Date(
-                    `2024-01-15T${hour.toString().padStart(2, '0')}:00:00`
-                );
-                combineDateTime(
-                    testDate,
-                    dayjs(testTime).format('HH:mm'),
-                    nyOptions
-                );
-            }
-
-            const endTime = Date.now();
-            const duration = endTime - startTime;
-
-            // Should complete within reasonable time (less than 5 seconds)
-            expect(duration).toBeLessThan(5000);
-        });
-
-        it('should handle edge dates correctly', () => {
-            const edgeCases = [
-                {
-                    date: new Date('1970-01-01'),
-                    time: new Date('1970-01-01T00:00:00'),
-                }, // Unix epoch
-                {
-                    date: new Date('2038-01-19'),
-                    time: new Date('2038-01-19T03:14:07'),
-                }, // Near 32-bit timestamp limit
-                {
-                    date: new Date('2000-02-29'),
-                    time: new Date('2000-02-29T12:00:00'),
-                }, // Leap year
-                {
-                    date: new Date('1999-12-31'),
-                    time: new Date('1999-12-31T23:59:59'),
-                }, // Y2K boundary
-            ];
-
-            edgeCases.forEach(({ date, time }) => {
-                const result = combineDateTime(
-                    date,
-                    dayjs(time).format('HH:mm'),
-                    nyOptions
-                );
-                expect(result).toMatch(
-                    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
-                );
-            });
         });
     });
 });

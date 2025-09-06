@@ -42,7 +42,6 @@ export function useAvailabilityGetQuery(id: string) {
 
 // Get availabilities by date
 export function useAvailabilityByDate(date: Date) {
-    console.log('useAvailabilityByDate', date);
     // Check if date is valid
     const isValidDate = date instanceof Date && !isNaN(date.getTime());
     return trpc.availability.byDate.useQuery(
@@ -66,7 +65,6 @@ export function useAvailabilityByDateLookupQuery(date: Date) {
         'query'
     );
 
-    console.log({ availability });
 
     return useQuery({
         // Include availability in the query key to ensure it re-runs when availability changes

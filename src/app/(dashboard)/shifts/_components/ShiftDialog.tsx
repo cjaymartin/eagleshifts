@@ -24,6 +24,7 @@ export default function ShiftDialog({
     //const { reset: resetDialog } = useShiftDialogHelpers();
     //const [form] = useDialogForm();
 
+
     const isNew = !payload || (payload as any)?.isNew; //dialog?.new;
     const isDuplicate = (payload as any)?.isDuplicate;
     //const open = dialog?.open && dialog?.type === 'shift';
