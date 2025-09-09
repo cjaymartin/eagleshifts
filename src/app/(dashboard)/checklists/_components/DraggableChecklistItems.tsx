@@ -49,7 +49,11 @@ export default function DraggableChecklistItems({
     };
 
     // Helper function to reorder the items
-    const reorderItems = (list: any[], startIndex: number, endIndex: number) => {
+    const reorderItems = (
+        list: any[],
+        startIndex: number,
+        endIndex: number
+    ) => {
         const result = Array.from(list);
         const [removed] = result.splice(startIndex, 1);
         result.splice(endIndex, 0, removed);
@@ -81,9 +85,17 @@ export default function DraggableChecklistItems({
                     <Tooltip title={`Comments: ${item.commentsOption}`}>
                         <Chip
                             icon={<CommentIcon />}
-                            label={item.commentsOption === 'required' ? 'Required' : 'Optional'}
+                            label={
+                                item.commentsOption === 'required'
+                                    ? 'Required'
+                                    : 'Optional'
+                            }
                             size="small"
-                            color={item.commentsOption === 'required' ? 'secondary' : 'default'}
+                            color={
+                                item.commentsOption === 'required'
+                                    ? 'secondary'
+                                    : 'default'
+                            }
                             variant="outlined"
                         />
                     </Tooltip>
@@ -93,9 +105,17 @@ export default function DraggableChecklistItems({
                     <Tooltip title={`File Upload: ${item.uploadOption}`}>
                         <Chip
                             icon={<AttachFileIcon />}
-                            label={item.uploadOption === 'required' ? 'Required' : 'Optional'}
+                            label={
+                                item.uploadOption === 'required'
+                                    ? 'Required'
+                                    : 'Optional'
+                            }
                             size="small"
-                            color={item.uploadOption === 'required' ? 'secondary' : 'default'}
+                            color={
+                                item.uploadOption === 'required'
+                                    ? 'secondary'
+                                    : 'default'
+                            }
                             variant="outlined"
                         />
                     </Tooltip>
@@ -106,7 +126,12 @@ export default function DraggableChecklistItems({
 
     return (
         <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="checklist-items" isDropDisabled={false}>
+            <Droppable
+                droppableId="checklist-items"
+                isDropDisabled={false}
+                isCombineEnabled={false}
+                ignoreContainerClipping={false}
+            >
                 {(provided) => (
                     <List
                         {...provided.droppableProps}
@@ -114,7 +139,12 @@ export default function DraggableChecklistItems({
                         sx={{ width: '100%', bgcolor: 'background.paper' }}
                     >
                         {items.map((item, index) => (
-                            <Draggable key={item.id} draggableId={item.id} index={index} isDragDisabled={false}>
+                            <Draggable
+                                key={item.id}
+                                draggableId={item.id}
+                                index={index}
+                                isDragDisabled={false}
+                            >
                                 {(provided, snapshot) => (
                                     <ListItem
                                         ref={provided.innerRef}
@@ -124,7 +154,9 @@ export default function DraggableChecklistItems({
                                             border: '1px solid',
                                             borderColor: 'divider',
                                             borderRadius: 1,
-                                            bgcolor: snapshot.isDragging ? 'action.hover' : 'background.paper',
+                                            bgcolor: snapshot.isDragging
+                                                ? 'action.hover'
+                                                : 'background.paper',
                                         }}
                                     >
                                         <Box
@@ -146,16 +178,27 @@ export default function DraggableChecklistItems({
                                                 </Typography>
                                             }
                                             secondary={renderItemFeatures(item)}
+                                            secondaryTypographyProps={{
+                                                component: 'div',
+                                            }}
                                         />
 
                                         <Box>
                                             <Tooltip title="Edit Item">
-                                                <IconButton edge="end" onClick={() => onEdit(item)}>
+                                                <IconButton
+                                                    edge="end"
+                                                    onClick={() => onEdit(item)}
+                                                >
                                                     <EditIcon />
                                                 </IconButton>
                                             </Tooltip>
                                             <Tooltip title="Delete Item">
-                                                <IconButton edge="end" onClick={() => onDelete(item)}>
+                                                <IconButton
+                                                    edge="end"
+                                                    onClick={() =>
+                                                        onDelete(item)
+                                                    }
+                                                >
                                                     <DeleteIcon />
                                                 </IconButton>
                                             </Tooltip>

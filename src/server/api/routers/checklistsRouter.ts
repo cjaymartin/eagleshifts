@@ -517,7 +517,7 @@ export const checklistsRouter = router({
                 latitude: z.number().optional(),
                 longitude: z.number().optional(),
                 comments: z.string().optional(),
-                uploadId: z.string().optional(),
+                uploadId: z.string().nullable().optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -572,7 +572,34 @@ export const checklistsRouter = router({
                 });
             }
 
-            // Check if there's an existing completion record
+            // If marking as incomplete, delete all completions for this item and shift
+            if (!input.completed) {
+                await ctx.prisma.checklistItemCompletion.deleteMany({
+                    where: {
+                        checklistItemId: input.itemId,
+                        shiftId: input.shiftId,
+                    },
+                });
+                return { success: true, message: 'Checklist item marked as incomplete' };
+            }
+
+            // --- From here, we are marking as complete ---
+
+            // Validate required fields
+            if (item.commentsOption === 'required' && !input.comments) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Comments are required for this item',
+                });
+            }
+
+            if (item.uploadOption === 'required' && !input.uploadId) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'File upload is required for this item',
+                });
+            }
+
             const existingCompletion = await ctx.prisma.checklistItemCompletion.findFirst({
                 where: {
                     checklistItemId: input.itemId,
@@ -581,42 +608,12 @@ export const checklistsRouter = router({
                 },
             });
 
-            // Validate required fields
-            if (input.completed) {
-                if (item.commentsOption === 'required' && !input.comments) {
-                    throw new TRPCError({
-                        code: 'BAD_REQUEST',
-                        message: 'Comments are required for this item',
-                    });
-                }
-
-                if (item.uploadOption === 'required' && !input.uploadId) {
-                    throw new TRPCError({
-                        code: 'BAD_REQUEST',
-                        message: 'File upload is required for this item',
-                    });
-                }
-            }
-
-            // If there's an existing completion, update it
             if (existingCompletion) {
-                if (!input.completed) {
-                    // If marking as incomplete, delete the completion record
-                    await ctx.prisma.checklistItemCompletion.delete({
-                        where: {
-                            id: existingCompletion.id,
-                        },
-                    });
-                    return { success: true, message: 'Checklist item marked as incomplete' };
-                }
-
-                // Otherwise, update the completion record
-                const updatedCompletion = await ctx.prisma.checklistItemCompletion.update({
-                    where: {
-                        id: existingCompletion.id,
-                    },
+                // Update existing completion for this user
+                return await ctx.prisma.checklistItemCompletion.update({
+                    where: { id: existingCompletion.id },
                     data: {
-                        completed: input.completed,
+                        completed: true,
                         completedAt: new Date(),
                         latitude: input.latitude,
                         longitude: input.longitude,
@@ -624,22 +621,15 @@ export const checklistsRouter = router({
                         uploadId: input.uploadId,
                     },
                 });
-
-                return updatedCompletion;
             }
 
-            // If there's no existing completion and we're marking as incomplete, do nothing
-            if (!input.completed) {
-                return { success: true, message: 'Checklist item is already incomplete' };
-            }
-
-            // Create a new completion record
-            const newCompletion = await ctx.prisma.checklistItemCompletion.create({
+            // Create a new completion record for this user
+            return await ctx.prisma.checklistItemCompletion.create({
                 data: {
                     checklistItemId: input.itemId,
                     shiftId: input.shiftId,
                     memberId: member.id,
-                    completed: input.completed,
+                    completed: true,
                     completedAt: new Date(),
                     latitude: input.latitude,
                     longitude: input.longitude,
@@ -647,8 +637,6 @@ export const checklistsRouter = router({
                     uploadId: input.uploadId,
                 },
             });
-
-            return newCompletion;
         }),
 
     // Get checklist completions for a shift

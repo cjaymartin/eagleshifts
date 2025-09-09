@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
     Box,
     Typography,
     Paper,
@@ -19,27 +22,123 @@ import {
     DialogContent,
     DialogActions,
     Tooltip,
+    Skeleton, // Add Skeleton
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import CheckIcon from '@mui/icons-material/Check';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CommentIcon from '@mui/icons-material/Comment';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { trpc } from '@/lib/trpc/client';
 import { useNotifications } from '@/components/providers/NotificationsProvider';
 import dayjs from 'dayjs';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { useUploadFileMutation, readFileAsBase64, useUploadGroupsQuery, useCreateChecklistUploadGroupMutation, useShiftUploadsQuery, useFileUrlQuery } from '@/queries/uploads';
+import {
+    useUploadFileMutation,
+    readFileAsBase64,
+    useUploadGroupsQuery,
+    useCreateChecklistUploadGroupMutation,
+    useShiftUploadsQuery,
+    useFileUrlQuery,
+    useDeleteFileMutation,
+} from '@/queries/uploads';
 import LocationMap from '@/components/locations/LocationMap';
-import { isFileTypeSupported, FilePreviewDialog } from '@/components/FilePreview';
+import {
+    isFileTypeSupported,
+    FilePreviewDialog,
+} from '@/components/FilePreview';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 // Component to display upload details
-const UploadDetails = ({ upload }: { upload: any }) => {
+const UploadDetails = ({ upload, itemId, setUploads, completeItemMutation, completions, shift, refetchChecklistData, refetchShiftUploads, notifications, deleteFileMutation, isClearingFile, setIsClearingFile }: {
+    upload: any;
+    itemId: string;
+    setUploads: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+    completeItemMutation: any;
+    completions: Record<string, any>;
+    shift: any;
+    refetchChecklistData: () => void;
+    refetchShiftUploads: () => void;
+    notifications: any;
+    deleteFileMutation: any;
+    isClearingFile: boolean;
+    setIsClearingFile: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+}) => {
     // Use the useFileUrlQuery hook at the top level of the component
     const { data } = useFileUrlQuery(upload.id);
     const [previewOpen, setPreviewOpen] = useState(false);
-    const isPreviewable = upload.fileName ? isFileTypeSupported(upload.fileName) : false;
+    const isPreviewable = upload.fileName
+        ? isFileTypeSupported(upload.fileName)
+        : false;
+
+    const handleClearFile = async () => {
+        setIsClearingFile((prev) => ({ ...prev, [itemId]: true })); // Set clearing status to true
+
+        // Update local state immediately for responsiveness
+        setUploads((prev) => {
+            const newUploads = { ...prev };
+            delete newUploads[itemId];
+            return newUploads;
+        });
+
+        try {
+            // Determine current completion status and other details
+            const currentCompletion = completions[itemId];
+            const isCurrentlyCompleted = !!currentCompletion;
+
+            const mutationPayload: any = {
+                itemId: itemId,
+                shiftId: shift.id, // Use shift.id from ChecklistCompletion props
+                completed: isCurrentlyCompleted, // Maintain current completion status
+                uploadId: undefined, // Explicitly clear the uploadId
+            };
+
+            // Include comments, latitude, longitude if they exist in the current completion
+            if (currentCompletion) {
+                if (currentCompletion.comments) {
+                    mutationPayload.comments = currentCompletion.comments;
+                }
+                if (currentCompletion.latitude !== null && currentCompletion.latitude !== undefined) {
+                    mutationPayload.latitude = currentCompletion.latitude;
+                }
+                if (currentCompletion.longitude !== null && currentCompletion.longitude !== undefined) {
+                    mutationPayload.longitude = currentCompletion.longitude;
+                }
+            }
+
+            await completeItemMutation.mutateAsync(mutationPayload);
+
+            // Now, delete the actual upload record
+            if (upload.id) { // Ensure upload.id exists before attempting to delete
+                await deleteFileMutation.mutateAsync({ uploadId: upload.id });
+            }
+
+            // Refetch data to ensure UI is consistent with backend
+            refetchChecklistData(); // Refetch checklistData
+            refetchShiftUploads(); // Refetch shiftUploads
+
+            notifications.show('File cleared successfully', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
+
+        } catch (error: any) {
+            console.error('Error clearing file:', error);
+            notifications.show(`Failed to clear file: ${error.message}`, {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
+            // Revert local state if mutation fails
+            setUploads((prev) => ({ ...prev, [itemId]: upload.id }));
+        } finally {
+            setIsClearingFile((prev) => ({ ...prev, [itemId]: false })); // Always set to false when done
+        }
+    };
 
     return (
         <Box sx={{ mt: 1, p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
@@ -76,6 +175,19 @@ const UploadDetails = ({ upload }: { upload: any }) => {
                         Preview File
                     </Button>
                 )}
+                {/* New Clear File Button */}
+                {upload && !completions[itemId] && ( // Only show if there's an upload and the item is not completed
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={handleClearFile}
+                        sx={{ mt: 1 }}
+                    >
+                        Clear File
+                    </Button>
+                )}
             </Box>
 
             {/* File Preview Dialog */}
@@ -91,28 +203,142 @@ const UploadDetails = ({ upload }: { upload: any }) => {
 };
 
 // Component to find and display upload details
-const UploadDetailsContainer = ({ 
-    itemId, 
-    uploadId, 
-    shiftUploads 
-}: { 
-    itemId: string; 
-    uploadId: string; 
-    shiftUploads: any[] 
+const UploadDetailsContainer = ({
+    itemId,
+    uploadId,
+    shiftUploads,
+    setUploads,
+    completeItemMutation,
+    completions,
+    shift,
+    refetchChecklistData,
+    refetchShiftUploads,
+    notifications,
+    deleteFileMutation,
+    isClearingFile,
+    setIsClearingFile,
+}: {
+    itemId: string;
+    uploadId: string;
+    shiftUploads: any[];
+    setUploads: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+    completeItemMutation: any;
+    completions: Record<string, any>;
+    shift: any;
+    refetchChecklistData: () => void;
+    refetchShiftUploads: () => void;
+    notifications: any;
+    deleteFileMutation: any;
+    isClearingFile: boolean;
+    setIsClearingFile: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 }) => {
     if (!uploadId) return null;
 
     // Find the group upload that contains this upload
-    const groupUpload = shiftUploads.find(g => g.upload && g.upload.id === uploadId);
+    const groupUpload = shiftUploads.find(
+        (g) => g.upload && g.upload.id === uploadId
+    );
     if (!groupUpload || !groupUpload.upload) {
-        console.log(`No matching upload found for item ${itemId} with uploadId ${uploadId}`);
+        console.log(
+            `No matching upload found for item ${itemId} with uploadId ${uploadId}`
+        );
         return null;
     }
 
     const upload = groupUpload.upload;
     console.log(`Found matching upload for item ${itemId}:`, upload);
 
-    return <UploadDetails upload={upload} />;
+    return (
+        <UploadDetails
+            upload={upload}
+            itemId={itemId}
+            setUploads={setUploads}
+            completeItemMutation={completeItemMutation}
+            completions={completions}
+            shift={shift}
+            refetchChecklistData={refetchChecklistData}
+            refetchShiftUploads={refetchShiftUploads}
+            notifications={notifications}
+            deleteFileMutation={deleteFileMutation}
+            isClearingFile={isClearingFile}
+            setIsClearingFile={setIsClearingFile}
+        />
+    );
+};
+
+// Component to display a download icon and handle download logic
+const DownloadIcon = ({
+    uploadId,
+    upload,
+}: {
+    uploadId: string;
+    upload: any;
+}) => {
+    const { data } = useFileUrlQuery(uploadId);
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const isPreviewable = upload?.fileName
+        ? isFileTypeSupported(upload.fileName)
+        : false;
+
+    const handleIconClick = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent accordion from toggling
+        if (data?.url) {
+            if (isPreviewable) {
+                setPreviewOpen(true);
+            } else {
+                window.open(data.url, '_blank');
+            }
+        }
+    };
+
+    if (!data?.url) {
+        return (
+            <CloudUploadIcon
+                sx={{ color: 'text.secondary', ml: 1, cursor: 'not-allowed' }}
+            />
+        );
+    }
+
+    return (
+        <>
+            <Tooltip title={isPreviewable ? 'Preview File' : 'Download File'}>
+                <Box
+                    onClick={handleIconClick}
+                    sx={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '50%',
+                        width: 24, // Approximate size of small IconButton
+                        height: 24, // Approximate size of small IconButton
+                        cursor: 'pointer',
+                        ml: 1,
+                        '&:hover': {
+                            bgcolor: 'action.hover', // Mimic hover effect
+                        },
+                    }}
+                    aria-label={
+                        isPreviewable ? 'Preview File' : 'Download File'
+                    }
+                >
+                    {isPreviewable ? (
+                        <VisibilityIcon fontSize="small" color="action" />
+                    ) : (
+                        <FileDownloadIcon fontSize="small" color="action" />
+                    )}
+                </Box>
+            </Tooltip>
+
+            {/* File Preview Dialog */}
+            {isPreviewable && (
+                <FilePreviewDialog
+                    open={previewOpen}
+                    onClose={() => setPreviewOpen(false)}
+                    uploadId={uploadId}
+                />
+            )}
+        </>
+    );
 };
 
 type ChecklistCompletionProps = {
@@ -142,6 +368,8 @@ export default function ChecklistCompletion({
         longitude: number;
         itemName: string;
     } | null>(null);
+    const [expanded, setExpanded] = useState<string | false>(false);
+    const [isClearingFile, setIsClearingFile] = useState<Record<string, boolean>>({}); // State to track clearing status per item
 
     const notifications = useNotifications();
 
@@ -149,13 +377,19 @@ export default function ChecklistCompletion({
     const uploadFileMutation = useUploadFileMutation();
 
     // Get upload groups
-    const { data: uploadGroups = [], refetch: refetchUploadGroups } = useUploadGroupsQuery();
+    const { data: uploadGroups = [], refetch: refetchUploadGroups } =
+        useUploadGroupsQuery();
 
     // Create checklist upload group mutation
-    const createChecklistUploadGroupMutation = useCreateChecklistUploadGroupMutation();
+    const createChecklistUploadGroupMutation =
+        useCreateChecklistUploadGroupMutation();
+
+    // Delete file mutation
+    const deleteFileMutation = useDeleteFileMutation();
 
     // Get uploads for the shift
-    const { data: shiftUploads = [], refetch: refetchShiftUploads } = useShiftUploadsQuery(shift.id);
+    const { data: shiftUploads = [], refetch: refetchShiftUploads } =
+        useShiftUploadsQuery(shift.id);
 
     // Fetch checklist completions for the shift
     const {
@@ -165,52 +399,94 @@ export default function ChecklistCompletion({
         refetch,
     } = trpc.checklists.getShiftCompletions.useQuery({ shiftId: shift.id });
 
-    // Log shift uploads whenever they change and update uploads state
+    // Initialize completions, comments, and uploads from fetched data
     useEffect(() => {
-        console.log("shiftUploads data updated:", shiftUploads);
+        if (checklistData) {
+            console.log('Initializing from checklistData:', checklistData);
+            const newCompletions: Record<string, any> = {};
+            const newComments: Record<string, string> = {};
+            const newUploads: Record<string, string> = {}; // This will be our source of truth for uploads
 
-        // If we have shift uploads, update the uploads state to include them
-        if (shiftUploads && shiftUploads.length > 0) {
-            // Find all checklist items that require uploads
-            const itemsWithRequiredUploads = checklistData?.items.filter(
-                item => item.uploadOption === 'required'
-            ) || [];
+            checklistData.items.forEach((item) => {
+                console.log(`Processing item ${item.id} (${item.name}):`, item);
+                if (item.completions && item.completions.length > 0) {
+                    const completion = item.completions[0];
+                    console.log(
+                        `Found completion for item ${item.id}:`,
+                        completion
+                    );
+                    newCompletions[item.id] = completion;
+                    if (completion.comments) {
+                        newComments[item.id] = completion.comments;
+                    }
+                    // Only set uploadId if the upload actually exists in shiftUploads and is not deleted
+                    const associatedUpload = shiftUploads.find(
+                        (groupUpload) =>
+                            groupUpload.upload &&
+                            groupUpload.upload.id === completion.uploadId
+                    );
+                    if (associatedUpload && associatedUpload.upload) {
+                        console.log(
+                            `Found uploadId for item ${item.id} in shiftUploads:`,
+                            completion.uploadId
+                        );
+                        newUploads[item.id] = completion.uploadId!;
+                    } else {
+                        // If completion has an uploadId but the upload is not in shiftUploads (e.g., deleted), clear it
+                        console.log(
+                            `Upload for item ${item.id} (ID: ${completion.uploadId}) not found in shiftUploads, clearing.`
+                        );
+                        delete newUploads[item.id]; // Ensure it's not carried over
+                    }
+                }
+            });
 
-            // Check if we have any uploads that aren't already in the uploads state
-            const newUploads: Record<string, string> = { ...uploads };
-            let hasNewUploads = false;
+            // Now, handle unassociated uploads from shiftUploads
+            // This part is for associating newly uploaded files that aren't yet linked to a completion
+            const itemsWithRequiredUploads =
+                checklistData?.items.filter(
+                    (item) => item.uploadOption === 'required'
+                ) || [];
 
-            // For each upload in shiftUploads
-            shiftUploads.forEach(groupUpload => {
+            shiftUploads.forEach((groupUpload) => {
                 if (groupUpload.upload) {
-                    console.log("Found upload in shiftUploads:", groupUpload.upload);
-
-                    // Check if this upload is already associated with an item
-                    const isAlreadyAssociated = Object.values(uploads).includes(groupUpload.upload.id);
+                    // Check if this upload is already associated with an item in newUploads
+                    const isAlreadyAssociated = Object.values(
+                        newUploads
+                    ).includes(groupUpload.upload.id);
 
                     // If not already associated and we have items that need uploads
-                    if (!isAlreadyAssociated && itemsWithRequiredUploads.length > 0) {
+                    if (
+                        !isAlreadyAssociated &&
+                        itemsWithRequiredUploads.length > 0
+                    ) {
                         // Find the first item that needs an upload and doesn't have one yet
                         const itemToAssociate = itemsWithRequiredUploads.find(
-                            item => !uploads[item.id] && !completions[item.id]
+                            (item) =>
+                                !newUploads[item.id] && !newCompletions[item.id]
                         );
 
                         if (itemToAssociate) {
-                            console.log(`Associating upload ${groupUpload.upload.id} with item ${itemToAssociate.id}`);
-                            newUploads[itemToAssociate.id] = groupUpload.upload.id;
-                            hasNewUploads = true;
+                            console.log(
+                                `Associating unassociated upload ${groupUpload.upload.id} with item ${itemToAssociate.id}`
+                            );
+                            newUploads[itemToAssociate.id] =
+                                groupUpload.upload.id;
                         }
                     }
                 }
             });
 
-            // Update uploads state if we found new uploads
-            if (hasNewUploads) {
-                console.log("Updating uploads state with new uploads:", newUploads);
-                setUploads(newUploads);
-            }
+            console.log('Setting state with:', {
+                completions: newCompletions,
+                comments: newComments,
+                uploads: newUploads,
+            });
+            setCompletions(newCompletions);
+            setComments(newComments);
+            setUploads(newUploads);
         }
-    }, [shiftUploads, checklistData, uploads, completions]);
+    }, [checklistData, shiftUploads]);
 
     // Handle file upload
     const handleFileUpload = async (
@@ -218,64 +494,92 @@ export default function ChecklistCompletion({
         uploadName: string,
         event: React.ChangeEvent<HTMLInputElement>
     ) => {
-        console.log(`handleFileUpload called for item ${itemId}`, { uploadName });
+        console.log(`handleFileUpload called for item ${itemId}`, {
+            uploadName,
+        });
         const file = event.target.files?.[0];
         if (!file) return;
 
-        console.log("File selected:", { name: file.name, size: file.size, type: file.type });
+        console.log('File selected:', {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+        });
 
         try {
             setUploading((prev) => ({ ...prev, [itemId]: true }));
 
             // Read file as base64
             const fileData = await readFileAsBase64(file);
-            console.log("File read as base64 (truncated):", fileData.substring(0, 50) + "...");
+            console.log(
+                'File read as base64 (truncated):',
+                fileData.substring(0, 50) + '...'
+            );
 
             // Find an appropriate upload group
-            let uploadGroupId = "";
+            let uploadGroupId = '';
 
-            console.log("Available upload groups:", uploadGroups);
+            console.log('Available upload groups:', uploadGroups);
 
             // First, try to find a group with "checklist" in the name
-            const checklistGroup = uploadGroups.find(group => 
+            const checklistGroup = uploadGroups.find((group) =>
                 group.uploadName.toLowerCase().includes('checklist')
             );
 
             // If not found, use the first available group
             if (checklistGroup) {
                 uploadGroupId = checklistGroup.id;
-                console.log("Using checklist upload group:", checklistGroup);
+                console.log('Using checklist upload group:', checklistGroup);
             } else if (uploadGroups.length > 0) {
                 uploadGroupId = uploadGroups[0].id;
-                console.log("Using first available upload group:", uploadGroups[0]);
+                console.log(
+                    'Using first available upload group:',
+                    uploadGroups[0]
+                );
             } else {
-                console.log("No upload groups available, attempting to create one");
+                console.log(
+                    'No upload groups available, attempting to create one'
+                );
                 // No upload groups available - try to create a default checklist upload group
                 try {
-                    notifications.show("No upload groups found. Creating a default checklist upload group...", { severity: 'info', autoHideDuration: 3000 });
+                    notifications.show(
+                        'No upload groups found. Creating a default checklist upload group...',
+                        { severity: 'info', autoHideDuration: 3000 }
+                    );
 
-                    const newGroup = await createChecklistUploadGroupMutation.mutateAsync();
-                    console.log("Created new upload group:", newGroup);
+                    const newGroup =
+                        await createChecklistUploadGroupMutation.mutateAsync();
+                    console.log('Created new upload group:', newGroup);
 
                     if (newGroup && newGroup.id) {
                         uploadGroupId = newGroup.id;
                         // Refresh the upload groups list
                         await refetchUploadGroups();
-                        notifications.show("Created a default checklist upload group.", { severity: 'success', autoHideDuration: 3000 });
+                        notifications.show(
+                            'Created a default checklist upload group.',
+                            { severity: 'success', autoHideDuration: 3000 }
+                        );
                     } else {
-                        throw new Error("Failed to create a default checklist upload group.");
+                        throw new Error(
+                            'Failed to create a default checklist upload group.'
+                        );
                     }
                 } catch (error: any) {
-                    console.error('Error creating checklist upload group:', error);
+                    console.error(
+                        'Error creating checklist upload group:',
+                        error
+                    );
                     notifications.show(
-                        "No upload groups available and failed to create a default one. Please ask an administrator to set up upload groups in the Business Settings page.",
+                        'No upload groups available and failed to create a default one. Please ask an administrator to set up upload groups in the Business Settings page.',
                         { severity: 'error', autoHideDuration: 3000 }
                     );
-                    throw new Error("No upload groups available. Please ask an administrator to set up upload groups in the Business Settings page.");
+                    throw new Error(
+                        'No upload groups available. Please ask an administrator to set up upload groups in the Business Settings page.'
+                    );
                 }
             }
 
-            console.log("Uploading file with params:", {
+            console.log('Uploading file with params:', {
                 shiftId: shift.id,
                 uploadGroupId,
                 fileName: file.name,
@@ -293,16 +597,22 @@ export default function ChecklistCompletion({
                 fileData,
             });
 
-            console.log("Upload result:", result);
+            console.log('Upload result:', result);
 
             // Handle successful upload
             if (result?.upload?.id) {
                 handleFileUploaded(itemId, result.upload.id);
-                notifications.show(`File uploaded successfully`, { severity: 'success', autoHideDuration: 3000 });
+                notifications.show(`File uploaded successfully`, {
+                    severity: 'success',
+                    autoHideDuration: 3000,
+                });
             }
         } catch (error: any) {
             console.error('Error uploading file:', error);
-            notifications.show(`Failed to upload file: ${error.message}`, { severity: 'error', autoHideDuration: 3000 });
+            notifications.show(`Failed to upload file: ${error.message}`, {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
         } finally {
             setUploading((prev) => ({ ...prev, [itemId]: false }));
             // Clear the file input
@@ -313,20 +623,26 @@ export default function ChecklistCompletion({
     // Complete checklist item mutation
     const completeItemMutation = trpc.checklists.completeItem.useMutation({
         onSuccess: (data, variables) => {
-            console.log("completeItemMutation succeeded:", { data, variables });
+            console.log('completeItemMutation succeeded:', { data, variables });
             refetch();
-            notifications.show('Item updated successfully', { severity: 'success', autoHideDuration: 3000 });
+            notifications.show('Item updated successfully', {
+                severity: 'success',
+                autoHideDuration: 3000,
+            });
         },
         onError: (error, variables) => {
-            console.error("completeItemMutation failed:", { error, variables });
-            notifications.show(`Error updating item: ${error.message}`, { severity: 'error', autoHideDuration: 3000 });
+            console.error('completeItemMutation failed:', { error, variables });
+            notifications.show(`Error updating item: ${error.message}`, {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
         },
     });
 
     // Initialize completions, comments, and uploads from fetched data
     useEffect(() => {
         if (checklistData) {
-            console.log("Initializing from checklistData:", checklistData);
+            console.log('Initializing from checklistData:', checklistData);
             const newCompletions: Record<string, any> = {};
             const newComments: Record<string, string> = {};
             const newUploads: Record<string, string> = {};
@@ -335,22 +651,28 @@ export default function ChecklistCompletion({
                 console.log(`Processing item ${item.id} (${item.name}):`, item);
                 if (item.completions && item.completions.length > 0) {
                     const completion = item.completions[0];
-                    console.log(`Found completion for item ${item.id}:`, completion);
+                    console.log(
+                        `Found completion for item ${item.id}:`,
+                        completion
+                    );
                     newCompletions[item.id] = completion;
                     if (completion.comments) {
                         newComments[item.id] = completion.comments;
                     }
                     if (completion.uploadId) {
-                        console.log(`Found uploadId for item ${item.id}:`, completion.uploadId);
+                        console.log(
+                            `Found uploadId for item ${item.id}:`,
+                            completion.uploadId
+                        );
                         newUploads[item.id] = completion.uploadId;
                     }
                 }
             });
 
-            console.log("Setting state with:", {
+            console.log('Setting state with:', {
                 completions: newCompletions,
                 comments: newComments,
-                uploads: newUploads
+                uploads: newUploads,
             });
             setCompletions(newCompletions);
             setComments(newComments);
@@ -384,30 +706,37 @@ export default function ChecklistCompletion({
             );
         } else {
             setGeoError('Geolocation is not supported by this browser');
-            notifications.show('Geolocation is not supported by this browser', { severity: 'error', autoHideDuration: 3000 });
+            notifications.show('Geolocation is not supported by this browser', {
+                severity: 'error',
+                autoHideDuration: 3000,
+            });
         }
     };
 
     // Handle checkbox change
     const handleCheckboxChange = (item: any) => {
-        console.log(`handleCheckboxChange called for item ${item.id} (${item.name})`);
+        console.log(
+            `handleCheckboxChange called for item ${item.id} (${item.name})`
+        );
         const isCompleted = !!completions[item.id];
-        console.log(`Item is currently ${isCompleted ? 'completed' : 'not completed'}`);
+        console.log(
+            `Item is currently ${isCompleted ? 'completed' : 'not completed'}`
+        );
 
         if (isCompleted) {
             // If unchecking, show confirmation dialog
-            console.log("Showing confirmation dialog for unchecking item");
+            console.log('Showing confirmation dialog for unchecking item');
             setConfirmUncheckItem(item.id);
         } else {
             // If checking, validate required fields
             let canComplete = true;
-            console.log("Validating required fields for item:", {
+            console.log('Validating required fields for item:', {
                 commentsOption: item.commentsOption,
                 hasComments: !!comments[item.id],
                 uploadOption: item.uploadOption,
                 hasUpload: !!uploads[item.id],
                 geoLocationEnabled: item.geoLocationEnabled,
-                hasGeolocation: !!geolocation
+                hasGeolocation: !!geolocation,
             });
 
             // Check if comments are required but missing
@@ -415,27 +744,35 @@ export default function ChecklistCompletion({
                 item.commentsOption === 'required' &&
                 (!comments[item.id] || comments[item.id].trim() === '')
             ) {
-                console.log("Comments are required but missing");
-                notifications.show('Comments are required for this item', { severity: 'error', autoHideDuration: 3000 });
+                console.log('Comments are required but missing');
+                notifications.show('Comments are required for this item', {
+                    severity: 'error',
+                    autoHideDuration: 3000,
+                });
                 canComplete = false;
             }
 
             // Check if upload is required but missing
             if (item.uploadOption === 'required' && !uploads[item.id]) {
-                console.log("Upload is required but missing");
-                console.log("Current uploads state:", uploads);
-                notifications.show('File upload is required for this item', { severity: 'error', autoHideDuration: 3000 });
+                console.log('Upload is required but missing');
+                console.log('Current uploads state:', uploads);
+                notifications.show('File upload is required for this item', {
+                    severity: 'error',
+                    autoHideDuration: 3000,
+                });
                 canComplete = false;
             }
 
             // Get geolocation if needed
             if (item.geoLocationEnabled && !geolocation) {
-                console.log("Geolocation is required but missing, requesting it now");
+                console.log(
+                    'Geolocation is required but missing, requesting it now'
+                );
                 getGeolocation();
             }
 
             if (canComplete) {
-                console.log("All validation passed, completing item with:", {
+                console.log('All validation passed, completing item with:', {
                     itemId: item.id,
                     shiftId: shift.id,
                     completed: true,
@@ -445,19 +782,28 @@ export default function ChecklistCompletion({
                     uploadId: uploads[item.id],
                 });
 
-                completeItemMutation.mutate({
+                const mutationPayload: any = {
                     itemId: item.id,
                     shiftId: shift.id,
                     completed: true,
-                    ...(item.geoLocationEnabled ? {
-                        latitude: geolocation?.latitude,
-                        longitude: geolocation?.longitude,
-                    } : {}),
-                    comments: comments[item.id],
-                    uploadId: uploads[item.id],
-                });
+                };
+
+                if (item.geoLocationEnabled && geolocation) {
+                    mutationPayload.latitude = geolocation.latitude;
+                    mutationPayload.longitude = geolocation.longitude;
+                }
+
+                if (comments[item.id]) {
+                    mutationPayload.comments = comments[item.id];
+                }
+
+                if (uploads[item.id]) {
+                    mutationPayload.uploadId = uploads[item.id];
+                }
+
+                completeItemMutation.mutate(mutationPayload);
             } else {
-                console.log("Validation failed, cannot complete item");
+                console.log('Validation failed, cannot complete item');
             }
         }
     };
@@ -472,44 +818,58 @@ export default function ChecklistCompletion({
 
     // Handle file upload
     const handleFileUploaded = (itemId: string, uploadId: string) => {
-        console.log(`handleFileUploaded called for item ${itemId} with uploadId ${uploadId}`);
+        console.log(
+            `handleFileUploaded called for item ${itemId} with uploadId ${uploadId}`
+        );
 
-        console.log("Current uploads state before update:", uploads);
+        console.log('Current uploads state before update:', uploads);
         setUploads((prev) => {
             const newUploads = {
                 ...prev,
                 [itemId]: uploadId,
             };
-            console.log("New uploads state:", newUploads);
+            console.log('New uploads state:', newUploads);
             return newUploads;
         });
 
         // If the item is already completed, update it with the new upload
         if (completions[itemId]) {
             // Find the item to check if geoLocationEnabled is true
-            const item = checklistData?.items.find(i => i.id === itemId);
+            const item = checklistData?.items.find((i) => i.id === itemId);
 
-            const mutationPayload = {
+            const mutationPayload: any = {
                 itemId: itemId,
                 shiftId: shift.id,
                 completed: true,
-                ...(item?.geoLocationEnabled ? {
-                    latitude: completions[itemId].latitude,
-                    longitude: completions[itemId].longitude,
-                } : {}),
-                comments: comments[itemId],
-                uploadId: uploadId,
             };
 
-            console.log(`Item ${itemId} is already completed, updating with new upload:`, mutationPayload);
+            if (item?.geoLocationEnabled && completions[itemId]) {
+                mutationPayload.latitude = completions[itemId].latitude;
+                mutationPayload.longitude = completions[itemId].longitude;
+            }
+
+            if (comments[itemId]) {
+                mutationPayload.comments = comments[itemId];
+            }
+
+            mutationPayload.uploadId = uploadId; // uploadId is always a string here
+
+            completeItemMutation.mutate(mutationPayload);
+
+            console.log(
+                `Item ${itemId} is already completed, updating with new upload:`,
+                mutationPayload
+            );
 
             completeItemMutation.mutate(mutationPayload);
         } else {
-            console.log(`Item ${itemId} is not completed yet. Upload has been associated but item needs to be checked.`);
+            console.log(
+                `Item ${itemId} is not completed yet. Upload has been associated but item needs to be checked.`
+            );
         }
 
         // Refresh the shift uploads to show the new upload
-        console.log("Refreshing shift uploads...");
+        console.log('Refreshing shift uploads...');
         refetchShiftUploads();
     };
 
@@ -534,6 +894,12 @@ export default function ChecklistCompletion({
     const formatDate = (date: Date) => {
         return dayjs(date).format('MMM D, YYYY h:mm A');
     };
+
+    const handleAccordionChange =
+        (panel: string) =>
+        (event: React.SyntheticEvent, isExpanded: boolean) => {
+            setExpanded(isExpanded ? panel : false);
+        };
 
     if (isLoading) {
         return (
@@ -584,9 +950,9 @@ export default function ChecklistCompletion({
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, mt: 1 }}>
                 <LocationOnIcon color="primary" sx={{ mr: 1 }} />
                 <Typography variant="body2" sx={{ flexGrow: 1 }}>
-                    {geolocation ? 
-                        `Current location: ${geolocation.latitude.toFixed(6)}, ${geolocation.longitude.toFixed(6)}` : 
-                        "Getting your location..."}
+                    {geolocation
+                        ? `Current location: ${geolocation.latitude.toFixed(6)}, ${geolocation.longitude.toFixed(6)}`
+                        : 'Getting your location...'}
                 </Typography>
 
                 {/* View map button - only visible when geolocation is available */}
@@ -599,7 +965,7 @@ export default function ChecklistCompletion({
                             setSelectedLocation({
                                 latitude: geolocation.latitude,
                                 longitude: geolocation.longitude,
-                                itemName: "Current Location"
+                                itemName: 'Current Location',
                             });
                             setLocationModalOpen(true);
                         }}
@@ -623,382 +989,444 @@ export default function ChecklistCompletion({
                 </Alert>
             )}
 
-            <List>
+            <Box>
                 {checklistData.items.map((item, index) => {
-                    const isCompleted = !!completions[item.id] && completions[item.id].completed === true;
-                    // Check if all required fields are filled
-                    const hasComments = comments[item.id] && comments[item.id].trim() !== '';
+                    const isCompleted =
+                        !!completions[item.id] &&
+                        completions[item.id].completed === true;
+                    const hasComments =
+                        comments[item.id] && comments[item.id].trim() !== '';
                     const hasUpload = !!uploads[item.id];
-
-                    // Get unassociated uploads before checking hasUploadInShiftUploads
-                    const unassociatedUploads = shiftUploads.filter(groupUpload => 
-                        groupUpload.upload && !Object.values(uploads).includes(groupUpload.upload.id)
+                    const unassociatedUploads = shiftUploads.filter(
+                        (groupUpload) =>
+                            groupUpload.upload &&
+                            !Object.values(uploads).includes(
+                                groupUpload.upload.id
+                            )
                     );
-
-                    // Check if there's an upload in shiftUploads that matches this item's upload ID
-                    const hasUploadInShiftUploads = (
-                        // Either the item already has an upload ID and it exists in shiftUploads
-                        (uploads[item.id] && shiftUploads.some(groupUpload => 
-                            groupUpload.upload && groupUpload.upload.id === uploads[item.id]
-                        )) ||
-                        // Or there's an unassociated upload in shiftUploads and this item requires an upload
-                        (item.uploadOption === 'required' && !uploads[item.id] && unassociatedUploads.length > 0)
-                    );
-
-                    // If the item is already completed, it has all required fields
+                    const hasUploadInShiftUploads =
+                        (uploads[item.id] &&
+                            shiftUploads.some(
+                                (groupUpload) =>
+                                    groupUpload.upload &&
+                                    groupUpload.upload.id === uploads[item.id]
+                            )) ||
+                        (item.uploadOption === 'required' &&
+                            !uploads[item.id] &&
+                            unassociatedUploads.length > 0);
                     const isAlreadyCompleted = isCompleted;
+                    const hasRequiredFields =
+                        isAlreadyCompleted ||
+                        ((item.commentsOption !== 'required' || hasComments) &&
+                            (item.uploadOption !== 'required' ||
+                                hasUpload ||
+                                hasUploadInShiftUploads));
 
-                    const hasRequiredFields = isAlreadyCompleted || (
-                        // Check if required comments are filled
-                        (item.commentsOption !== 'required' || hasComments) &&
-                        // Check if required upload is present (either in uploads state or in shiftUploads)
-                        (item.uploadOption !== 'required' || hasUpload || hasUploadInShiftUploads)
-                    );
-
-                    // Reusing unassociatedUploads from above
-
-                    // If this item requires an upload and doesn't have one yet, but there are unassociated uploads,
-                    // automatically associate the first unassociated upload with this item
-                    if (item.uploadOption === 'required' && !uploads[item.id] && unassociatedUploads.length > 0 && !isCompleted) {
+                    if (
+                        item.uploadOption === 'required' &&
+                        !uploads[item.id] &&
+                        unassociatedUploads.length > 0 &&
+                        !isCompleted
+                    ) {
                         const uploadToAssociate = unassociatedUploads[0].upload;
                         if (uploadToAssociate) {
-                            console.log(`Auto-associating upload ${uploadToAssociate.id} with item ${item.id}`);
-
-                            // Update the uploads state
                             setTimeout(() => {
-                                setUploads(prev => ({
+                                setUploads((prev) => ({
                                     ...prev,
-                                    [item.id]: uploadToAssociate.id
+                                    [item.id]: uploadToAssociate.id,
                                 }));
                             }, 0);
                         }
                     }
 
-                    console.log(`hasRequiredFields for item ${item.id} (${item.name}):`, {
-                        hasRequiredFields,
-                        isAlreadyCompleted,
-                        commentsOption: item.commentsOption,
-                        hasComments,
-                        uploadOption: item.uploadOption,
-                        hasUpload,
-                        hasUploadInShiftUploads,
-                        uploadId: uploads[item.id],
-                        uploads,
-                        shiftUploadsCount: shiftUploads.length,
-                        shiftUploadsWithUpload: shiftUploads.filter(g => g.upload).length,
-                        unassociatedUploadsCount: unassociatedUploads.length,
-                        unassociatedUploads: unassociatedUploads.map(g => g.upload?.id)
-                    });
+                    const canBeExpanded =
+                        item.commentsOption !== 'off' ||
+                        item.uploadOption !== 'off';
+                    const isExpanded = expanded === item.id;
 
                     return (
-                        <Paper
+                        <Accordion
                             key={item.id}
-                            variant="outlined"
+                            expanded={canBeExpanded && isExpanded}
+                            onChange={
+                                canBeExpanded
+                                    ? handleAccordionChange(item.id)
+                                    : undefined
+                            }
                             sx={{
-                                mb: 2,
+                                mb: 1,
+                                '&:before': {
+                                    display: 'none',
+                                },
                                 bgcolor: isCompleted
-                                    ? 'success.light'
+                                    ? 'grey.100'
                                     : 'background.paper',
                                 opacity: isCompleted ? 0.9 : 1,
                             }}
                         >
-                            <ListItem>
-                                <Tooltip title={!isCompleted && hasRequiredFields ? "Click to mark as completed" : ""}>
+                            <AccordionSummary
+                                expandIcon={
+                                    canBeExpanded ? <ExpandMoreIcon /> : null
+                                }
+                                aria-controls={`${item.id}-content`}
+                                id={`${item.id}-header`}
+                                sx={{
+                                    '& .MuiAccordionSummary-content': {
+                                        alignItems: 'center',
+                                    },
+                                    cursor: canBeExpanded
+                                        ? 'pointer'
+                                        : 'default',
+                                }}
+                            >
+                                <Tooltip
+                                    title={
+                                        !isCompleted && hasRequiredFields
+                                            ? 'Click to mark as completed'
+                                            : ''
+                                    }
+                                >
                                     <Checkbox
                                         checked={isCompleted}
-                                        onChange={() => handleCheckboxChange(item)}
-                                        color={!isCompleted && hasRequiredFields ? "success" : "primary"}
+                                        onChange={(e) => {
+                                            e.stopPropagation();
+                                            handleCheckboxChange(item);
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        color={
+                                            !isCompleted && hasRequiredFields
+                                                ? 'success'
+                                                : 'primary'
+                                        }
                                         sx={{
-                                            '&:hover': {
-                                                backgroundColor: !isCompleted && hasRequiredFields ? 'rgba(76, 175, 80, 0.1)' : undefined,
-                                            },
-                                            animation: !isCompleted && hasRequiredFields ? 'pulse 1.5s infinite' : 'none',
+                                            p: 0,
+                                            mr: 1,
+                                            animation:
+                                                !isCompleted &&
+                                                hasRequiredFields
+                                                    ? 'pulse 1.5s infinite'
+                                                    : 'none',
                                             '@keyframes pulse': {
-                                                '0%': { boxShadow: '0 0 0 0 rgba(76, 175, 80, 0.4)' },
-                                                '70%': { boxShadow: '0 0 0 10px rgba(76, 175, 80, 0)' },
-                                                '100%': { boxShadow: '0 0 0 0 rgba(76, 175, 80, 0)' },
+                                                '0%': {
+                                                    boxShadow:
+                                                        '0 0 0 0 rgba(76, 175, 80, 0.4)',
+                                                },
+                                                '70%': {
+                                                    boxShadow:
+                                                        '0 0 0 10px rgba(76, 175, 80, 0)',
+                                                },
+                                                '100%': {
+                                                    boxShadow:
+                                                        '0 0 0 0 rgba(76, 175, 80, 0)',
+                                                },
                                             },
                                         }}
                                     />
                                 </Tooltip>
-                                <ListItemText
-                                    primary={
-                                        <Box
+                                <Typography
+                                    sx={{
+                                        flexGrow: 1,
+                                        textDecoration: isCompleted
+                                            ? 'line-through'
+                                            : 'none',
+                                        color: isCompleted
+                                            ? 'text.secondary'
+                                            : 'text.primary',
+                                    }}
+                                >
+                                    {index + 1}. {item.name}
+                                </Typography>
+
+                                {/*{item.commentsOption !== 'off' && (*/}
+                                {/*    <CommentIcon*/}
+                                {/*        sx={{ color: 'text.secondary', ml: 1 }}*/}
+                                {/*    />*/}
+                                {/*)}*/}
+                                {item.uploadOption !== 'off' &&
+                                    (hasUpload ? (
+                                        <DownloadIcon
+                                            uploadId={uploads[item.id]}
+                                            upload={
+                                                shiftUploads.find(
+                                                    (gu) =>
+                                                        gu.upload?.id ===
+                                                        uploads[item.id]
+                                                )?.upload
+                                            }
+                                        />
+                                    ) : (
+                                        <CloudUploadIcon
                                             sx={{
-                                                display: 'flex',
-                                                alignItems: 'center',
+                                                color: 'text.secondary',
+                                                ml: 1,
+                                            }}
+                                        />
+                                    ))}
+
+                                {isCompleted && (
+                                    <Tooltip title="Completed">
+                                        <CheckCircleIcon
+                                            color="success"
+                                            sx={{ ml: 1 }}
+                                        />
+                                    </Tooltip>
+                                )}
+                                {!isCompleted && !hasRequiredFields && (
+                                    <Tooltip title="Required fields missing">
+                                        <ErrorIcon
+                                            color="error"
+                                            sx={{ ml: 1 }}
+                                        />
+                                    </Tooltip>
+                                )}
+                                {isCompleted &&
+                                    completions[item.id] &&
+                                    completions[item.id].latitude &&
+                                    completions[item.id].longitude &&
+                                    item.geoLocationEnabled && (
+                                        <div
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedLocation({
+                                                    latitude:
+                                                        completions[item.id]
+                                                            .latitude,
+                                                    longitude:
+                                                        completions[item.id]
+                                                            .longitude,
+                                                    itemName: item.name,
+                                                });
+                                                setLocationModalOpen(true);
                                             }}
                                         >
-                                            <Typography
-                                                variant="subtitle1"
-                                                sx={{
-                                                    textDecoration: isCompleted
-                                                        ? 'line-through'
-                                                        : 'none',
-                                                    color: isCompleted
-                                                        ? 'text.secondary'
-                                                        : 'text.primary',
-                                                }}
-                                            >
-                                                {index + 1}. {item.name}
-                                            </Typography>
-                                            {isCompleted && (
-                                                <Tooltip title="Completed">
-                                                    <CheckCircleIcon
-                                                        color="success"
-                                                        sx={{ ml: 1 }}
-                                                    />
-                                                </Tooltip>
-                                            )}
-                                            {isCompleted && completions[item.id] && completions[item.id].latitude && completions[item.id].longitude && item.geoLocationEnabled && (
-                                                <Tooltip title="View location where this item was completed">
-                                                    <Button
-                                                        variant="outlined"
-                                                        size="small"
-                                                        startIcon={<LocationOnIcon />}
-                                                        color="primary"
-                                                        sx={{ 
-                                                            ml: 1,
-                                                            borderColor: 'primary.main',
-                                                            backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                                                            '&:hover': {
-                                                                backgroundColor: 'rgba(25, 118, 210, 0.15)',
-                                                            }
-                                                        }}
-                                                        onClick={() => {
-                                                            setSelectedLocation({
-                                                                latitude: completions[item.id].latitude,
-                                                                longitude: completions[item.id].longitude,
-                                                                itemName: item.name
-                                                            });
-                                                            setLocationModalOpen(true);
-                                                        }}
-                                                    >
-                                                        View Map
-                                                    </Button>
-                                                </Tooltip>
-                                            )}
-                                            {!isCompleted &&
-                                                !hasRequiredFields && (
-                                                    <Tooltip title="Required fields missing">
-                                                        <ErrorIcon
-                                                            color="error"
-                                                            sx={{ ml: 1 }}
-                                                        />
-                                                    </Tooltip>
-                                                )}
-                                        </Box>
-                                    }
-                                />
-                            </ListItem>
-
-                            {/* Chips section - moved outside of ListItemText to avoid nesting div in p */}
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    flexWrap: 'wrap',
-                                    gap: 1,
-                                    mt: 1,
-                                    ml: 9, // Align with the text above
-                                    mb: 1,
-                                }}
-                            >
-                                {item.geoLocationEnabled && (
-                                    <Chip
-                                        icon={<LocationOnIcon />}
-                                        label="Location Required"
-                                        size="small"
-                                        color={
-                                            geolocation
-                                                ? 'success'
-                                                : 'primary'
-                                        }
-                                        variant="outlined"
-                                    />
-                                )}
+                                            <LocationOnIcon />
+                                        </div>
+                                    )}
+                            </AccordionSummary>
+                            <AccordionDetails>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: 1,
+                                        mb: 2,
+                                    }}
+                                >
+                                    {item.geoLocationEnabled && (
+                                        <Chip
+                                            icon={<LocationOnIcon />}
+                                            label="Location Required"
+                                            size="small"
+                                            color={
+                                                geolocation
+                                                    ? 'success'
+                                                    : 'primary'
+                                            }
+                                            variant="outlined"
+                                        />
+                                    )}
+                                    {item.commentsOption !== 'off' && (
+                                        <Chip
+                                            icon={<CommentIcon />}
+                                            label={
+                                                item.commentsOption ===
+                                                'required'
+                                                    ? 'Comments Required'
+                                                    : 'Comments Optional'
+                                            }
+                                            size="small"
+                                            color={
+                                                item.commentsOption ===
+                                                'required'
+                                                    ? 'secondary'
+                                                    : 'default'
+                                            }
+                                            variant="outlined"
+                                        />
+                                    )}
+                                    {item.uploadOption !== 'off' && (
+                                        <Chip
+                                            icon={<AttachFileIcon />}
+                                            label={
+                                                item.uploadOption === 'required'
+                                                    ? 'Upload Required'
+                                                    : 'Upload Optional'
+                                            }
+                                            size="small"
+                                            color={
+                                                item.uploadOption === 'required'
+                                                    ? 'secondary'
+                                                    : 'default'
+                                            }
+                                            variant="outlined"
+                                        />
+                                    )}
+                                </Box>
 
                                 {item.commentsOption !== 'off' && (
-                                    <Chip
-                                        icon={<CommentIcon />}
+                                    <TextField
                                         label={
-                                            item.commentsOption ===
-                                            'required'
-                                                ? 'Comments Required'
-                                                : 'Comments Optional'
+                                            item.commentsOption === 'required'
+                                                ? 'Required Comments'
+                                                : 'Comments (Optional)'
                                         }
-                                        size="small"
-                                        color={
-                                            item.commentsOption ===
-                                            'required'
-                                                ? 'secondary'
-                                                : 'default'
+                                        fullWidth
+                                        multiline
+                                        rows={2}
+                                        value={comments[item.id] || ''}
+                                        onChange={(e) =>
+                                            handleCommentChange(
+                                                item.id,
+                                                e.target.value
+                                            )
                                         }
-                                        variant="outlined"
+                                        margin="normal"
+                                        required={
+                                            item.commentsOption === 'required'
+                                        }
+                                        error={
+                                            item.commentsOption ===
+                                                'required' &&
+                                            (!comments[item.id] ||
+                                                comments[item.id].trim() === '')
+                                        }
+                                        helperText={
+                                            item.commentsOption ===
+                                                'required' &&
+                                            (!comments[item.id] ||
+                                                comments[item.id].trim() === '')
+                                                ? 'Comments are required'
+                                                : ''
+                                        }
+                                        disabled={isCompleted}
                                     />
                                 )}
 
                                 {item.uploadOption !== 'off' && (
-                                    <Chip
-                                        icon={<AttachFileIcon />}
-                                        label={
-                                            item.uploadOption ===
-                                            'required'
-                                                ? 'Upload Required'
-                                                : 'Upload Optional'
-                                        }
-                                        size="small"
-                                        color={
-                                            item.uploadOption ===
-                                            'required'
-                                                ? 'secondary'
-                                                : 'default'
-                                        }
-                                        variant="outlined"
-                                    />
-                                )}
-                            </Box>
-
-                            {(item.commentsOption !== 'off' ||
-                                item.uploadOption !== 'off') && (
-                                <Box sx={{ px: 2, pb: 2 }}>
-                                    {item.commentsOption !== 'off' && (
-                                        <TextField
-                                            label={
-                                                item.commentsOption ===
-                                                'required'
-                                                    ? 'Required Comments'
-                                                    : 'Comments (Optional)'
-                                            }
-                                            fullWidth
-                                            multiline
-                                            rows={2}
-                                            value={comments[item.id] || ''}
-                                            onChange={(e) =>
-                                                handleCommentChange(
-                                                    item.id,
-                                                    e.target.value
-                                                )
-                                            }
-                                            margin="normal"
-                                            required={
-                                                item.commentsOption ===
-                                                'required'
-                                            }
-                                            error={
-                                                item.commentsOption ===
-                                                    'required' &&
-                                                (!comments[item.id] ||
-                                                    comments[item.id].trim() ===
-                                                        '')
-                                            }
-                                            helperText={
-                                                item.commentsOption ===
-                                                    'required' &&
-                                                (!comments[item.id] ||
-                                                    comments[item.id].trim() ===
-                                                        '')
-                                                    ? 'Comments are required'
-                                                    : ''
-                                            }
-                                            disabled={isCompleted}
-                                        />
-                                    )}
-
-                                    {item.uploadOption !== 'off' && (
-                                        <Box sx={{ mt: 2 }}>
-                                            {uploads[item.id] ? (
-                                                <Box>
-                                                    <Alert
-                                                        severity="success"
-                                                        sx={{ mb: 1 }}
-                                                    >
-                                                        File uploaded successfully. {!isCompleted && item.uploadOption === 'required' && "You can now check this item."}
-                                                    </Alert>
-                                                    {/* Display uploaded file details */}
-
-                                                    {/* Display upload details using the container component */}
-                                                    <UploadDetailsContainer 
-                                                        itemId={item.id} 
-                                                        uploadId={uploads[item.id]} 
-                                                        shiftUploads={shiftUploads} 
-                                                    />
-                                                </Box>
-                                            ) : (
-                                                <Box>
-                                                    <input
-                                                        accept="*/*"
-                                                        style={{ display: 'none' }}
-                                                        id={`upload-file-${item.id}`}
-                                                        type="file"
-                                                        onChange={(e) =>
-                                                            handleFileUpload(
-                                                                item.id,
-                                                                `${checklistData.name} - ${item.name}`,
-                                                                e
+                                    <Box sx={{ mt: 2 }}>
+                                        {isClearingFile[item.id] ? (
+                                            <Skeleton variant="rectangular" width="100%" height={100} sx={{ mt: 1 }} />
+                                        ) : uploads[item.id] ? (
+                                            <Box>
+                                                <Alert
+                                                    severity="success"
+                                                    sx={{ mb: 1 }}
+                                                >
+                                                    File uploaded successfully.{' '}
+                                                    {!isCompleted &&
+                                                        item.uploadOption ===
+                                                            'required' &&
+                                                        'You can now check this item.'}
+                                                </Alert>
+                                                <UploadDetailsContainer
+                                                    itemId={item.id}
+                                                    uploadId={uploads[item.id]}
+                                                    shiftUploads={shiftUploads}
+                                                    setUploads={setUploads}
+                                                    completeItemMutation={
+                                                        completeItemMutation
+                                                    }
+                                                    completions={completions}
+                                                    shift={shift}
+                                                    refetchChecklistData={
+                                                        refetch
+                                                    }
+                                                    refetchShiftUploads={
+                                                        refetchShiftUploads
+                                                    }
+                                                    notifications={
+                                                        notifications
+                                                    }
+                                                    deleteFileMutation={
+                                                        deleteFileMutation
+                                                    }
+                                                    isClearingFile={isClearingFile[item.id]}
+                                                    setIsClearingFile={setIsClearingFile}
+                                                />
+                                            </Box>
+                                        ) : (
+                                            <Box>
+                                                <input
+                                                    accept="*/*"
+                                                    style={{ display: 'none' }}
+                                                    id={`upload-file-${item.id}`}
+                                                    type="file"
+                                                    onChange={(e) =>
+                                                        handleFileUpload(
+                                                            item.id,
+                                                            `${checklistData.name} - ${item.name}`,
+                                                            e
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        isCompleted ||
+                                                        uploading[item.id]
+                                                    }
+                                                />
+                                                <label
+                                                    htmlFor={`upload-file-${item.id}`}
+                                                >
+                                                    <Button
+                                                        variant="outlined"
+                                                        component="span"
+                                                        startIcon={
+                                                            uploading[
+                                                                item.id
+                                                            ] ? (
+                                                                <CircularProgress
+                                                                    size={20}
+                                                                />
+                                                            ) : (
+                                                                <CloudUploadIcon />
                                                             )
                                                         }
-                                                        disabled={isCompleted || uploading[item.id]}
-                                                    />
-                                                    <label
-                                                        htmlFor={`upload-file-${item.id}`}
+                                                        disabled={
+                                                            isCompleted ||
+                                                            uploading[item.id]
+                                                        }
+                                                        color={
+                                                            item.uploadOption ===
+                                                            'required'
+                                                                ? 'secondary'
+                                                                : 'primary'
+                                                        }
                                                     >
-                                                        <Button
-                                                            variant="outlined"
-                                                            component="span"
-                                                            startIcon={
-                                                                uploading[item.id] ? (
-                                                                    <CircularProgress
-                                                                        size={20}
-                                                                    />
-                                                                ) : (
-                                                                    <CloudUploadIcon />
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                isCompleted || uploading[item.id]
-                                                            }
-                                                            color={item.uploadOption === 'required' ? "secondary" : "primary"}
-                                                        >
-                                                            {uploading[item.id]
-                                                                ? 'Uploading...'
-                                                                : item.uploadOption === 'required'
-                                                                ? 'Upload Required File'
-                                                                : 'Upload File'}
-                                                        </Button>
-                                                    </label>
-                                                </Box>
-                                            )}
-                                        </Box>
-                                    )}
-                                </Box>
-                            )}
-
-                            {isCompleted && completions[item.id] && (
-                                <Box
-                                    sx={{
-                                        px: 2,
-                                        pb: 2,
-                                        color: 'text.secondary',
-                                    }}
-                                >
-                                    <Typography
-                                        variant="caption"
-                                        display="block"
-                                    >
-                                        Completed by:{' '}
-                                        {completions[item.id].member?.name ||
-                                            'You'}{' '}
-                                        at{' '}
-                                        {formatDate(
-                                            completions[item.id].completedAt
+                                                        {uploading[item.id]
+                                                            ? 'Uploading...'
+                                                            : item.uploadOption ===
+                                                                'required'
+                                                              ? 'Upload Required File'
+                                                              : 'Upload File'}
+                                                    </Button>
+                                                </label>
+                                            </Box>
                                         )}
-                                    </Typography>
-                                </Box>
-                            )}
-                        </Paper>
+                                    </Box>
+                                )}
+
+                                {isCompleted && completions[item.id] && (
+                                    <Box
+                                        sx={{ mt: 2, color: 'text.secondary' }}
+                                    >
+                                        <Typography
+                                            variant="caption"
+                                            display="block"
+                                        >
+                                            Completed by:{' '}
+                                            {completions[item.id].member
+                                                ?.name || 'You'}{' '}
+                                            at{' '}
+                                            {formatDate(
+                                                completions[item.id].completedAt
+                                            )}
+                                        </Typography>
+                                    </Box>
+                                )}
+                            </AccordionDetails>
+                        </Accordion>
                     );
                 })}
-            </List>
+            </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
                 <Button onClick={onClose} variant="contained">
@@ -1024,25 +1452,28 @@ export default function ChecklistCompletion({
             </Dialog>
 
             {/* Location Map Modal */}
-            <Dialog 
-                open={locationModalOpen} 
+            <Dialog
+                open={locationModalOpen}
                 onClose={() => setLocationModalOpen(false)}
                 maxWidth="md"
                 fullWidth
             >
                 <DialogTitle>
-                    Location Map: {selectedLocation?.itemName === "Current Location" 
-                        ? "Your Current Location" 
+                    Location Map:{' '}
+                    {selectedLocation?.itemName === 'Current Location'
+                        ? 'Your Current Location'
                         : `Where "${selectedLocation?.itemName}" was completed`}
                 </DialogTitle>
                 <DialogContent>
                     {selectedLocation && (
                         <Box sx={{ py: 2 }}>
                             <Typography variant="body2" gutterBottom>
-                                Coordinates: {selectedLocation.latitude.toFixed(6)}, {selectedLocation.longitude.toFixed(6)}
+                                Coordinates:{' '}
+                                {selectedLocation.latitude.toFixed(6)},{' '}
+                                {selectedLocation.longitude.toFixed(6)}
                             </Typography>
                             <Box sx={{ mt: 2, height: 400 }}>
-                                <LocationMap 
+                                <LocationMap
                                     latitude={selectedLocation.latitude}
                                     longitude={selectedLocation.longitude}
                                     zoom={15}
