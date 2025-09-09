@@ -1,6 +1,15 @@
 import { prisma } from '@/lib/prisma';
 import { v4 as uuidv4 } from 'uuid';
 
+type ChecklistItem = {
+    name: string;
+    order: number;
+    geoLocationEnabled?: boolean;
+    commentsOption?: 'required' | 'optional' | 'off';
+    uploadOption?: 'required' | 'optional' | 'off';
+    completed?: boolean;
+};
+
 /**
  * Seeds the database with initial data for development purposes.
  * This function should be called from a server root page.
@@ -242,7 +251,9 @@ export async function seedDatabase() {
                 },
             });
             createdLocationGroups.push(createdGroup);
-            console.log(`Created location group: ${createdGroup.name} with color ${createdGroup.color}`);
+            console.log(
+                `Created location group: ${createdGroup.name} with color ${createdGroup.color}`
+            );
         }
 
         // Create Departments
@@ -301,67 +312,75 @@ export async function seedDatabase() {
                 },
             });
             createdDepartments.push(createdDepartment);
-            console.log(`Created department: ${createdDepartment.name} with color ${createdDepartment.color}`);
+            console.log(
+                `Created department: ${createdDepartment.name} with color ${createdDepartment.color}`
+            );
         }
 
         // Assign locations to groups
         // Boston Area: Boston Downtown Office, Quincy Market Branch
         await prisma.location.update({
             where: { id: createdLocations[0].id }, // Boston Downtown Office
-            data: { 
+            data: {
                 groupId: createdLocationGroups[0].id,
                 defaultDepartmentId: createdDepartments[0].id, // Sales
             },
         });
         await prisma.location.update({
             where: { id: createdLocations[2].id }, // Quincy Market Branch
-            data: { 
+            data: {
                 groupId: createdLocationGroups[0].id,
                 defaultDepartmentId: createdDepartments[1].id, // Marketing
             },
         });
-        console.log(`Assigned Boston Downtown Office and Quincy Market Branch to Boston Area group`);
+        console.log(
+            `Assigned Boston Downtown Office and Quincy Market Branch to Boston Area group`
+        );
 
         // Cambridge Area: Cambridge Innovation Center, Somerville Office
         await prisma.location.update({
             where: { id: createdLocations[1].id }, // Cambridge Innovation Center
-            data: { 
+            data: {
                 groupId: createdLocationGroups[1].id,
                 defaultDepartmentId: createdDepartments[4].id, // IT Support
             },
         });
         await prisma.location.update({
             where: { id: createdLocations[3].id }, // Somerville Office
-            data: { 
+            data: {
                 groupId: createdLocationGroups[1].id,
                 defaultDepartmentId: createdDepartments[2].id, // Operations
             },
         });
-        console.log(`Assigned Cambridge Innovation Center and Somerville Office to Cambridge Area group`);
+        console.log(
+            `Assigned Cambridge Innovation Center and Somerville Office to Cambridge Area group`
+        );
 
         // Suburban Offices: Brookline Store, Newton Center, Waltham Office Park
         await prisma.location.update({
             where: { id: createdLocations[4].id }, // Brookline Store
-            data: { 
+            data: {
                 groupId: createdLocationGroups[2].id,
                 defaultDepartmentId: createdDepartments[3].id, // Administration
             },
         });
         await prisma.location.update({
             where: { id: createdLocations[5].id }, // Newton Center
-            data: { 
+            data: {
                 groupId: createdLocationGroups[2].id,
                 defaultDepartmentId: createdDepartments[5].id, // Safety Division
             },
         });
         await prisma.location.update({
             where: { id: createdLocations[6].id }, // Waltham Office Park
-            data: { 
+            data: {
                 groupId: createdLocationGroups[2].id,
                 defaultDepartmentId: createdDepartments[6].id, // EMT
             },
         });
-        console.log(`Assigned Brookline Store, Newton Center, and Waltham Office Park to Suburban Offices group`);
+        console.log(
+            `Assigned Brookline Store, Newton Center, and Waltham Office Park to Suburban Offices group`
+        );
 
         // 6. Add employee team members
         const teamMembers = [
@@ -483,7 +502,9 @@ export async function seedDatabase() {
                         departmentId = location.defaultDepartmentId;
                     } else {
                         // Pick a random department
-                        const departmentIndex = Math.floor(Math.random() * createdDepartments.length);
+                        const departmentIndex = Math.floor(
+                            Math.random() * createdDepartments.length
+                        );
                         departmentId = createdDepartments[departmentIndex].id;
                     }
                 }
@@ -538,11 +559,13 @@ export async function seedDatabase() {
             for (let i = 0; i < numAvailabilities; i++) {
                 // Random start date within the next 30 days
                 const startDay = Math.floor(Math.random() * 25); // Leave room for multi-day availabilities
-                const startDate = new Date(Date.UTC(
-                    currentYear,
-                    currentMonth,
-                    currentDate.getDate() + startDay
-                ));
+                const startDate = new Date(
+                    Date.UTC(
+                        currentYear,
+                        currentMonth,
+                        currentDate.getDate() + startDay
+                    )
+                );
 
                 // Random duration between 1-5 days
                 const durationDays = Math.floor(Math.random() * 5) + 1;
@@ -578,8 +601,306 @@ export async function seedDatabase() {
             }
         }
 
+        // 9. Create checklists and assign to shifts
+        console.log('Creating checklists...');
+
+        // Roster Checklist
+        const rosterChecklist = await prisma.checklist.create({
+            data: {
+                id: uuidv4(),
+                organizationId: testOrg.id,
+                name: 'Daily Roster',
+                description: 'Daily roster management checklist for staff',
+            },
+        });
+
+        // Roster Checklist Items
+        const rosterItems: ChecklistItem[] = [
+            {
+                name: 'Arrived at location',
+                order: 1,
+                geoLocationEnabled: true,
+                commentsOption: 'optional',
+                completed: true,
+            },
+            {
+                name: 'Uploaded daily roster',
+                order: 2,
+                uploadOption: 'required' as const,
+                commentsOption: 'optional',
+                completed: true,
+            },
+            {
+                name: 'Verified staff attendance',
+                order: 3,
+                commentsOption: 'optional',
+                completed: false,
+            },
+            {
+                name: 'Reported any absences',
+                order: 4,
+                commentsOption: 'required',
+                completed: false,
+            },
+            {
+                name: 'Left location',
+                order: 5,
+                geoLocationEnabled: true,
+                commentsOption: 'optional',
+                completed: false,
+            },
+        ];
+
+        // Create roster checklist items and store their IDs
+        const createdRosterItems = [];
+        for (const item of rosterItems) {
+            const checklistItem = await prisma.checklistItem.create({
+                data: {
+                    id: uuidv4(),
+                    checklistId: rosterChecklist.id,
+                    name: item.name,
+                    order: item.order,
+                    geoLocationEnabled: item.geoLocationEnabled || false,
+                    commentsOption: item.commentsOption || 'off',
+                    uploadOption: item.uploadOption || 'off',
+                },
+            });
+            createdRosterItems.push({ ...item, id: checklistItem.id });
+            console.log(`Created checklist item: ${checklistItem.name}`);
+        }
+
+        // Retail Restock Checklist
+        const restockChecklist = await prisma.checklist.create({
+            data: {
+                id: uuidv4(),
+                organizationId: testOrg.id,
+                name: 'Retail Restock',
+                description: 'Retail inventory restocking procedure',
+            },
+        });
+
+        // Retail Restock Checklist Items
+        const restockItems: ChecklistItem[] = [
+            {
+                name: 'Checked inventory levels',
+                order: 1,
+                commentsOption: 'optional',
+                completed: true,
+            },
+            {
+                name: 'Identified low stock items',
+                order: 2,
+                commentsOption: 'optional',
+                completed: true,
+            },
+            {
+                name: 'Pulled stock from backroom',
+                order: 3,
+                commentsOption: 'optional',
+                completed: true,
+            },
+            {
+                name: 'Restocked shelves',
+                order: 4,
+                commentsOption: 'optional',
+                completed: true,
+            },
+            {
+                name: 'Updated inventory system',
+                order: 5,
+                uploadOption: 'required' as const,
+                commentsOption: 'required',
+                completed: false,
+            },
+            {
+                name: 'Disposed of damaged goods',
+                order: 6,
+                commentsOption: 'optional',
+                completed: false,
+            },
+            {
+                name: 'Cleaned restocking area',
+                order: 7,
+                commentsOption: 'optional',
+                completed: false,
+            },
+        ];
+
+        // Create restock checklist items and store their IDs
+        const createdRestockItems = [];
+        for (const item of restockItems) {
+            const checklistItem = await prisma.checklistItem.create({
+                data: {
+                    id: uuidv4(),
+                    checklistId: restockChecklist.id,
+                    name: item.name,
+                    order: item.order,
+                    geoLocationEnabled: item.geoLocationEnabled || false,
+                    commentsOption: item.commentsOption || 'off',
+                    uploadOption: item.uploadOption || 'off',
+                },
+            });
+            createdRestockItems.push({ ...item, id: checklistItem.id });
+            console.log(`Created checklist item: ${checklistItem.name}`);
+        }
+
+        // Assign checklists to shifts and complete some items
+        console.log('Assigning checklists to shifts...');
+
+        // Get all shifts
+        const allShifts = await prisma.shift.findMany({
+            where: { organizationId: testOrg.id },
+            include: { shiftAssignments: true },
+        });
+
+        // Assign checklists to 70% of shifts
+        const checklistAssignments = [
+            { checklist: rosterChecklist, weight: 0.6 }, // 60% roster, 40% restock
+            { checklist: restockChecklist, weight: 0.4 },
+        ];
+
+        for (const shift of allShifts) {
+            // Skip 30% of shifts to leave some without checklists
+            if (Math.random() > 0.7) continue;
+
+            // Choose which checklist to assign (weighted random)
+            const random = Math.random();
+            let cumulativeWeight = 0;
+            let selectedChecklist = null;
+
+            for (const assignment of checklistAssignments) {
+                cumulativeWeight += assignment.weight;
+                if (random <= cumulativeWeight) {
+                    selectedChecklist = assignment.checklist;
+                    break;
+                }
+            }
+
+            if (!selectedChecklist) {
+                selectedChecklist = rosterChecklist; // Fallback
+            }
+
+            // Get the checklist items with their database IDs
+            const checklistItems =
+                selectedChecklist.id === rosterChecklist.id
+                    ? createdRosterItems
+                    : createdRestockItems;
+
+            // Assign checklist to shift
+            await prisma.shift.update({
+                where: { id: shift.id },
+                data: {
+                    checklistId: selectedChecklist.id,
+                },
+            });
+
+            console.log(
+                `Assigned ${selectedChecklist.name} to shift at ${shift.title}`
+            );
+
+            // Complete some items for each assignment
+            if (shift.shiftAssignments && shift.shiftAssignments.length > 0) {
+                for (const assignment of shift.shiftAssignments) {
+                    // Get member's timezone (default to America/New_York if not set)
+                    const member = await prisma.member.findUnique({
+                        where: { id: assignment.memberId },
+                        include: { user: true },
+                    });
+
+                    // Complete some items (60-90% of items)
+                    const completedCount = Math.floor(
+                        checklistItems.length * (0.6 + Math.random() * 0.3)
+                    );
+
+                    const itemsToComplete = [...checklistItems]
+                        .sort(() => 0.5 - Math.random())
+                        .slice(0, completedCount);
+
+                    for (const item of itemsToComplete) {
+                        const completedAt = new Date(shift.startTime);
+                        // Randomize completion time within the shift
+                        const randomMinutes = Math.floor(
+                            ((shift.endTime.getTime() -
+                                shift.startTime.getTime()) /
+                                (1000 * 60)) *
+                                Math.random()
+                        );
+                        completedAt.setMinutes(
+                            completedAt.getMinutes() + randomMinutes
+                        );
+
+                        if (!item.id) {
+                            console.warn(
+                                'Skipping checklist item without ID:',
+                                item.name
+                            );
+                            continue;
+                        }
+
+                        const latitude =
+                            42.3601 + (Math.random() * 0.02 - 0.01); // Around Boston area
+                        const longitude =
+                            -71.0589 + (Math.random() * 0.02 - 0.01);
+
+                        const completionData: any = {
+                            id: uuidv4(),
+                            memberId: assignment.memberId,
+                            checklistItemId: item.id,
+                            shiftId: shift.id,
+                            completed: true,
+                            completedAt: completedAt,
+                            latitude: item.geoLocationEnabled ? latitude : null,
+                            longitude: item.geoLocationEnabled
+                                ? longitude
+                                : null,
+                        };
+
+                        if (item.commentsOption === 'required') {
+                            completionData.comments = `This is a required comment for ${item.name}.`;
+                        }
+
+                        if (item.uploadOption === 'required') {
+                            // Create a dummy upload for the required upload
+                            const uploadGroup =
+                                await prisma.uploadGroup.findFirst({
+                                    where: {
+                                        organizationId: testOrg.id,
+                                        uploadName: 'Roster',
+                                    },
+                                });
+
+                            if (uploadGroup) {
+                                const upload = await prisma.upload.create({
+                                    data: {
+                                        id: uuidv4(),
+                                        uploadGroupId: uploadGroup.id,
+                                        shiftId: shift.id,
+                                        fileName: 'dummy-roster.pdf',
+                                        fileKey: `dummy-roster-${uuidv4()}.pdf`,
+                                        fileSize: 12345,
+                                        fileType: 'application/pdf',
+                                        uploaderId: assignment.memberId,
+                                    },
+                                });
+                                completionData.uploadId = upload.id;
+                            }
+                        }
+
+                        await prisma.checklistItemCompletion.create({
+                            data: completionData,
+                        });
+                    }
+
+                    console.log(
+                        `Completed ${itemsToComplete.length} items for member ${member?.name || assignment.memberId}`
+                    );
+                }
+            }
+        }
+
         console.log('Database seeding completed successfully!');
     } catch (error) {
         console.error('Error seeding database:', error);
+        throw error; // Re-throw to ensure the error is visible in the console
     }
 }
