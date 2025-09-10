@@ -147,7 +147,7 @@ export default function ShiftUploads({ shiftId, readOnly }: ShiftUploadsProps) {
                         },
                     }}
                 >
-                    {uploadData?.map(({ group, upload }) => (
+                    {uploadData?.filter(({ group }) => !group.uploadName.toLowerCase().includes('checklist')).map(({ group, upload }) => (
                         <Box key={group.id}>
                             <Paper
                                 elevation={1}
