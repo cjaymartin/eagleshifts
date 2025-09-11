@@ -378,7 +378,8 @@ export default function ChecklistCompletion({
 
     // Get upload groups
     const { data: uploadGroups = [], refetch: refetchUploadGroups } =
-        useUploadGroupsQuery();
+        useUploadGroupsQuery({ includeInactiveChecklistGroup: true });
+    console.log('Current uploadGroups state:', uploadGroups);
 
     // Create checklist upload group mutation
     const createChecklistUploadGroupMutation =
@@ -516,72 +517,49 @@ export default function ChecklistCompletion({
                 fileData.substring(0, 50) + '...'
             );
 
-            // Find an appropriate upload group
-            let uploadGroupId = '';
+            let currentUploadGroupId = '';
 
-            console.log('Available upload groups:', uploadGroups);
+            console.log('handleFileUpload: Starting. Current uploadGroups:', uploadGroups); // Added
 
-            // First, try to find a group with "checklist" in the name
-            const checklistGroup = uploadGroups.find((group) =>
-                group.uploadName.toLowerCase().includes('checklist')
+            // Always call createChecklistUploadGroupMutation to ensure the group is active or created
+            console.log('handleFileUpload: Ensuring checklist upload group is active or created.');
+            notifications.show(
+                'Ensuring checklist upload group is ready...',
+                { severity: 'info', autoHideDuration: 3000 }
             );
-
-            // If not found, use the first available group
-            if (checklistGroup) {
-                uploadGroupId = checklistGroup.id;
-                console.log('Using checklist upload group:', checklistGroup);
-            } else if (uploadGroups.length > 0) {
-                uploadGroupId = uploadGroups[0].id;
-                console.log(
-                    'Using first available upload group:',
-                    uploadGroups[0]
-                );
-            } else {
-                console.log(
-                    'No upload groups available, attempting to create one'
-                );
-                // No upload groups available - try to create a default checklist upload group
-                try {
+            try {
+                const ensuredGroup = await createChecklistUploadGroupMutation.mutateAsync();
+                if (ensuredGroup && ensuredGroup.id) {
+                    currentUploadGroupId = ensuredGroup.id;
+                    console.log('handleFileUpload: Ensured checklist upload group:', ensuredGroup);
+                    await refetchUploadGroups(); // Refresh the upload groups list to reflect any changes
                     notifications.show(
-                        'No upload groups found. Creating a default checklist upload group...',
-                        { severity: 'info', autoHideDuration: 3000 }
+                        'Checklist upload group ready.',
+                        { severity: 'success', autoHideDuration: 3000 }
                     );
-
-                    const newGroup =
-                        await createChecklistUploadGroupMutation.mutateAsync();
-                    console.log('Created new upload group:', newGroup);
-
-                    if (newGroup && newGroup.id) {
-                        uploadGroupId = newGroup.id;
-                        // Refresh the upload groups list
-                        await refetchUploadGroups();
-                        notifications.show(
-                            'Created a default checklist upload group.',
-                            { severity: 'success', autoHideDuration: 3000 }
-                        );
-                    } else {
-                        throw new Error(
-                            'Failed to create a default checklist upload group.'
-                        );
-                    }
-                } catch (error: any) {
-                    console.error(
-                        'Error creating checklist upload group:',
-                        error
-                    );
-                    notifications.show(
-                        'No upload groups available and failed to create a default one. Please ask an administrator to set up upload groups in the Business Settings page.',
-                        { severity: 'error', autoHideDuration: 3000 }
-                    );
-                    throw new Error(
-                        'No upload groups available. Please ask an administrator to set up upload groups in the Business Settings page.'
-                    );
+                } else {
+                    throw new Error('Failed to ensure checklist upload group: Invalid response.');
                 }
+            } catch (groupError: any) {
+                console.error('handleFileUpload: Error ensuring checklist upload group:', groupError);
+                notifications.show(
+                    `Failed to prepare upload group: ${groupError.message}`,
+                    { severity: 'error', autoHideDuration: 5000 }
+                );
+                throw new Error('Failed to prepare checklist upload group.');
             }
+
+            // If for some reason currentUploadGroupId is still empty, throw an error
+            if (!currentUploadGroupId) {
+                console.error('handleFileUpload: currentUploadGroupId is empty before uploadFileMutation.'); // Added
+                throw new Error('Failed to determine a valid upload group for checklist upload.');
+            }
+
+            console.log('handleFileUpload: Final uploadGroupId before mutation:', currentUploadGroupId); // Added
 
             console.log('Uploading file with params:', {
                 shiftId: shift.id,
-                uploadGroupId,
+                uploadGroupId: currentUploadGroupId,
                 fileName: file.name,
                 fileSize: file.size,
                 fileType: file.type,
@@ -590,7 +568,7 @@ export default function ChecklistCompletion({
             // Upload file
             const result = await uploadFileMutation.mutateAsync({
                 shiftId: shift.id,
-                uploadGroupId: uploadGroupId,
+                uploadGroupId: currentUploadGroupId,
                 fileName: file.name,
                 fileSize: file.size,
                 fileType: file.type,
@@ -1081,9 +1059,11 @@ export default function ChecklistCompletion({
                             >
                                 <Tooltip
                                     title={
-                                        !isCompleted && hasRequiredFields
-                                            ? 'Click to mark as completed'
-                                            : ''
+                                        !isCompleted && !hasRequiredFields
+                                            ? 'Required fields missing'
+                                            : (!isCompleted && hasRequiredFields
+                                                ? 'Click to mark as completed'
+                                                : '')
                                     }
                                 >
                                     <Checkbox
@@ -1093,6 +1073,7 @@ export default function ChecklistCompletion({
                                             handleCheckboxChange(item);
                                         }}
                                         onClick={(e) => e.stopPropagation()}
+                                        disabled={!isCompleted && !hasRequiredFields}
                                         color={
                                             !isCompleted && hasRequiredFields
                                                 ? 'success'
@@ -1171,12 +1152,10 @@ export default function ChecklistCompletion({
                                         />
                                     </Tooltip>
                                 )}
-                                {!isCompleted && !hasRequiredFields && (
-                                    <Tooltip title="Required fields missing">
-                                        <ErrorIcon
-                                            color="error"
-                                            sx={{ ml: 1 }}
-                                        />
+                                {/* Show grey LocationOnIcon if GPS is involved and not yet completed */}
+                                {!isCompleted && item.geoLocationEnabled && (
+                                    <Tooltip title="Geolocation required">
+                                        <LocationOnIcon sx={{ color: 'action.active', ml: 1 }} />
                                     </Tooltip>
                                 )}
                                 {isCompleted &&

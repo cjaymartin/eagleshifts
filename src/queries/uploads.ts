@@ -2,8 +2,8 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { trpc } from '@/lib/trpc/client';
 
 // Get upload groups for the current organization
-export const useUploadGroupsQuery = () => {
-    return trpc.uploads.getUploadGroups.useQuery();
+export const useUploadGroupsQuery = (options?: { includeInactiveChecklistGroup?: boolean }) => {
+    return trpc.uploads.getUploadGroups.useQuery(options || {});
 };
 
 // Get uploads for a specific shift
