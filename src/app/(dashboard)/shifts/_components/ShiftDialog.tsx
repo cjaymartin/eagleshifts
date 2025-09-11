@@ -17,9 +17,10 @@ export default function ShiftDialog({
     payload,
     open,
     onClose,
+    readOnly,
 }: DialogProps<
     inferRouterOutputs<AppRouter>['shifts']['byId'] | undefined | null
->) {
+> & { readOnly?: boolean }) {
     //const [dialog] = useDialogContext();
     //const { reset: resetDialog } = useShiftDialogHelpers();
     //const [form] = useDialogForm();
@@ -44,7 +45,7 @@ export default function ShiftDialog({
         >
             <DialogTitle>
                 <Box display="flex">
-                    <Box flexGrow={1}>{isNew ? 'Add' : 'Edit'} Shift</Box>
+                    <Box flexGrow={1}>{isNew ? 'Add' : readOnly ? 'View' : 'Edit'} Shift</Box>
                     <Box>
                         <IconButton onClick={handleClose}>
                             <CloseIcon />
@@ -60,6 +61,7 @@ export default function ShiftDialog({
                         shiftId={payload?.id}
                         shift={payload}
                         onClose={handleClose as any}
+                        readOnly={readOnly}
                     />
                 </Container>
             </DialogContent>

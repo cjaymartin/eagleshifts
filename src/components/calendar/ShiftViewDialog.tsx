@@ -13,6 +13,8 @@ import {
     IconButton,
     Grid,
     Paper,
+    TextField,
+    MenuItem,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
@@ -21,6 +23,7 @@ import MapIcon from '@mui/icons-material/Map';
 import PeopleIcon from '@mui/icons-material/People';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import { DialogProps } from '@toolpad/core';
 import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/api/trpc/[trpc]';
@@ -35,7 +38,9 @@ import {
     useShiftRequestCreateMutation,
     useShiftRequestsListQuery,
 } from '@/queries/requests';
+import { trpc } from '@/lib/trpc/client';
 import { useNotifications } from '@/components/providers/NotificationsProvider';
+import ChecklistCompletion from '@/app/(dashboard)/checklists/_components/ChecklistCompletion';
 
 // Extend dayjs with plugins
 dayjs.extend(utc);
@@ -44,6 +49,84 @@ dayjs.extend(timezone);
 type ShiftViewDialogProps = DialogProps<
     inferRouterOutputs<AppRouter>['shifts']['byId'] | undefined | null
 >;
+
+// Simple Checklist Link Component
+function ChecklistLink({ shift }: { shift?: any }) {
+    const [openChecklistDialog, setOpenChecklistDialog] = useState(false);
+
+    // Determine if a checklist is attached by checking both Checklist object and checklistId
+    const hasChecklist = !!(shift?.Checklist || shift?.checklistId);
+
+    const handleOpenChecklist = () => {
+        setOpenChecklistDialog(true);
+    };
+
+    const handleCloseChecklist = () => {
+        setOpenChecklistDialog(false);
+    };
+
+    if (!hasChecklist) {
+        return (
+            <Box sx={{ mt: 2, mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <AssignmentIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+                    <Typography variant="body2" fontWeight="bold">
+                        Checklist
+                    </Typography>
+                </Box>
+                <Typography variant="body2" gutterBottom>
+                    No checklist attached to this shift.
+                </Typography>
+            </Box>
+        );
+    }
+
+    return (
+        <>
+            <Box sx={{ mt: 2, mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <AssignmentIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+                    <Typography variant="body2" fontWeight="bold">
+                        Checklist
+                    </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography variant="body2" sx={{ mr: 2 }}>
+                        {shift.Checklist?.name || 'Checklist Attached'}
+                    </Typography>
+                    <Button 
+                        variant="contained" 
+                        color="primary" 
+                        size="small"
+                        onClick={handleOpenChecklist}
+                    >
+                        View Checklist
+                    </Button>
+                </Box>
+            </Box>
+
+            {/* Checklist Dialog */}
+            <Dialog
+                open={openChecklistDialog}
+                onClose={handleCloseChecklist}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    {shift?.title} - {shift?.Checklist?.name || 'Checklist'}
+                </DialogTitle>
+                <DialogContent>
+                    {shift && (
+                        <ChecklistCompletion
+                            shift={shift}
+                            onClose={handleCloseChecklist}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
 
 export default function ShiftViewDialog({
     payload,
@@ -384,6 +467,14 @@ export default function ShiftViewDialog({
                                     {payload.adminNotes}
                                 </Typography>
                             </Box>
+                        </>
+                    )}
+
+                    {/* Checklist Link - Visible to all users with a shift that has a checklist */}
+                    {(payload?.Checklist || payload?.checklistId) && (
+                        <>
+                            <Divider sx={{ mt: 1 }} />
+                            <ChecklistLink shift={payload} />
                         </>
                     )}
                 </Stack>

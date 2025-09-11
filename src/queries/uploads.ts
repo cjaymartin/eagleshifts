@@ -2,8 +2,8 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { trpc } from '@/lib/trpc/client';
 
 // Get upload groups for the current organization
-export const useUploadGroupsQuery = () => {
-    return trpc.uploads.getUploadGroups.useQuery();
+export const useUploadGroupsQuery = (options?: { includeInactiveChecklistGroup?: boolean }) => {
+    return trpc.uploads.getUploadGroups.useQuery(options || {});
 };
 
 // Get uploads for a specific shift
@@ -57,6 +57,11 @@ export const useAllUploadsQuery = (
 // Initialize upload groups based on organization_profile.uploadNames (admin only)
 export const useInitializeUploadGroupsMutation = () => {
     return trpc.uploads.initializeUploadGroups.useMutation();
+};
+
+// Create a default checklist upload group if none exists
+export const useCreateChecklistUploadGroupMutation = () => {
+    return trpc.uploads.createChecklistUploadGroup.useMutation();
 };
 
 // Helper function to read a file as base64

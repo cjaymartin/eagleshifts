@@ -34,6 +34,49 @@ async function isAuthorizedForShiftUploads(
 }
 
 export const uploadsRouter = router({
+    // Create a default checklist upload group if none exists
+    createChecklistUploadGroup: memberProcedure.mutation(async ({ ctx }) => {
+        try {
+            // Check if a checklist upload group already exists
+            const existingGroup = await ctx.prisma.uploadGroup.findFirst({
+                where: {
+                    organizationId: ctx.user.organizationId,
+                    uploadName: { contains: 'Checklist', mode: 'insensitive' },
+                },
+            });
+
+            // If a checklist upload group already exists, ensure it's active and return it
+            if (existingGroup) {
+                if (!existingGroup.isActive) {
+                    // Reactivate the group if it's currently inactive
+                    const reactivatedGroup = await ctx.prisma.uploadGroup.update({
+                        where: { id: existingGroup.id },
+                        data: { isActive: true },
+                    });
+                    return reactivatedGroup;
+                }
+                return existingGroup;
+            }
+
+            // Create a new checklist upload group
+            const newGroup = await ctx.prisma.uploadGroup.create({
+                data: {
+                    organizationId: ctx.user.organizationId,
+                    uploadName: 'Checklist Uploads',
+                    isActive: true,
+                },
+            });
+
+            return newGroup;
+        } catch (error: any) {
+            if (error instanceof TRPCError) throw error;
+            throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: `Failed to create checklist upload group: ${error.message}`,
+            });
+        }
+    }),
+
     // Initialize upload groups based on organization_profile.uploadNames
     initializeUploadGroups: adminProcedure.mutation(async ({ ctx }) => {
         try {
@@ -82,10 +125,12 @@ export const uploadsRouter = router({
                 }
             }
 
-            // Deactivate groups for names that no longer exist
+            // Deactivate groups for names that no longer exist, excluding "Checklist Uploads"
             const groupsToDeactivate = existingGroups.filter(
                 (group) =>
-                    !uploadNames.includes(group.uploadName) && group.isActive
+                    !uploadNames.includes(group.uploadName) &&
+                    group.isActive &&
+                    !group.uploadName.toLowerCase().includes('checklist') // Exclude checklist uploads from deactivation
             );
 
             // Create new groups
@@ -118,10 +163,11 @@ export const uploadsRouter = router({
     }),
 
     // Get upload groups for the current organization
-    getUploadGroups: memberProcedure.query(async ({ ctx }) => {
-        try {
-            const groups = await ctx.prisma.uploadGroup.findMany({
-                where: {
+    getUploadGroups: memberProcedure
+        .input(z.object({ includeInactiveChecklistGroup: z.boolean().optional() })) // Add new input
+        .query(async ({ ctx, input }) => { // Add input to query function
+            try {
+                const whereClause: Prisma.UploadGroupWhereInput = { // Use Prisma.UploadGroupWhereInput
                     organizationId: ctx.user.organizationId,
                     OR: [
                         { isActive: true },
@@ -134,13 +180,26 @@ export const uploadsRouter = router({
                             },
                         },
                     ],
-                },
-                include: {
-                    uploads: {
-                        where: { isDeleted: false }, // Include a count of active uploads
+                };
+
+                if (input.includeInactiveChecklistGroup) {
+                    // If requested, explicitly include the "Checklist Uploads" group
+                    // even if it's inactive and has no active uploads.
+                    // This is done by adding another OR condition to the where clause.
+                    whereClause.OR?.push({
+                        uploadName: { contains: 'Checklist', mode: 'insensitive' },
+                        isActive: false, // Specifically target inactive checklist groups
+                    });
+                }
+
+                const groups = await ctx.prisma.uploadGroup.findMany({
+                    where: whereClause, // Use the constructed whereClause
+                    include: {
+                        uploads: {
+                            where: { isDeleted: false }, // Include a count of active uploads
+                        },
                     },
-                },
-            });
+                });
 
             return groups;
         } catch (error: any) {
@@ -273,13 +332,18 @@ export const uploadsRouter = router({
                 }
 
                 // Get the upload group to verify it belongs to the user's organization
+                console.log('uploads.uploadFile: input.uploadGroupId:', input.uploadGroupId); // Debug
+                const uploadGroupWhere = { // Define where clause separately for logging
+                    id: input.uploadGroupId,
+                    organizationId: ctx.user.organizationId,
+                    isActive: true,
+                };
+                console.log('uploads.uploadFile: Prisma findFirst where clause:', uploadGroupWhere); // Debug
+
                 const uploadGroup = await ctx.prisma.uploadGroup.findFirst({
-                    where: {
-                        id: input.uploadGroupId,
-                        organizationId: ctx.user.organizationId,
-                        isActive: true,
-                    },
+                    where: uploadGroupWhere,
                 });
+                console.log('uploads.uploadFile: Result of findFirst for uploadGroup:', uploadGroup); // Debug
 
                 if (!uploadGroup) {
                     throw new TRPCError({

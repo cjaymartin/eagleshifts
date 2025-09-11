@@ -27,6 +27,7 @@ import { trpc } from '@/lib/trpc/client';
 import { useDialogs } from '@toolpad/core';
 import ShiftForm from '@/app/(dashboard)/shifts/_components/ShiftForm';
 import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
+import { useBatchCheckShiftChecklistsQuery } from '@/queries/shifts';
 import {
     useShiftDraftsListQuery,
     useShiftDraftDeleteMutation,
@@ -47,6 +48,11 @@ export default function Shifts() {
     const { data: businessProfile } = useBusinessProfileQuery();
     const { data: shifts } = trpc.shifts.list.useQuery(filters as any);
     const { data: draftShifts = [] } = useShiftDraftsListQuery();
+
+    // Get checklist completion status for all shifts in a single batch query
+    const shiftIds = shifts?.map((shift) => shift.id) || [];
+    const { data: checklistStatuses } =
+        useBatchCheckShiftChecklistsQuery(shiftIds);
 
     const fileType =
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
@@ -152,6 +158,13 @@ export default function Shifts() {
                                                   isDepartmentFilterActive={
                                                       !!filters?.departmentIds
                                                           ?.length
+                                                  }
+                                                  isChecklistComplete={
+                                                      checklistStatuses
+                                                          ? checklistStatuses[
+                                                                shift.id
+                                                            ]
+                                                          : false
                                                   }
                                               />
                                           </TableRow>
