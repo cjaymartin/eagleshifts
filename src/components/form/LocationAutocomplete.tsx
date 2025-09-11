@@ -216,17 +216,17 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
                                         <Close />
                                     </IconButton>
                                 </Tooltip>
-                                {onViewLocation && (
-                                    <Tooltip title="View location details">
-                                        <IconButton
-                                            onClick={handleViewLocation}
-                                            disabled={disabled}
-                                            size="small"
-                                        >
-                                            <Visibility />
-                                        </IconButton>
-                                    </Tooltip>
-                                )}
+                                {/*{onViewLocation && (*/}
+                                {/*    <Tooltip title="View location details">*/}
+                                {/*        <IconButton*/}
+                                {/*            onClick={handleViewLocation}*/}
+                                {/*            disabled={disabled}*/}
+                                {/*            size="small"*/}
+                                {/*        >*/}
+                                {/*            <Visibility />*/}
+                                {/*        </IconButton>*/}
+                                {/*    </Tooltip>*/}
+                                {/*)}*/}
                             </Box>
                         </React.Fragment>
                     );

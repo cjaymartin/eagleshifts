@@ -8,14 +8,14 @@ import {
     Chip,
     Container,
     Grid,
-    IconButton,
-    InputAdornment,
+    // IconButton,
+    // InputAdornment,
     Stack,
     TextField,
-    Tooltip,
+    // Tooltip,
     Typography,
 } from '@mui/material';
-import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+// import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import { Controller, useForm } from 'react-hook-form';
 import { useNotifications } from '@/components/providers/NotificationsProvider';
 import {
@@ -32,8 +32,8 @@ type LocationFormData = {
     id?: string;
     name: string;
     address: string;
-    latitude: number;
-    longitude: number;
+    //latitude: number;
+    //longitude: number;
     groupId?: string;
     defaultDepartmentId?: string;
     tags?: string[];
@@ -79,8 +79,8 @@ export default function LocationForm({
         defaultValues: {
             name: '',
             address: '',
-            latitude: 40.7128, // Default to New York City
-            longitude: -74.006,
+            //latitude: 40.7128, // Default to New York City
+            //longitude: -74.006,
             groupId: undefined,
             defaultDepartmentId: undefined,
             tags: [],
@@ -88,8 +88,8 @@ export default function LocationForm({
     });
 
     // Watch coordinates for the map
-    const latitude = watch('latitude');
-    const longitude = watch('longitude');
+    //const latitude = watch('latitude');
+    //const longitude = watch('longitude');
 
     // Initialize form with location data if editing
     useEffect(() => {
@@ -97,8 +97,8 @@ export default function LocationForm({
             reset({
                 name: location.name,
                 address: location.address,
-                latitude: location.latitude,
-                longitude: location.longitude,
+                //latitude: location.latitude,
+                //longitude: location.longitude,
                 groupId: location.groupId || undefined,
                 defaultDepartmentId: location.defaultDepartmentId || undefined,
                 tags: location.tags || [],
@@ -108,116 +108,116 @@ export default function LocationForm({
     }, [location, reset]);
 
     // Handle map marker drag
-    const handleMapPositionChange = (lat: number, lng: number) => {
-        setValue('latitude', lat);
-        setValue('longitude', lng);
-    };
+    // const handleMapPositionChange = (lat: number, lng: number) => {
+    //     setValue('latitude', lat);
+    //     setValue('longitude', lng);
+    // };
 
     // Handle getting coordinates from address
-    const handleGetCoordinatesFromAddress = async () => {
-        try {
-            setIsGuessingAddress(true);
-
-            // Get current address from form
-            const address = watch('address');
-
-            if (!address) {
-                notifications.show('Please enter an address first', {
-                    severity: 'warning',
-                });
-                return;
-            }
-
-            // Call Nominatim API for forward geocoding
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
-                {
-                    headers: {
-                        'Accept-Language': 'en',
-                        'User-Agent': 'EagleShifts Location Manager',
-                    },
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch coordinates');
-            }
-
-            const data = await response.json();
-
-            if (data && data.length > 0) {
-                // Update coordinates fields
-                setValue('latitude', parseFloat(data[0].lat));
-                setValue('longitude', parseFloat(data[0].lon));
-                notifications.show('Coordinates updated successfully', {
-                    severity: 'success',
-                });
-            } else {
-                notifications.show(
-                    'Could not find coordinates for this address',
-                    { severity: 'warning' }
-                );
-            }
-        } catch (error) {
-            console.error('Error getting coordinates:', error);
-            notifications.show('Failed to get coordinates', {
-                severity: 'error',
-            });
-        } finally {
-            setIsGuessingAddress(false);
-        }
-    };
+    // const handleGetCoordinatesFromAddress = async () => {
+    //     try {
+    //         setIsGuessingAddress(true);
+    //
+    //         // Get current address from form
+    //         const address = watch('address');
+    //
+    //         if (!address) {
+    //             notifications.show('Please enter an address first', {
+    //                 severity: 'warning',
+    //             });
+    //             return;
+    //         }
+    //
+    //         // Call Nominatim API for forward geocoding
+    //         const response = await fetch(
+    //             `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+    //             {
+    //                 headers: {
+    //                     'Accept-Language': 'en',
+    //                     'User-Agent': 'EagleShifts Location Manager',
+    //                 },
+    //             }
+    //         );
+    //
+    //         if (!response.ok) {
+    //             throw new Error('Failed to fetch coordinates');
+    //         }
+    //
+    //         const data = await response.json();
+    //
+    //         if (data && data.length > 0) {
+    //             // Update coordinates fields
+    //             setValue('latitude', parseFloat(data[0].lat));
+    //             setValue('longitude', parseFloat(data[0].lon));
+    //             notifications.show('Coordinates updated successfully', {
+    //                 severity: 'success',
+    //             });
+    //         } else {
+    //             notifications.show(
+    //                 'Could not find coordinates for this address',
+    //                 { severity: 'warning' }
+    //             );
+    //         }
+    //     } catch (error) {
+    //         console.error('Error getting coordinates:', error);
+    //         notifications.show('Failed to get coordinates', {
+    //             severity: 'error',
+    //         });
+    //     } finally {
+    //         setIsGuessingAddress(false);
+    //     }
+    // };
 
     // Handle getting address from name
-    const handleGetAddressFromName = async () => {
-        try {
-            setIsGuessingAddress(true);
-
-            // Get current name from form
-            const name = watch('name');
-
-            if (!name) {
-                notifications.show('Please enter a location name first', {
-                    severity: 'warning',
-                });
-                return;
-            }
-
-            // Call Nominatim API for search by name
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name)}&limit=1`,
-                {
-                    headers: {
-                        'Accept-Language': 'en',
-                        'User-Agent': 'EagleShifts Location Manager',
-                    },
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch address');
-            }
-
-            const data = await response.json();
-
-            if (data && data.length > 0) {
-                // Update address field
-                setValue('address', data[0].display_name);
-                notifications.show('Address updated successfully', {
-                    severity: 'success',
-                });
-            } else {
-                notifications.show('Could not find address for this name', {
-                    severity: 'warning',
-                });
-            }
-        } catch (error) {
-            console.error('Error getting address:', error);
-            notifications.show('Failed to get address', { severity: 'error' });
-        } finally {
-            setIsGuessingAddress(false);
-        }
-    };
+    // const handleGetAddressFromName = async () => {
+    //     try {
+    //         setIsGuessingAddress(true);
+    //
+    //         // Get current name from form
+    //         const name = watch('name');
+    //
+    //         if (!name) {
+    //             notifications.show('Please enter a location name first', {
+    //                 severity: 'warning',
+    //             });
+    //             return;
+    //         }
+    //
+    //         // Call Nominatim API for search by name
+    //         const response = await fetch(
+    //             `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name)}&limit=1`,
+    //             {
+    //                 headers: {
+    //                     'Accept-Language': 'en',
+    //                     'User-Agent': 'EagleShifts Location Manager',
+    //                 },
+    //             }
+    //         );
+    //
+    //         if (!response.ok) {
+    //             throw new Error('Failed to fetch address');
+    //         }
+    //
+    //         const data = await response.json();
+    //
+    //         if (data && data.length > 0) {
+    //             // Update address field
+    //             setValue('address', data[0].display_name);
+    //             notifications.show('Address updated successfully', {
+    //                 severity: 'success',
+    //             });
+    //         } else {
+    //             notifications.show('Could not find address for this name', {
+    //                 severity: 'warning',
+    //             });
+    //         }
+    //     } catch (error) {
+    //         console.error('Error getting address:', error);
+    //         notifications.show('Failed to get address', { severity: 'error' });
+    //     } finally {
+    //         setIsGuessingAddress(false);
+    //     }
+    // };
 
     // Handle tag input
     const handleAddTag = () => {
@@ -449,80 +449,80 @@ export default function LocationForm({
                     </Box>
 
                     {/* Map for selecting coordinates */}
-                    <Box>
-                        <Box
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="space-between"
-                            mb={1}
-                        >
-                            <Typography variant="subtitle2">
-                                Select Location on Map
-                            </Typography>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={handleGetCoordinatesFromAddress}
-                                disabled={isGuessingAddress}
-                                startIcon={<LocationSearchingIcon />}
-                            >
-                                Get coordinates from address
-                            </Button>
-                        </Box>
-                        <Box sx={{ height: 400, width: '100%', mb: 2 }}>
-                            <LocationPickerMap
-                                latitude={latitude}
-                                longitude={longitude}
-                                onPositionChange={handleMapPositionChange}
-                            />
-                        </Box>
-                    </Box>
+                    {/*<Box>*/}
+                    {/*    <Box*/}
+                    {/*        display="flex"*/}
+                    {/*        alignItems="center"*/}
+                    {/*        justifyContent="space-between"*/}
+                    {/*        mb={1}*/}
+                    {/*    >*/}
+                    {/*        <Typography variant="subtitle2">*/}
+                    {/*            Select Location on Map*/}
+                    {/*        </Typography>*/}
+                    {/*        <Button*/}
+                    {/*            variant="contained"*/}
+                    {/*            color="primary"*/}
+                    {/*            onClick={handleGetCoordinatesFromAddress}*/}
+                    {/*            disabled={isGuessingAddress}*/}
+                    {/*            startIcon={<LocationSearchingIcon />}*/}
+                    {/*        >*/}
+                    {/*            Get coordinates from address*/}
+                    {/*        </Button>*/}
+                    {/*    </Box>*/}
+                    {/*    <Box sx={{ height: 400, width: '100%', mb: 2 }}>*/}
+                    {/*        <LocationPickerMap*/}
+                    {/*            latitude={latitude}*/}
+                    {/*            longitude={longitude}*/}
+                    {/*            onPositionChange={handleMapPositionChange}*/}
+                    {/*        />*/}
+                    {/*    </Box>*/}
+                    {/*</Box>*/}
 
                     {/* Coordinates */}
-                    <Grid container spacing={2}>
-                        <Grid size={{ xs: 6 }}>
-                            <Controller
-                                name="latitude"
-                                control={control}
-                                rules={{ required: 'Latitude is required' }}
-                                render={({ field }) => (
-                                    <TextField
-                                        {...field}
-                                        label="Latitude"
-                                        variant="outlined"
-                                        fullWidth
-                                        type="number"
-                                        inputProps={{
-                                            step: 0.000001,
-                                        }}
-                                        error={!!errors.latitude}
-                                        helperText={errors.latitude?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 6 }}>
-                            <Controller
-                                name="longitude"
-                                control={control}
-                                rules={{ required: 'Longitude is required' }}
-                                render={({ field }) => (
-                                    <TextField
-                                        {...field}
-                                        label="Longitude"
-                                        variant="outlined"
-                                        fullWidth
-                                        type="number"
-                                        inputProps={{
-                                            step: 0.000001,
-                                        }}
-                                        error={!!errors.longitude}
-                                        helperText={errors.longitude?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                    </Grid>
+                    {/*<Grid container spacing={2}>*/}
+                    {/*    <Grid size={{ xs: 6 }}>*/}
+                    {/*        <Controller*/}
+                    {/*            name="latitude"*/}
+                    {/*            control={control}*/}
+                    {/*            rules={{ required: 'Latitude is required' }}*/}
+                    {/*            render={({ field }) => (*/}
+                    {/*                <TextField*/}
+                    {/*                    {...field}*/}
+                    {/*                    label="Latitude"*/}
+                    {/*                    variant="outlined"*/}
+                    {/*                    fullWidth*/}
+                    {/*                    type="number"*/}
+                    {/*                    inputProps={{*/}
+                    {/*                        step: 0.000001,*/}
+                    {/*                    }}*/}
+                    {/*                    error={!!errors.latitude}*/}
+                    {/*                    helperText={errors.latitude?.message}*/}
+                    {/*                />*/}
+                    {/*            )}*/}
+                    {/*        />*/}
+                    {/*    </Grid>*/}
+                    {/*    <Grid size={{ xs: 6 }}>*/}
+                    {/*        <Controller*/}
+                    {/*            name="longitude"*/}
+                    {/*            control={control}*/}
+                    {/*            rules={{ required: 'Longitude is required' }}*/}
+                    {/*            render={({ field }) => (*/}
+                    {/*                <TextField*/}
+                    {/*                    {...field}*/}
+                    {/*                    label="Longitude"*/}
+                    {/*                    variant="outlined"*/}
+                    {/*                    fullWidth*/}
+                    {/*                    type="number"*/}
+                    {/*                    inputProps={{*/}
+                    {/*                        step: 0.000001,*/}
+                    {/*                    }}*/}
+                    {/*                    error={!!errors.longitude}*/}
+                    {/*                    helperText={errors.longitude?.message}*/}
+                    {/*                />*/}
+                    {/*            )}*/}
+                    {/*        />*/}
+                    {/*    </Grid>*/}
+                    {/*</Grid>*/}
 
                     {/* Form Actions */}
                     <Stack

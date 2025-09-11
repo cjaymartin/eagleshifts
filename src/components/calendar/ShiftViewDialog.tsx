@@ -94,9 +94,9 @@ function ChecklistLink({ shift }: { shift?: any }) {
                     <Typography variant="body2" sx={{ mr: 2 }}>
                         {shift.Checklist?.name || 'Checklist Attached'}
                     </Typography>
-                    <Button 
-                        variant="contained" 
-                        color="primary" 
+                    <Button
+                        variant="contained"
+                        color="primary"
                         size="small"
                         onClick={handleOpenChecklist}
                     >
@@ -339,19 +339,19 @@ export default function ShiftViewDialog({
                                 </Typography>
                             )}
                         </Box>
-                        {payload?.locationId && (
-                            <IconButton
-                                size="small"
-                                color="primary"
-                                onClick={() => {
-                                    setViewLocationId(payload.locationId);
-                                    setIsLocationViewOpen(true);
-                                }}
-                                aria-label="view location"
-                            >
-                                <LocationOnIcon />
-                            </IconButton>
-                        )}
+                        {/*{payload?.locationId && (*/}
+                        {/*    <IconButton*/}
+                        {/*        size="small"*/}
+                        {/*        color="primary"*/}
+                        {/*        onClick={() => {*/}
+                        {/*            setViewLocationId(payload.locationId);*/}
+                        {/*            setIsLocationViewOpen(true);*/}
+                        {/*        }}*/}
+                        {/*        aria-label="view location"*/}
+                        {/*    >*/}
+                        {/*        <LocationOnIcon />*/}
+                        {/*    </IconButton>*/}
+                        {/*)}*/}
                     </Box>
 
                     <Divider />

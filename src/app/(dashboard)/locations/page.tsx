@@ -153,7 +153,7 @@ export default function LocationsPage() {
                     justifyContent="space-between"
                     alignItems="center"
                 >
-                    <Typography variant="h4">Locations</Typography>
+                    <Typography variant="h4"></Typography>
                     {isAdmin && tabValue === 0 && (
                         <Button
                             variant="contained"
@@ -284,11 +284,13 @@ export default function LocationsPage() {
                                                                     backgroundColor:
                                                                         location
                                                                             .defaultDepartment
-                                                                            .color || '#f0f0f0',
+                                                                            .color ||
+                                                                        '#f0f0f0',
                                                                     color: getTextColor(
                                                                         location
                                                                             .defaultDepartment
-                                                                            .color || '#f0f0f0'
+                                                                            .color ||
+                                                                            '#f0f0f0'
                                                                     ),
                                                                     px: 1,
                                                                     py: 0.5,
@@ -305,17 +307,17 @@ export default function LocationsPage() {
                                                             '-'
                                                         )}
                                                     </TableCell>
-                                                    <TableCell width={134}>
-                                                        <IconButton
-                                                            onClick={() =>
-                                                                handleViewLocation(
-                                                                    location.id
-                                                                )
-                                                            }
-                                                            size="small"
-                                                        >
-                                                            <LocationOn />
-                                                        </IconButton>
+                                                    <TableCell width={102}>
+                                                        {/*<IconButton*/}
+                                                        {/*    onClick={() =>*/}
+                                                        {/*        handleViewLocation(*/}
+                                                        {/*            location.id*/}
+                                                        {/*        )*/}
+                                                        {/*    }*/}
+                                                        {/*    size="small"*/}
+                                                        {/*>*/}
+                                                        {/*    <LocationOn />*/}
+                                                        {/*</IconButton>*/}
                                                         {isAdmin && (
                                                             <>
                                                                 <IconButton

@@ -219,9 +219,9 @@ model Shift {
   isCancelled Boolean @default(false)
 
   // Relationships
-  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  location         Location?         @relation(fields: [locationId], references: [id])
-  department       Department?       @relation(fields: [departmentId], references: [id])
+  organization            Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location                Location?                 @relation(fields: [locationId], references: [id])
+  department              Department?               @relation(fields: [departmentId], references: [id])
   // assignments   Member[]       @relation("ShiftAssignments")
   shiftAssignments        shiftAssignment[]
   shiftRequests           ShiftRequest[]
@@ -416,8 +416,8 @@ model Location {
   organizationId      String
   name                String
   address             String
-  latitude            Float
-  longitude           Float
+  latitude            Float?
+  longitude           Float?
   groupId             String?
   defaultDepartmentId String?
   tags                String? // Stored as JSON array
