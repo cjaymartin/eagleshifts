@@ -212,7 +212,10 @@ const LocationAutocomplete = forwardRef<
                                 </Box>
                                 <Tooltip title="Clear selection">
                                     <IconButton
-                                        onClick={() => onChange(null)}
+                                        onClick={() => {
+                                            onChange(null);
+                                            setInputValue('');
+                                        }}
                                         disabled={disabled}
                                         size="small"
                                     >
