@@ -131,8 +131,8 @@ export default function LocationViewDialog({
                                 }}
                             >
                                 <LocationMap
-                                    latitude={location.latitude}
-                                    longitude={location.longitude}
+                                    latitude={location.latitude as any}
+                                    longitude={location.longitude as any}
                                     popupContent={
                                         <div>
                                             <Typography variant="subtitle1">
