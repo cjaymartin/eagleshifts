@@ -944,6 +944,8 @@ export default function ShiftForm(props: ShiftFormProps) {
     }
 
     const titleRef = useRef<HTMLInputElement>(null);
+    const locationRef = useRef<HTMLInputElement>(null);
+    const departmentRef = useRef<HTMLInputElement>(null);
     useEffect(() => {
         if (props.isNew && titleRef.current) {
             titleRef.current.focus();
@@ -1014,15 +1016,18 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 render={({ field }) => {
                                     return (
                                         <LocationAutocomplete
+                                            ref={locationRef}
                                             value={field.value}
                                             onChange={(locationId) => {
                                                 field.onChange(locationId);
-                                                // Clear legacy location when a location is selected
                                                 if (locationId) {
-                                                    setValue(
-                                                        'legacyLocation',
-                                                        ''
-                                                    );
+                                                    setTimeout(() => {
+                                                        departmentRef.current?.focus();
+                                                    }, 0);
+                                                } else {
+                                                    setTimeout(() => {
+                                                        locationRef.current?.focus();
+                                                    }, 0);
                                                 }
                                             }}
                                             disabled={!isAdmin || readOnly}
@@ -1050,6 +1055,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 render={({ field }) => {
                                     return (
                                         <DepartmentAutocomplete
+                                            ref={departmentRef}
                                             value={field.value as any}
                                             onChange={(departmentId) => {
                                                 field.onChange(departmentId);

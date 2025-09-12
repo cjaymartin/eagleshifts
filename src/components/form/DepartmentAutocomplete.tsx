@@ -13,7 +13,7 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, forwardRef } from 'react';
 import { Add, Close, FolderOutlined, Visibility } from '@mui/icons-material';
 import { useDepartmentsQuery, useDepartmentQuery } from '@/queries/departments';
 import { useAuthQuery } from '@/queries/users';
@@ -39,7 +39,10 @@ export type DepartmentAutocompleteProps = Omit<
     helperText?: React.ReactNode;
 };
 
-export default function DepartmentAutocomplete(props: DepartmentAutocompleteProps) {
+const DepartmentAutocomplete = forwardRef<
+    HTMLInputElement,
+    DepartmentAutocompleteProps
+>(function DepartmentAutocomplete(props, ref) {
     const {
         value,
         onChange,
@@ -231,6 +234,7 @@ export default function DepartmentAutocomplete(props: DepartmentAutocompleteProp
                 return (
                     <TextField
                         {...params}
+                        inputRef={ref}
                         label="Department (Optional)"
                         placeholder="Search for a department"
                         error={error}
@@ -261,4 +265,6 @@ export default function DepartmentAutocomplete(props: DepartmentAutocompleteProp
             }}
         />
     );
-}
+});
+
+export default DepartmentAutocomplete;

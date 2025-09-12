@@ -14,7 +14,7 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, forwardRef } from 'react';
 import { Add, Close, LocationOn, Visibility } from '@mui/icons-material';
 import { useLocationsQuery, useLocationQuery } from '@/queries/locations';
 import { useAuthQuery } from '@/queries/users';
@@ -41,7 +41,10 @@ export type LocationAutocompleteProps = Omit<
     helperText?: React.ReactNode;
 };
 
-export default function LocationAutocomplete(props: LocationAutocompleteProps) {
+const LocationAutocomplete = forwardRef<
+    HTMLInputElement,
+    LocationAutocompleteProps
+>(function LocationAutocomplete(props, ref) {
     const {
         value,
         onChange,
@@ -236,6 +239,7 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
                 return (
                     <TextField
                         {...params}
+                        inputRef={ref}
                         label="Location"
                         placeholder="Search for a location"
                         error={error}
@@ -266,4 +270,6 @@ export default function LocationAutocomplete(props: LocationAutocompleteProps) {
             }}
         />
     );
-}
+});
+
+export default LocationAutocomplete;
