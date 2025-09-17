@@ -8,6 +8,8 @@ import {
     getFileUrl,
     uploadFile,
 } from '@/utils/s3';
+import { Prisma } from '@/generated/prisma';
+import UploadGroupWhereInput = Prisma.UploadGroupWhereInput;
 
 // Helper function to check if a user is authorized to access a shift's uploads
 // Users can access uploads if they are an admin or if they are assigned to the shift
@@ -49,10 +51,11 @@ export const uploadsRouter = router({
             if (existingGroup) {
                 if (!existingGroup.isActive) {
                     // Reactivate the group if it's currently inactive
-                    const reactivatedGroup = await ctx.prisma.uploadGroup.update({
-                        where: { id: existingGroup.id },
-                        data: { isActive: true },
-                    });
+                    const reactivatedGroup =
+                        await ctx.prisma.uploadGroup.update({
+                            where: { id: existingGroup.id },
+                            data: { isActive: true },
+                        });
                     return reactivatedGroup;
                 }
                 return existingGroup;
@@ -164,10 +167,13 @@ export const uploadsRouter = router({
 
     // Get upload groups for the current organization
     getUploadGroups: memberProcedure
-        .input(z.object({ includeInactiveChecklistGroup: z.boolean().optional() })) // Add new input
-        .query(async ({ ctx, input }) => { // Add input to query function
+        .input(
+            z.object({ includeInactiveChecklistGroup: z.boolean().optional() })
+        ) // Add new input
+        .query(async ({ ctx, input }) => {
+            // Add input to query function
             try {
-                const whereClause: Prisma.UploadGroupWhereInput = { // Use Prisma.UploadGroupWhereInput
+                const whereClause: UploadGroupWhereInput = {
                     organizationId: ctx.user.organizationId,
                     OR: [
                         { isActive: true },
@@ -175,7 +181,7 @@ export const uploadsRouter = router({
                             isActive: false,
                             uploads: {
                                 some: {
-                                    isDeleted: false, // Ensure only non-deleted uploads are considered
+                                    isDeleted: false,
                                 },
                             },
                         },
@@ -187,7 +193,10 @@ export const uploadsRouter = router({
                     // even if it's inactive and has no active uploads.
                     // This is done by adding another OR condition to the where clause.
                     whereClause.OR?.push({
-                        uploadName: { contains: 'Checklist', mode: 'insensitive' },
+                        uploadName: {
+                            contains: 'Checklist',
+                            mode: 'insensitive',
+                        },
                         isActive: false, // Specifically target inactive checklist groups
                     });
                 }
@@ -201,14 +210,14 @@ export const uploadsRouter = router({
                     },
                 });
 
-            return groups;
-        } catch (error: any) {
-            throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: `Failed to get upload groups: ${error.message}`,
-            });
-        }
-    }),
+                return groups;
+            } catch (error: any) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: `Failed to get upload groups: ${error.message}`,
+                });
+            }
+        }),
 
     // Get uploads for a specific shift
     getShiftUploads: memberProcedure
@@ -332,18 +341,28 @@ export const uploadsRouter = router({
                 }
 
                 // Get the upload group to verify it belongs to the user's organization
-                console.log('uploads.uploadFile: input.uploadGroupId:', input.uploadGroupId); // Debug
-                const uploadGroupWhere = { // Define where clause separately for logging
+                console.log(
+                    'uploads.uploadFile: input.uploadGroupId:',
+                    input.uploadGroupId
+                ); // Debug
+                const uploadGroupWhere = {
+                    // Define where clause separately for logging
                     id: input.uploadGroupId,
                     organizationId: ctx.user.organizationId,
                     isActive: true,
                 };
-                console.log('uploads.uploadFile: Prisma findFirst where clause:', uploadGroupWhere); // Debug
+                console.log(
+                    'uploads.uploadFile: Prisma findFirst where clause:',
+                    uploadGroupWhere
+                ); // Debug
 
                 const uploadGroup = await ctx.prisma.uploadGroup.findFirst({
                     where: uploadGroupWhere,
                 });
-                console.log('uploads.uploadFile: Result of findFirst for uploadGroup:', uploadGroup); // Debug
+                console.log(
+                    'uploads.uploadFile: Result of findFirst for uploadGroup:',
+                    uploadGroup
+                ); // Debug
 
                 if (!uploadGroup) {
                     throw new TRPCError({
