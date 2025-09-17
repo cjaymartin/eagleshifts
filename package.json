@@ -22,7 +22,10 @@
     "db:migrate:dev:reset": "dotenv -e .env.local -- npx prisma migrate reset",
     "db:migrate:deploy": "npx prisma migrate deploy",
     "db:migrate:status": "npx prisma migrate status",
-    "local:mkadmin": "dotenv -e .env.local -- tsx src/scripts/mkadmin.ts"
+    "local:mkadmin": "dotenv -e .env.local -- tsx src/scripts/mkadmin.ts",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.856.0",

@@ -18,11 +18,19 @@ export default {
 };
 
 export const Default = (args) => {
-    const [value, setValue] = useState('');
+    const [value, setValue] = useState<Date | undefined>(undefined);
     return (
         <div style={{ padding: 40 }}>
             <TimePicker {...args} value={value} onChange={setValue} />
-            <div style={{ marginTop: 16 }}>Selected: {value}</div>
+            <div style={{ marginTop: 16 }}>
+                Selected:{' '}
+                {value
+                    ? value.toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                      })
+                    : 'None'}
+            </div>
         </div>
     );
 };

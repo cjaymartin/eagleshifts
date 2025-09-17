@@ -1,45 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import { Autocomplete, TextField, IconButton, InputAdornment } from '@mui/material';
+import {
+    Autocomplete,
+    TextField,
+    IconButton,
+    InputAdornment,
+} from '@mui/material';
 import { AccessTime, Add, Remove } from '@mui/icons-material';
-import dayjs from 'dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-
-dayjs.extend(customParseFormat);
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import { DateTime } from 'luxon';
 
 export interface TimePickerProps {
-    value?: string; // Expects 'HH:mm' format
-    onChange?: (value: string) => void;
+    value?: Date; // JS Date object
+    onChange?: (value: Date) => void;
     intervalMinutes?: number;
     placeholder?: string;
     disabled?: boolean;
     showIncrement?: boolean;
     label?: string;
-    timezone?: string;
+    timezone?: string; // IANA or offset TZ string
 }
 
-// Utility to generate time options
-function generateTimeOptions(interval: number): string[] {
+// Utility to generate time options in 12h format for the given timezone
+function generateTimeOptions(interval: number, timezone: string): string[] {
     const options: string[] = [];
+    // Use a fixed date for all options, e.g., 2020-01-01
+    const base = DateTime.fromObject(
+        { year: 2020, month: 1, day: 1 },
+        { zone: timezone }
+    );
     for (let h = 0; h < 24; h++) {
         for (let m = 0; m < 60; m += interval) {
-            options.push(dayjs().hour(h).minute(m).format('h:mm A'));
+            const dt = base.set({ hour: h, minute: m });
+            options.push(dt.toFormat('h:mm a'));
         }
     }
     return options;
 }
 
-// Utility to parse various time formats from user input
-function parseTimeInput(input: string): string | null {
+// Parse user input as a time in the given timezone, return a Date object (UTC)
+function parseTimeInput(
+    input: string,
+    timezone: string,
+    baseDate: Date
+): Date | null {
     if (!input) return null;
     const str = input.trim();
+    const base = DateTime.fromJSDate(baseDate, { zone: timezone });
 
     // Handle 'now'
     if (str.toLowerCase() === 'now') {
-        return dayjs().format('HH:mm');
+        return DateTime.now().setZone(timezone).toJSDate();
     }
 
     // Handle numeric inputs like '345' or '1430'
@@ -48,30 +57,40 @@ function parseTimeInput(input: string): string | null {
         const hour = parseInt(str.slice(0, len - 2), 10);
         const minute = parseInt(str.slice(len - 2), 10);
         if (hour < 24 && minute < 60) {
-            return dayjs().hour(hour).minute(minute).format('HH:mm');
+            return base
+                .set({ hour, minute, second: 0, millisecond: 0 })
+                .toJSDate();
         }
     }
 
-    // Handle other formats
-    const formats = ['h:mm A', 'h:mmA', 'H:mm', 'ha', 'hA'];
-    const parsed = dayjs(str, formats, true);
-    if (parsed.isValid()) {
-        return parsed.format('HH:mm');
+    // Try various time formats
+    const formats = ['h:mm a', 'h:mma', 'H:mm', 'ha', 'hA'];
+    for (const fmt of formats) {
+        const dt = DateTime.fromFormat(str, fmt, { zone: timezone });
+        if (dt.isValid) {
+            return base
+                .set({
+                    hour: dt.hour,
+                    minute: dt.minute,
+                    second: 0,
+                    millisecond: 0,
+                })
+                .toJSDate();
+        }
     }
-
     return null;
 }
 
-// Utility to format 24h time string to 12h display
-function formatTimeDisplay(time: string): string {
-    if (!time) return '';
-    const parsed = dayjs(time, 'HH:mm');
-    return parsed.isValid() ? parsed.format('h:mm A') : '';
+// Format a JS Date to 12h display in the given timezone
+function formatTimeDisplay(date: Date | undefined, timezone: string): string {
+    if (!date) return '';
+    const dt = DateTime.fromJSDate(date, { zone: timezone });
+    return dt.isValid ? dt.toFormat('h:mm a') : '';
 }
 
 export const TimePicker: React.FC<TimePickerProps> = (props) => {
     const {
-        value = '',
+        value,
         onChange,
         intervalMinutes = 15,
         placeholder = 'Select time',
@@ -81,46 +100,49 @@ export const TimePicker: React.FC<TimePickerProps> = (props) => {
         timezone = 'UTC',
     } = props;
 
-    const [inputValue, setInputValue] = useState(() => formatTimeDisplay(value));
-    const options = generateTimeOptions(intervalMinutes);
+    // Use today as the base date for time picking
+    const baseDate = value || new Date();
+    const [inputValue, setInputValue] = useState(() =>
+        formatTimeDisplay(value, timezone)
+    );
+    const options = generateTimeOptions(intervalMinutes, timezone);
 
     useEffect(() => {
-        setInputValue(formatTimeDisplay(value));
-    }, [value]);
+        setInputValue(formatTimeDisplay(value, timezone));
+    }, [value, timezone]);
 
     const handleValueChange = (newValue: string | null) => {
-        const parsed = parseTimeInput(newValue || '');
+        const parsed = parseTimeInput(newValue || '', timezone, baseDate);
         if (onChange && parsed) {
             onChange(parsed);
         }
     };
 
     const nudge = (direction: 'up' | 'down') => {
-        const currentTime = parseTimeInput(inputValue) || dayjs().format('HH:mm');
-        const currentDayjs = dayjs(currentTime, 'HH:mm');
-        const minutes = currentDayjs.hour() * 60 + currentDayjs.minute();
-
+        // Get current time in the selected timezone
+        const currentDT = value
+            ? DateTime.fromJSDate(value, { zone: timezone })
+            : DateTime.now().setZone(timezone);
+        const minutes = currentDT.hour * 60 + currentDT.minute;
         let newMinutes;
         if (direction === 'up') {
-            newMinutes = (Math.floor(minutes / intervalMinutes) + 1) * intervalMinutes;
-        } else { // down
-            newMinutes = (Math.ceil(minutes / intervalMinutes) - 1) * intervalMinutes;
+            newMinutes =
+                (Math.floor(minutes / intervalMinutes) + 1) * intervalMinutes;
+        } else {
+            newMinutes =
+                (Math.ceil(minutes / intervalMinutes) - 1) * intervalMinutes;
         }
-
-        // Handle wrapping around midnight
-        if (newMinutes >= 24 * 60) {
-            newMinutes -= 24 * 60;
-        }
-        if (newMinutes < 0) {
-            newMinutes += 24 * 60;
-        }
-
-        const newHour = Math.floor(newMinutes / 60);
-        const newMinute = newMinutes % 60;
-
-        const newTime = dayjs().hour(newHour).minute(newMinute).format('HH:mm');
+        // Wrap around midnight
+        if (newMinutes >= 24 * 60) newMinutes -= 24 * 60;
+        if (newMinutes < 0) newMinutes += 24 * 60;
+        const newDT = currentDT.set({
+            hour: Math.floor(newMinutes / 60),
+            minute: newMinutes % 60,
+            second: 0,
+            millisecond: 0,
+        });
         if (onChange) {
-            onChange(newTime);
+            onChange(newDT.toJSDate());
         }
     };
 
@@ -128,7 +150,7 @@ export const TimePicker: React.FC<TimePickerProps> = (props) => {
         <Autocomplete
             freeSolo
             options={options}
-            value={formatTimeDisplay(value)}
+            value={formatTimeDisplay(value, timezone)}
             inputValue={inputValue}
             onInputChange={(event, newInputValue) => {
                 setInputValue(newInputValue);
@@ -137,12 +159,12 @@ export const TimePicker: React.FC<TimePickerProps> = (props) => {
                 handleValueChange(newValue);
             }}
             onBlur={() => {
-                const parsed = parseTimeInput(inputValue);
+                const parsed = parseTimeInput(inputValue, timezone, baseDate);
                 if (parsed) {
                     if (onChange) onChange(parsed);
-                    setInputValue(formatTimeDisplay(parsed));
+                    setInputValue(formatTimeDisplay(parsed, timezone));
                 } else {
-                    setInputValue(formatTimeDisplay(value)); // Revert if invalid
+                    setInputValue(formatTimeDisplay(value, timezone)); // Revert if invalid
                 }
             }}
             disabled={disabled}
@@ -151,7 +173,7 @@ export const TimePicker: React.FC<TimePickerProps> = (props) => {
                     {...params}
                     label={label}
                     placeholder={placeholder}
-                    helperText={timezone}
+                    // No helperText for timezone
                     InputProps={{
                         ...params.InputProps,
                         startAdornment: (
@@ -163,10 +185,20 @@ export const TimePicker: React.FC<TimePickerProps> = (props) => {
                             <InputAdornment position="end">
                                 {showIncrement && (
                                     <>
-                                        <IconButton onClick={() => nudge('down')} disabled={disabled} size="small">
+                                        <IconButton
+                                            onClick={() => nudge('down')}
+                                            disabled={disabled}
+                                            size="small"
+                                            tabIndex={-1} // Exclude from tab order
+                                        >
                                             <Remove />
                                         </IconButton>
-                                        <IconButton onClick={() => nudge('up')} disabled={disabled} size="small">
+                                        <IconButton
+                                            onClick={() => nudge('up')}
+                                            disabled={disabled}
+                                            size="small"
+                                            tabIndex={-1} // Exclude from tab order
+                                        >
                                             <Add />
                                         </IconButton>
                                     </>

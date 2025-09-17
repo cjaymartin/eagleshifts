@@ -12,8 +12,8 @@ const compat = new FlatCompat({
 });
 
 export default defineConfig([
-    // Global ignores for generated files
-    globalIgnores(['src/generated/**/*']),
+    // Global ignores for generated files and stories
+    globalIgnores(['src/generated/**/*', 'src/stories/**/*']),
 
     ...compat.extends('next/core-web-vitals', 'next/typescript'),
 

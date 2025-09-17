@@ -15,10 +15,6 @@ import {
     Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon';
 import { DateTime, Settings } from 'luxon';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -81,6 +77,7 @@ import LocationViewDialog from '@/components/locations/LocationViewDialog';
 import LocationForm from '@/components/locations/LocationForm';
 import DepartmentAutocomplete from '@/components/form/DepartmentAutocomplete';
 import { reset } from 'next/dist/lib/picocolors';
+import { TimePicker } from '@/components/TimePicker/TimePicker';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
@@ -992,436 +989,172 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 )}
 
                             {/* Show nothing (leave area blank) for rejected requests */}
-                            <Controller
-                                name="title"
-                                control={control}
-                                render={({ field }) => (
-                                    <TextField
-                                        {...field}
-                                        disabled={!isAdmin || readOnly}
-                                        label="Title"
-                                        variant="outlined"
-                                        error={!!errors.title}
-                                        helperText={
-                                            errors.title?.message as any
-                                        }
-                                        inputRef={titleRef}
-                                    />
-                                )}
-                            />
-                            {/* Location Autocomplete */}
-                            <Controller
-                                name="locationId"
-                                control={control}
-                                render={({ field }) => {
-                                    return (
-                                        <LocationAutocomplete
-                                            ref={locationRef}
-                                            value={field.value}
-                                            onChange={(locationId) => {
-                                                field.onChange(locationId);
-                                                if (locationId) {
-                                                    setTimeout(() => {
-                                                        departmentRef.current?.focus();
-                                                    }, 0);
-                                                } else {
-                                                    setTimeout(() => {
-                                                        locationRef.current?.focus();
-                                                    }, 0);
+                            <Grid container spacing={2}>
+                                <Grid size={{ xs: 12 }}>
+                                    <Controller
+                                        name="title"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <TextField
+                                                {...field}
+                                                disabled={!isAdmin || readOnly}
+                                                label="Title"
+                                                variant="outlined"
+                                                error={!!errors.title}
+                                                helperText={
+                                                    errors.title?.message as any
                                                 }
-                                            }}
-                                            disabled={!isAdmin || readOnly}
-                                            error={!!errors.locationId}
-                                            helperText={
-                                                errors.locationId
-                                                    ?.message as any
-                                            }
-                                            onCreateNew={() =>
-                                                setIsLocationFormOpen(true)
-                                            }
-                                            onViewLocation={(locationId) => {
-                                                setViewLocationId(locationId);
-                                                setIsLocationViewOpen(true);
-                                            }}
-                                        />
-                                    );
-                                }}
-                            />
-
-                            {/* Department Autocomplete */}
-                            <Controller
-                                name="departmentId"
-                                control={control}
-                                render={({ field }) => {
-                                    return (
-                                        <DepartmentAutocomplete
-                                            ref={departmentRef}
-                                            value={field.value as any}
-                                            onChange={(departmentId) => {
-                                                field.onChange(departmentId);
-                                            }}
-                                            disabled={!isAdmin}
-                                        />
-                                    );
-                                }}
-                            />
-
-                            {/* Location View Dialog */}
-                            <LocationViewDialog
-                                locationId={viewLocationId}
-                                open={isLocationViewOpen}
-                                onClose={() => setIsLocationViewOpen(false)}
-                            />
-
-                            {/* Log the date value before rendering DatePicker */}
-                            {console.log(
-                                '[ShiftForm] Before DatePicker - date value from form:',
-                                watch('date')
-                            )}
-                            {logDateInfo(
-                                'Date value from form before DatePicker',
-                                watch('date')
-                            )}
-
-                            <LocalizationProvider dateAdapter={AdapterLuxon}>
-                                <Controller
-                                    name="date"
-                                    control={control}
-                                    render={({ field }) => {
-                                        console.log(
-                                            '[ShiftForm] DatePicker render'
-                                        );
-                                        logDateInfo(
-                                            'field.value for date',
-                                            field.value
-                                        );
-
-                                        let luxonValue = null;
-                                        if (field.value) {
-                                            console.log(
-                                                '[ShiftForm] Converting date field.value to luxonValue'
-                                            );
-                                            luxonValue = DateTime.fromJSDate(
-                                                field.value
-                                            ).toUTC();
-                                            logDateInfo(
-                                                'luxonValue for date after conversion',
-                                                luxonValue
-                                            );
-                                        }
-
-                                        return (
-                                            <DatePicker
-                                                label="Date"
-                                                disabled={!isAdmin}
-                                                value={luxonValue}
-                                                timezone="UTC"
-                                                onChange={(date) => {
-                                                    console.log(
-                                                        '[ShiftForm] DatePicker onChange triggered'
-                                                    );
-                                                    logDateInfo(
-                                                        'date from onChange',
-                                                        date
-                                                    );
-
-                                                    // Convert Luxon DateTime to native Date if needed
-                                                    if (
-                                                        date &&
-                                                        'toJSDate' in date
-                                                    ) {
-                                                        try {
-                                                            console.log(
-                                                                '[ShiftForm] Converting Luxon DateTime to JS Date for date'
-                                                            );
-                                                            const jsDate = (
-                                                                date as any
-                                                            ).toJSDate();
-                                                            logDateInfo(
-                                                                'jsDate for date after conversion',
-                                                                jsDate
-                                                            );
-                                                            field.onChange(
-                                                                jsDate
-                                                            );
-                                                            console.log(
-                                                                '[ShiftForm] After field.onChange for date'
-                                                            );
-                                                        } catch (error) {
-                                                            console.error(
-                                                                'Error converting to JS Date:',
-                                                                {
-                                                                    error,
-                                                                    date,
-                                                                    timestamp:
-                                                                        new Date().toISOString(),
-                                                                }
-                                                            );
-                                                            field.onChange(
-                                                                null
-                                                            );
-                                                        }
-                                                    } else {
-                                                        console.log(
-                                                            '[ShiftForm] Passing date directly to field.onChange'
-                                                        );
-                                                        field.onChange(date);
-                                                    }
-                                                }}
-                                                slotProps={{
-                                                    textField: {
-                                                        error: !!errors.date,
-                                                        helperText: errors.date
-                                                            ?.message as any,
-                                                    },
-                                                }}
+                                                inputRef={titleRef}
+                                                fullWidth
                                             />
-                                        );
-                                    }}
-                                />
-                            </LocalizationProvider>
+                                        )}
+                                    />
+                                </Grid>
+                                <Grid size={{ xs: 12 }}>
+                                    <Controller
+                                        name="locationId"
+                                        control={control}
+                                        render={({ field }) => {
+                                            return (
+                                                <LocationAutocomplete
+                                                    ref={locationRef}
+                                                    value={field.value}
+                                                    onChange={(locationId) => {
+                                                        field.onChange(
+                                                            locationId
+                                                        );
+                                                        if (locationId) {
+                                                            setTimeout(() => {
+                                                                departmentRef.current?.focus();
+                                                            }, 0);
+                                                        } else {
+                                                            setTimeout(() => {
+                                                                locationRef.current?.focus();
+                                                            }, 0);
+                                                        }
+                                                    }}
+                                                    disabled={
+                                                        !isAdmin || readOnly
+                                                    }
+                                                    error={!!errors.locationId}
+                                                    helperText={
+                                                        errors.locationId
+                                                            ?.message as any
+                                                    }
+                                                    onCreateNew={() =>
+                                                        setIsLocationFormOpen(
+                                                            true
+                                                        )
+                                                    }
+                                                    onViewLocation={(
+                                                        locationId
+                                                    ) => {
+                                                        setViewLocationId(
+                                                            locationId
+                                                        );
+                                                        setIsLocationViewOpen(
+                                                            true
+                                                        );
+                                                    }}
+                                                />
+                                            );
+                                        }}
+                                    />
+                                </Grid>
+                            </Grid>
 
-                            {/* Log the date value after rendering DatePicker */}
-                            {console.log(
-                                '[ShiftForm] After DatePicker - date value from form:',
-                                watch('date')
-                            )}
-                            {logDateInfo(
-                                'Date value from form after DatePicker',
-                                watch('date')
-                            )}
-                            {businessProfile && (
-                                <LocalizationProvider
-                                    dateAdapter={AdapterLuxon}
-                                >
+                            <Grid container spacing={2} sx={{ mt: 2 }}>
+                                <Grid size={{ xs: 12 }}>
+                                    <Controller
+                                        name="departmentId"
+                                        control={control}
+                                        render={({ field }) => {
+                                            return (
+                                                <DepartmentAutocomplete
+                                                    ref={departmentRef}
+                                                    value={field.value as any}
+                                                    onChange={(
+                                                        departmentId
+                                                    ) => {
+                                                        field.onChange(
+                                                            departmentId
+                                                        );
+                                                    }}
+                                                    disabled={!isAdmin}
+                                                />
+                                            );
+                                        }}
+                                    />
+                                </Grid>
+                            </Grid>
+
+                            <Grid container spacing={2} sx={{ mt: 2 }}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Controller
                                         name="startTime"
                                         control={control}
-                                        render={({ field }) => {
-                                            console.log(
-                                                '[ShiftForm] TimePicker (startTime) render'
-                                            );
-                                            logDateInfo(
-                                                'field.value for startTime',
-                                                field.value
-                                            );
-                                            console.log(
-                                                '[ShiftForm] businessProfile.timezone:',
-                                                businessProfile.timezone
-                                            );
-
-                                            let luxonValue = null;
-                                            if (field.value) {
-                                                console.log(
-                                                    '[ShiftForm] Converting startTime field.value to luxonValue'
-                                                );
-                                                luxonValue =
-                                                    DateTime.fromJSDate(
-                                                        field.value
-                                                    ).toUTC();
-                                                logDateInfo(
-                                                    'luxonValue for startTime after conversion',
-                                                    luxonValue
-                                                );
-                                            }
-
+                                        render={({ field, fieldState }) => {
+                                            // Use the new TimePicker
                                             return (
                                                 <TimePicker
-                                                    disabled={!isAdmin}
                                                     label="Start Time"
-                                                    value={luxonValue}
-                                                    timezone={
-                                                        businessProfile.timezone
+                                                    value={
+                                                        field.value || undefined
                                                     }
-                                                    onChange={(time) => {
-                                                        console.log(
-                                                            '[ShiftForm] TimePicker (startTime) onChange triggered'
-                                                        );
-                                                        logDateInfo(
-                                                            'time from onChange for startTime',
-                                                            time
-                                                        );
-
-                                                        // Convert Luxon DateTime to native Date if needed
-                                                        if (
-                                                            time &&
-                                                            typeof time ===
-                                                                'object' &&
-                                                            'toJSDate' in time
-                                                        ) {
-                                                            try {
-                                                                console.log(
-                                                                    '[ShiftForm] Converting Luxon DateTime to JS Date for startTime'
-                                                                );
-                                                                const jsDate = (
-                                                                    time as any
-                                                                ).toJSDate();
-                                                                logDateInfo(
-                                                                    'jsDate for startTime after conversion',
-                                                                    jsDate
-                                                                );
-                                                                field.onChange(
-                                                                    jsDate
-                                                                );
-                                                                console.log(
-                                                                    '[ShiftForm] After field.onChange for startTime'
-                                                                );
-                                                            } catch (error) {
-                                                                console.error(
-                                                                    'Error converting to JS Date:',
-                                                                    {
-                                                                        error,
-                                                                        time,
-                                                                        timestamp:
-                                                                            new Date().toISOString(),
-                                                                    }
-                                                                );
-                                                                field.onChange(
-                                                                    null
-                                                                );
-                                                            }
-                                                        } else {
-                                                            console.log(
-                                                                '[ShiftForm] Passing time directly to field.onChange for startTime'
-                                                            );
-                                                            field.onChange(
-                                                                time
-                                                            );
-                                                        }
-                                                    }}
-                                                    slotProps={{
-                                                        textField: {
-                                                            error: !!errors.startTime,
-                                                            helperText: errors
-                                                                .startTime
-                                                                ?.message as any,
-                                                        },
-                                                    }}
+                                                    onChange={(date) =>
+                                                        field.onChange(date)
+                                                    }
+                                                    showIncrement
+                                                    disabled={readOnly}
+                                                    timezone={
+                                                        shift?.timezone ||
+                                                        businessProfile?.timezone ||
+                                                        'UTC'
+                                                    }
                                                 />
                                             );
                                         }}
                                     />
-                                </LocalizationProvider>
-                            )}
-                            {businessProfile && (
-                                <LocalizationProvider
-                                    dateAdapter={AdapterLuxon}
-                                >
+                                </Grid>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <Controller
                                         name="endTime"
                                         control={control}
-                                        render={({ field }) => {
-                                            console.log(
-                                                '[ShiftForm] TimePicker (endTime) render'
-                                            );
-                                            logDateInfo(
-                                                'field.value for endTime',
-                                                field.value
-                                            );
-
-                                            let luxonValue = null;
-                                            if (field.value) {
-                                                console.log(
-                                                    '[ShiftForm] Converting endTime field.value to luxonValue'
-                                                );
-                                                luxonValue =
-                                                    DateTime.fromJSDate(
-                                                        field.value
-                                                    ).toUTC();
-                                                logDateInfo(
-                                                    'luxonValue for endTime after conversion',
-                                                    luxonValue
-                                                );
-                                            }
-
+                                        render={({ field, fieldState }) => {
+                                            // Use the new TimePicker
                                             return (
                                                 <TimePicker
                                                     label="End Time"
-                                                    disabled={!isAdmin}
-                                                    value={luxonValue}
-                                                    timezone={
-                                                        businessProfile.timezone
+                                                    value={
+                                                        field.value || undefined
                                                     }
-                                                    onChange={(time) => {
-                                                        console.log(
-                                                            '[ShiftForm] TimePicker (endTime) onChange triggered'
-                                                        );
-                                                        logDateInfo(
-                                                            'time from onChange for endTime',
-                                                            time
-                                                        );
-
-                                                        // Convert Luxon DateTime to native Date if needed
-                                                        if (
-                                                            time &&
-                                                            typeof time ===
-                                                                'object' &&
-                                                            'toJSDate' in time
-                                                        ) {
-                                                            try {
-                                                                console.log(
-                                                                    '[ShiftForm] Converting Luxon DateTime to JS Date for endTime'
-                                                                );
-                                                                const jsDate = (
-                                                                    time as any
-                                                                ).toJSDate();
-                                                                logDateInfo(
-                                                                    'jsDate for endTime after conversion',
-                                                                    jsDate
-                                                                );
-                                                                field.onChange(
-                                                                    jsDate
-                                                                );
-                                                                console.log(
-                                                                    '[ShiftForm] After field.onChange for endTime'
-                                                                );
-                                                            } catch (error) {
-                                                                console.error(
-                                                                    'Error converting to JS Date:',
-                                                                    {
-                                                                        error,
-                                                                        time,
-                                                                        timestamp:
-                                                                            new Date().toISOString(),
-                                                                    }
-                                                                );
-                                                                field.onChange(
-                                                                    null
-                                                                );
-                                                            }
-                                                        } else {
-                                                            console.log(
-                                                                '[ShiftForm] Passing time directly to field.onChange for endTime'
-                                                            );
-                                                            field.onChange(
-                                                                time
-                                                            );
-                                                        }
-                                                    }}
-                                                    slotProps={{
-                                                        textField: {
-                                                            error: !!errors.endTime,
-                                                            helperText: errors
-                                                                .endTime
-                                                                ?.message as any,
-                                                        },
-                                                    }}
+                                                    onChange={(date) =>
+                                                        field.onChange(date)
+                                                    }
+                                                    showIncrement
+                                                    disabled={readOnly}
+                                                    timezone={
+                                                        shift?.timezone ||
+                                                        businessProfile?.timezone ||
+                                                        'UTC'
+                                                    }
                                                 />
                                             );
                                         }}
                                     />
-                                </LocalizationProvider>
-                            )}
+                                </Grid>
+                            </Grid>
+
                             <Grid container spacing={2} alignItems="center">
-                                <Grid component="div">
+                                <Grid size={{ xs: 'auto' }}>
                                     <Typography variant="h6">
                                         {assignments?.length || 0}
                                     </Typography>
                                 </Grid>
-                                <Grid component="div">
+                                <Grid size={{ xs: 'auto' }}>
                                     <Typography variant="body1">of</Typography>
                                 </Grid>
-                                <Grid component="div">
+                                <Grid size={{ xs: 'auto' }}>
                                     <Controller
                                         name="slots"
                                         control={control}
