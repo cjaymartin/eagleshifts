@@ -1,4 +1,5 @@
 [phases.setup]
+nixpkgsArchive = "fe6cb717e302cec1a96f1942ddb4c44b89f7d2eb"
 nixPkgs = ["nodejs_22", "yarn", "tzdata"]
 
 [phases.install]
