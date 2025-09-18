@@ -1,8 +1,8 @@
 [phases.setup]
-nixPkgs = ["nodejs_24", "yarn", "tzdata"]
+nixPkgs = ["nodejs_22", "yarn", "tzdata"]
 
 [phases.install]
-cmds = ["yarn install"]
+cmds = ["yarn install --production=true --frozen-lockfile"]
 
 [phases.build]
 cmds = ["NODE_OPTIONS='--max_old_space_size=1024' yarn build"]
