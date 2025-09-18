@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_23", "yarn", "tzdata"]
+nixPkgs = ["nodejs_24", "yarn", "tzdata"]
 
 [phases.install]
 cmds = ["yarn install"]
