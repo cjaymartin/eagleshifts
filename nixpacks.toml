@@ -6,7 +6,7 @@ nixPkgs = ["nodejs_22", "yarn", "tzdata"]
 cmds = ["yarn install"]
 
 [phases.build]
-cmds = ["NODE_OPTIONS='--max_old_space_size=1024' yarn build"]
+cmds = ["NODE_OPTIONS='--max_old_space_size=2048' yarn build"]
 
 [start]
 cmd = "yarn start"
