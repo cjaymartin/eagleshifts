@@ -17,7 +17,7 @@ export default {
     },
 };
 
-export const Default = (args) => {
+export const Default = (args: any) => {
     const [value, setValue] = useState<Date | undefined>(undefined);
     return (
         <div style={{ padding: 40 }}>
