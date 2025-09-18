@@ -3,7 +3,7 @@ nixpkgsArchive = "722eba67909b9544584bcebe771200bb02a921b2"
 nixPkgs = ["nodejs_22", "yarn", "tzdata"]
 
 [phases.install]
-cmds = ["yarn install --production=true"]
+cmds = ["yarn install"]
 
 [phases.build]
 cmds = ["NODE_OPTIONS='--max_old_space_size=1024' yarn build"]
