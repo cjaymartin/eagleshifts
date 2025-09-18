@@ -80,7 +80,11 @@ import { reset } from 'next/dist/lib/picocolors';
 import { TimePicker } from '@/components/TimePicker/TimePicker';
 import FormDatePicker from '@/components/form/FormDatePicker';
 import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import {
+    CalendarIcon,
+    DatePicker,
+    LocalizationProvider,
+} from '@mui/x-date-pickers';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
@@ -102,6 +106,18 @@ type ShiftFormData = {
     assignments?: any[];
     isDraft?: boolean | null;
     draftId?: string | null;
+};
+
+interface CustomOpenPickerButtonProps extends React.ComponentProps<typeof IconButton> {
+    tabIndex?: number;
+}
+
+const CustomOpenPickerButton: React.FC<CustomOpenPickerButtonProps> = ({ tabIndex, ...props }) => {
+    return (
+        <IconButton tabIndex={-1} {...props}>
+            <CalendarIcon />
+        </IconButton>
+    );
 };
 
 // Create zod schema for form validation
@@ -946,6 +962,7 @@ export default function ShiftForm(props: ShiftFormProps) {
     const titleRef = useRef<HTMLInputElement>(null);
     const locationRef = useRef<HTMLInputElement>(null);
     const departmentRef = useRef<HTMLInputElement>(null);
+    const dateRef = useRef<HTMLInputElement>(null);
     useEffect(() => {
         if (props.isNew && titleRef.current) {
             titleRef.current.focus();
@@ -1082,6 +1099,12 @@ export default function ShiftForm(props: ShiftFormProps) {
                                                         field.onChange(
                                                             departmentId
                                                         );
+                                                        setTimeout(() => {
+                                                            console.log(
+                                                                'FOCUS'
+                                                            );
+                                                            dateRef.current?.focus();
+                                                        }, 0);
                                                     }}
                                                     disabled={!isAdmin}
                                                 />
@@ -1184,6 +1207,11 @@ export default function ShiftForm(props: ShiftFormProps) {
                                                                 );
                                                             }
                                                         }}
+                                                        inputRef={dateRef}
+                                                        slots={{
+                                                            openPickerButton:
+                                                                CustomOpenPickerButton,
+                                                        }}
                                                         slotProps={{
                                                             textField: {
                                                                 fullWidth: true,
@@ -1191,6 +1219,12 @@ export default function ShiftForm(props: ShiftFormProps) {
                                                                 helperText:
                                                                     errors.date
                                                                         ?.message as any,
+                                                            },
+                                                            inputAdornment: {
+                                                                tabIndex: -1,
+                                                            },
+                                                            openPickerButton: {
+                                                                tabIndex: -1,
                                                             },
                                                         }}
                                                     />
