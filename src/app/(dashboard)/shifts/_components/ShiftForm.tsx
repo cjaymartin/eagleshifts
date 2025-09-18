@@ -78,6 +78,9 @@ import LocationForm from '@/components/locations/LocationForm';
 import DepartmentAutocomplete from '@/components/form/DepartmentAutocomplete';
 import { reset } from 'next/dist/lib/picocolors';
 import { TimePicker } from '@/components/TimePicker/TimePicker';
+import FormDatePicker from '@/components/form/FormDatePicker';
+import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
@@ -1085,6 +1088,116 @@ export default function ShiftForm(props: ShiftFormProps) {
                                             );
                                         }}
                                     />
+                                </Grid>
+                            </Grid>
+                            <Grid container spacing={2} sx={{ mt: 2 }}>
+                                <Grid size={{ xs: 12 }}>
+                                    <LocalizationProvider
+                                        dateAdapter={AdapterLuxon}
+                                    >
+                                        <Controller
+                                            name="date"
+                                            control={control}
+                                            render={({ field }) => {
+                                                console.log(
+                                                    '[ShiftForm] DatePicker render'
+                                                );
+                                                logDateInfo(
+                                                    'field.value for date',
+                                                    field.value
+                                                );
+
+                                                let luxonValue = null;
+                                                if (field.value) {
+                                                    console.log(
+                                                        '[ShiftForm] Converting date field.value to luxonValue'
+                                                    );
+                                                    luxonValue =
+                                                        DateTime.fromJSDate(
+                                                            field.value
+                                                        ).toUTC();
+                                                    logDateInfo(
+                                                        'luxonValue for date after conversion',
+                                                        luxonValue
+                                                    );
+                                                }
+
+                                                return (
+                                                    <DatePicker
+                                                        label="Date"
+                                                        disabled={!isAdmin}
+                                                        value={luxonValue}
+                                                        timezone="UTC"
+                                                        onChange={(date) => {
+                                                            console.log(
+                                                                '[ShiftForm] DatePicker onChange triggered'
+                                                            );
+                                                            logDateInfo(
+                                                                'date from onChange',
+                                                                date
+                                                            );
+
+                                                            // Convert Luxon DateTime to native Date if needed
+                                                            if (
+                                                                date &&
+                                                                'toJSDate' in
+                                                                    date
+                                                            ) {
+                                                                try {
+                                                                    console.log(
+                                                                        '[ShiftForm] Converting Luxon DateTime to JS Date for date'
+                                                                    );
+                                                                    const jsDate =
+                                                                        (
+                                                                            date as any
+                                                                        ).toJSDate();
+                                                                    logDateInfo(
+                                                                        'jsDate for date after conversion',
+                                                                        jsDate
+                                                                    );
+                                                                    field.onChange(
+                                                                        jsDate
+                                                                    );
+                                                                    console.log(
+                                                                        '[ShiftForm] After field.onChange for date'
+                                                                    );
+                                                                } catch (error) {
+                                                                    console.error(
+                                                                        'Error converting to JS Date:',
+                                                                        {
+                                                                            error,
+                                                                            date,
+                                                                            timestamp:
+                                                                                new Date().toISOString(),
+                                                                        }
+                                                                    );
+                                                                    field.onChange(
+                                                                        null
+                                                                    );
+                                                                }
+                                                            } else {
+                                                                console.log(
+                                                                    '[ShiftForm] Passing date directly to field.onChange'
+                                                                );
+                                                                field.onChange(
+                                                                    date
+                                                                );
+                                                            }
+                                                        }}
+                                                        slotProps={{
+                                                            textField: {
+                                                                fullWidth: true,
+                                                                error: !!errors.date,
+                                                                helperText:
+                                                                    errors.date
+                                                                        ?.message as any,
+                                                            },
+                                                        }}
+                                                    />
+                                                );
+                                            }}
+                                        />
+                                    </LocalizationProvider>
                                 </Grid>
                             </Grid>
 
