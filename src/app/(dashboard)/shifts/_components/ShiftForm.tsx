@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Alert,
     Box,
@@ -38,7 +38,12 @@ const logDateInfo = (label: string, value: any) => {
 
 // Set default timezone to UTC
 //Settings.defaultZone = 'UTC';
-import { useForm, Controller, FormProvider } from 'react-hook-form';
+import {
+    useForm,
+    Controller,
+    FormProvider,
+    UseFormSetValue,
+} from 'react-hook-form';
 import { useDialogs } from '@toolpad/core';
 import { useNotifications } from '@/components/providers/NotificationsProvider';
 import { z } from 'zod';
@@ -54,14 +59,11 @@ import { useBusinessProfileQuery } from '@/queries/team';
 import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/api/trpc/[trpc]';
 import ShiftAssignmentTool from '@/app/(dashboard)/shifts/_components/ShiftAssignmentTool';
-import ShiftUploads from '@/app/(dashboard)/shifts/_components/ShiftUploads';
 import {
     useShiftCancelMutation,
     useShiftCreateMutation,
     useShiftUpdateMutation,
     useChecklistsQuery,
-    useAttachChecklistMutation,
-    useDetachChecklistMutation,
 } from '@/queries/shifts';
 import {
     useShiftDraftCreateMutation,
@@ -106,13 +108,18 @@ type ShiftFormData = {
     assignments?: any[];
     isDraft?: boolean | null;
     draftId?: string | null;
+    checklistId?: string | null;
 };
 
-interface CustomOpenPickerButtonProps extends React.ComponentProps<typeof IconButton> {
+interface CustomOpenPickerButtonProps
+    extends React.ComponentProps<typeof IconButton> {
     tabIndex?: number;
 }
 
-const CustomOpenPickerButton: React.FC<CustomOpenPickerButtonProps> = ({ tabIndex, ...props }) => {
+const CustomOpenPickerButton: React.FC<CustomOpenPickerButtonProps> = ({
+    tabIndex,
+    ...props
+}) => {
     return (
         <IconButton tabIndex={-1} {...props}>
             <CalendarIcon />
@@ -178,6 +185,7 @@ const shiftFormSchema = z
         notes: z.string().optional(),
         adminNotes: z.string().optional(),
         assignments: z.array(z.any()).optional(),
+        checklistId: z.string().nullable().optional(),
     })
     .refine(
         (data) => {
@@ -223,76 +231,61 @@ type ShiftFormProps = {
 function ChecklistSection({
     shiftId,
     shift,
+    setValue,
+    formChecklistId,
 }: {
     shiftId?: string;
     shift?: any;
+    setValue: UseFormSetValue<ShiftFormData>;
+    formChecklistId: string | null | undefined;
 }) {
     const [selectedChecklistId, setSelectedChecklistId] = useState<string>('');
     const { data: checklists = [], isLoading: isLoadingChecklists } =
         useChecklistsQuery();
-    const attachChecklistMutation = useAttachChecklistMutation();
-    const detachChecklistMutation = useDetachChecklistMutation();
     const notifications = useNotifications();
 
-    // Determine if a checklist is attached by checking both Checklist object and checklistId
-    const hasChecklist = !!(shift?.Checklist || shift?.checklistId);
+    // Determine if a checklist is attached by using the form state
+    const hasChecklist = !!formChecklistId;
+    const activeChecklist = useMemo(() => {
+        return checklists.find((cl) => cl.id === formChecklistId);
+    }, [checklists, formChecklistId]);
 
-    console.log('ChecklistSection render', { shift, shiftId, hasChecklist });
+    console.log('ChecklistSection render', {
+        shift,
+        shiftId,
+        hasChecklist,
+        formChecklistId,
+        selectedChecklistId,
+    });
 
-    // Set the selected checklist ID when the shift data is loaded
+    // Set the selected checklist ID when the form checklistId changes
     useEffect(() => {
-        if (shift?.Checklist?.id) {
-            setSelectedChecklistId(shift.Checklist.id);
-        } else if (shift?.checklistId) {
-            setSelectedChecklistId(shift.checklistId);
+        if (formChecklistId) {
+            setSelectedChecklistId(formChecklistId);
         }
-    }, [shift]);
+    }, [formChecklistId]);
 
-    const handleAttachChecklist = async () => {
-        if (!shiftId || !selectedChecklistId) return;
+    const handleAttachChecklist = () => {
+        if (!selectedChecklistId) return;
 
-        try {
-            await attachChecklistMutation.mutateAsync({
-                shiftId,
-                checklistId: selectedChecklistId,
-            });
-            notifications.show('Checklist attached successfully', {
-                severity: 'success',
-                autoHideDuration: 3000,
-            });
-        } catch (error: any) {
-            console.error('Error attaching checklist:', error);
-            notifications.show(`Failed to attach checklist: ${error.message}`, {
-                severity: 'error',
-                autoHideDuration: 3000,
-            });
-        }
+        // Only update the form state with the new checklistId
+        setValue('checklistId', selectedChecklistId);
+        console.log('Checklist attached:', { selectedChecklistId });
     };
 
-    const handleDetachChecklist = async () => {
-        if (!shiftId) return;
-
-        try {
-            await detachChecklistMutation.mutateAsync({
-                shiftId,
-            });
-            setSelectedChecklistId('');
-            notifications.show('Checklist detached successfully', {
-                severity: 'success',
-                autoHideDuration: 3000,
-            });
-        } catch (error: any) {
-            console.error('Error detaching checklist:', error);
-            notifications.show(`Failed to detach checklist: ${error.message}`, {
-                severity: 'error',
-                autoHideDuration: 3000,
-            });
-        }
+    const handleDetachChecklist = () => {
+        // Clear the selected checklist ID
+        setSelectedChecklistId('');
+        // Update the form state by clearing the checklistId
+        setValue('checklistId', null);
+        console.log('Checklist detached');
     };
 
     if (isLoadingChecklists) {
         return <Typography>Loading checklists...</Typography>;
     }
+
+    console.log({ cl: shift });
 
     return (
         <Box sx={{ mt: 2, mb: 2 }}>
@@ -305,59 +298,49 @@ function ChecklistSection({
                     <Typography variant="body1" sx={{ mr: 2 }}>
                         Current Checklist:{' '}
                         <strong>
-                            {shift.Checklist?.name || 'Checklist Attached'}
+                            {activeChecklist?.name || 'Checklist Attached'}
                         </strong>
                     </Typography>
                     <Button
                         variant="outlined"
                         color="secondary"
                         onClick={handleDetachChecklist}
-                        disabled={detachChecklistMutation.isPending}
                     >
                         Remove Checklist
                     </Button>
                 </Box>
             ) : (
-                <Box sx={{ mb: 2 }}>
-                    <Typography variant="body1" gutterBottom>
-                        No checklist attached to this shift.
-                    </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <TextField
+                        select
+                        label="Select Checklist"
+                        value={selectedChecklistId || ''}
+                        onChange={(e) => setSelectedChecklistId(e.target.value)}
+                        sx={{ minWidth: 300, mr: 2 }}
+                    >
+                        <MenuItem value="">
+                            <em>None</em>
+                        </MenuItem>
+                        {checklists.map((checklist) => (
+                            <MenuItem key={checklist.id} value={checklist.id}>
+                                {checklist.name}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleAttachChecklist}
+                        disabled={
+                            !selectedChecklistId ||
+                            selectedChecklistId === shift?.Checklist?.id
+                        }
+                    >
+                        Attach Checklist
+                    </Button>
                 </Box>
             )}
-
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <TextField
-                    select
-                    label="Select Checklist"
-                    value={selectedChecklistId}
-                    onChange={(e) => setSelectedChecklistId(e.target.value)}
-                    sx={{ minWidth: 300, mr: 2 }}
-                >
-                    <MenuItem value="">
-                        <em>None</em>
-                    </MenuItem>
-                    {checklists.map((checklist) => (
-                        <MenuItem key={checklist.id} value={checklist.id}>
-                            {checklist.name}
-                        </MenuItem>
-                    ))}
-                </TextField>
-
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleAttachChecklist}
-                    disabled={
-                        !selectedChecklistId ||
-                        attachChecklistMutation.isPending ||
-                        selectedChecklistId === shift?.Checklist?.id
-                    }
-                >
-                    {attachChecklistMutation.isPending
-                        ? 'Attaching...'
-                        : 'Attach Checklist'}
-                </Button>
-            </Box>
         </Box>
     );
 }
@@ -432,6 +415,7 @@ export default function ShiftForm(props: ShiftFormProps) {
               notes: shift?.notes ?? '',
               adminNotes: shift?.adminNotes ?? '',
               slots: shift?.slots || 1,
+              checklistId: shift?.checklistId,
               // Parse dates from ISO format
               // For drafts, use the date field directly
               date: (shift as any)?.date
@@ -570,6 +554,8 @@ export default function ShiftForm(props: ShiftFormProps) {
             (transformedShift as any)?.Checklist ||
             (transformedShift as any)?.checklistId
         ),
+        shiftChecklistId: shift?.checklistId,
+        transformedShiftChecklistId: (transformedShift as any)?.checklistId,
     });
 
     const methods = useForm<ShiftFormData>({
@@ -590,6 +576,9 @@ export default function ShiftForm(props: ShiftFormProps) {
 
     // Watch all form values for debugging
     const allValues = watch();
+
+    // Watch the checklistId field specifically for the ChecklistSection component
+    const watchedChecklistId = watch('checklistId');
 
     // // Helper for setting form errors
     // const setErrors = (errorList: any) => {
@@ -655,6 +644,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                     : formData.legacyLocation,
                 notes: formData.notes,
                 adminNotes: formData.adminNotes,
+                checklistId: formData.checklistId,
                 assignments: (formData.assignments || []).map((assignment) => ({
                     ...assignment,
                     outcome:
@@ -665,6 +655,11 @@ export default function ShiftForm(props: ShiftFormProps) {
                             : 'waiting', // Default to 'waiting' if outcome is invalid
                 })),
             };
+
+            console.log('Creating shift with data:', {
+                checklistId: formData.checklistId,
+                shiftData,
+            });
 
             // Create shift
             await createMutation.mutateAsync(shiftData as any);
@@ -769,6 +764,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                     : formData.legacyLocation,
                 notes: formData.notes,
                 adminNotes: formData.adminNotes,
+                checklistId: formData.checklistId,
                 assignments: (formData.assignments || []).map((assignment) => ({
                     ...assignment,
                     outcome:
@@ -779,6 +775,11 @@ export default function ShiftForm(props: ShiftFormProps) {
                             : 'waiting', // Default to 'waiting' if outcome is invalid
                 })),
             };
+
+            console.log('Updating shift with data:', {
+                checklistId: formData.checklistId,
+                shiftData,
+            });
 
             await updateMutation.mutateAsync(shiftData as any);
             notifications.show('Shift updated successfully', {
@@ -1336,19 +1337,6 @@ export default function ShiftForm(props: ShiftFormProps) {
                                 )}
                             />
 
-                            {/* Uploads section */}
-                            {shiftId && (isAdmin || isAssigned) && (
-                                <ShiftUploads
-                                    shiftId={shiftId}
-                                    readOnly={
-                                        !!(
-                                            (!isAdmin && !isAssigned) ||
-                                            readOnly
-                                        )
-                                    }
-                                />
-                            )}
-
                             <Controller
                                 name="notes"
                                 control={control}
@@ -1391,18 +1379,11 @@ export default function ShiftForm(props: ShiftFormProps) {
                             {/* Checklist Section */}
                             {isAdmin && !isNew && (
                                 <>
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                    >
-                                        Debug:{' '}
-                                        {hasChecklist
-                                            ? `Checklist attached: ${shift.Checklist?.name || shift.checklistId}`
-                                            : 'No checklist attached'}
-                                    </Typography>
                                     <ChecklistSection
                                         shiftId={shiftId}
                                         shift={shift}
+                                        setValue={setValue}
+                                        formChecklistId={watchedChecklistId}
                                     />
                                 </>
                             )}

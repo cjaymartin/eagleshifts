@@ -14,6 +14,7 @@ type ShiftData = {
     notes?: string;
     adminNotes?: string;
     assignments?: string[];
+    checklistId?: string | null;
 };
 
 // For update operations

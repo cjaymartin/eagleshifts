@@ -41,6 +41,7 @@ import {
 import { trpc } from '@/lib/trpc/client';
 import { useNotifications } from '@/components/providers/NotificationsProvider';
 import ChecklistCompletion from '@/app/(dashboard)/checklists/_components/ChecklistCompletion';
+import ShiftUploads from '@/app/(dashboard)/shifts/_components/ShiftUploads';
 
 // Extend dayjs with plugins
 dayjs.extend(utc);
@@ -475,6 +476,17 @@ export default function ShiftViewDialog({
                         <>
                             <Divider sx={{ mt: 1 }} />
                             <ChecklistLink shift={payload} />
+                        </>
+                    )}
+
+                    {/* Uploads section */}
+                    {payload?.id && (
+                        <>
+                            <Divider sx={{ mt: 1 }} />
+                            <ShiftUploads
+                                shiftId={payload.id}
+                                readOnly={!isAdmin}
+                            />
                         </>
                     )}
                 </Stack>

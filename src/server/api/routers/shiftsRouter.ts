@@ -665,6 +665,7 @@ export const shiftsRouter = router({
                 notes: z.string().optional(),
                 adminNotes: z.string().optional(),
                 timezone: z.string().optional().default('America/New_York'),
+                checklistId: z.string().nullable().optional(),
                 assignments: z
                     .array(
                         z.object({
@@ -678,6 +679,7 @@ export const shiftsRouter = router({
         )
         .mutation(async ({ ctx, input }) => {
             console.log('Shift create input:', JSON.stringify(input, null, 2));
+            console.log('Shift create checklistId:', input.checklistId);
 
             // Check for the problematic member ID
             if (
@@ -757,6 +759,7 @@ export const shiftsRouter = router({
                     notes: input.notes,
                     adminNotes: input.adminNotes,
                     timezone: input.timezone,
+                    checklistId: input.checklistId,
                     // We'll handle assignments separately
                     shiftAssignments: undefined,
                 },
@@ -995,6 +998,7 @@ export const shiftsRouter = router({
                 notes: z.string().optional(),
                 adminNotes: z.string().optional(),
                 timezone: z.string(),
+                checklistId: z.string().nullable().optional(),
                 assignments: z
                     .array(
                         z.object({
@@ -1008,6 +1012,7 @@ export const shiftsRouter = router({
         )
         .mutation(async ({ ctx, input }) => {
             console.log('Shift update input:', JSON.stringify(input, null, 2));
+            console.log('Shift update checklistId:', input.checklistId);
 
             try {
                 const { id, ...data } = input;
@@ -1068,6 +1073,7 @@ export const shiftsRouter = router({
                         notes: data.notes,
                         adminNotes: data.adminNotes,
                         timezone: data.timezone,
+                        checklistId: data.checklistId,
                     },
                     include: {
                         shiftAssignments: true,
