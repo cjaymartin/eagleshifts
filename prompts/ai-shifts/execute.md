@@ -4,9 +4,9 @@
 This document provides instructions for implementing the AI-Powered Shift Entry feature story by story. It is designed to be used repeatedly with a "keep going" approach until all stories are complete.
 
 ## Current Status
-- **Completed Stories**: Story #1 - Feature Flag and Configuration, Story #2 - AI Toggle Component
+- **Completed Stories**: Story #1 - Feature Flag and Configuration, Story #2 - AI Toggle Component, Story #3 - Text Input Modal
 - **In Progress**: None
-- **Next Story to Implement**: Story #3 - Text Input Modal
+- **Next Story to Implement**: Story #4 - AI Text Parsing Service
 
 ## How to Use This Guide
 

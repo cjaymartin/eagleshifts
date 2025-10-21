@@ -2,8 +2,64 @@ import { z } from 'zod';
 import { router, adminProcedure, memberProcedure } from '@/server/trpc';
 import { TRPCError } from '@trpc/server';
 import { isAIFeatureAvailable, isOpenAIConfigured, trackAIUsage } from '@/utils/aiUtils';
+import { parseShiftText } from '@/utils/aiShiftParser';
 
 export const aiRouter = router({
+  // Parse shift text using AI
+  parseShiftText: adminProcedure
+    .input(
+      z.object({
+        text: z.string().min(1),
+        date: z.string().optional(), // ISO string date
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        // Check if the AI feature is available
+        const { available, reason } = await isAIFeatureAvailable(
+          ctx.prisma,
+          ctx.user.organizationId,
+          ctx.user.role
+        );
+
+        if (!available) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: `AI feature is not available: ${reason}`,
+          });
+        }
+
+        // Parse the shift text
+        const result = await parseShiftText(
+          input.text,
+          input.date,
+          ctx.user.organizationId,
+          ctx.prisma
+        );
+
+        // Track AI usage
+        await trackAIUsage(
+          ctx.prisma,
+          ctx.user.organizationId,
+          ctx.user.id,
+          'shift_text_parsing',
+          result.tokensUsed || 0,
+          { textLength: input.text.length }
+        );
+
+        return result.parsedShift;
+      } catch (error: any) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Failed to parse shift text: ${error.message}`,
+        });
+      }
+    }),
+
   // Check if the AI feature is available for the current user and organization
   isAvailable: memberProcedure.query(async ({ ctx }) => {
     try {

@@ -8,6 +8,7 @@ import timezone from 'dayjs/plugin/timezone';
 import { useBusinessProfileQuery } from '@/queries/team';
 import { DateTime } from 'luxon';
 import AIToggle from '@/components/calendar/AIToggle';
+import AIShiftTextModal from '@/components/calendar/AIShiftTextModal';
 
 // Debug function to safely log date objects
 const logDateInfo = (label: string, value: any) => {
@@ -80,10 +81,15 @@ export default function Calendar() {
     // AI toggle state
     const [aiEnabled, setAiEnabled] = useState(false);
 
+    // AI text modal state
+    const [aiModalOpen, setAiModalOpen] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
     // Reset AI toggle when navigating away from the page
     useEffect(() => {
         return () => {
             setAiEnabled(false);
+            setAiModalOpen(false);
         };
     }, []);
 
@@ -201,10 +207,9 @@ export default function Calendar() {
 
             if (action === 'doubleClick') {
                 if (aiEnabled) {
-                    // When AI is enabled, we'll open the AI text input modal
-                    // This will be implemented in Story #3
-                    // For now, show an alert as a placeholder
-                    alert('AI Shift Entry is enabled. The AI text input modal will be implemented in the next story.');
+                    // When AI is enabled, open the AI text input modal
+                    setSelectedDate(start);
+                    setAiModalOpen(true);
                 } else {
                     // Standard shift creation flow
                     // Create a new shift object with the selected date information
@@ -220,6 +225,24 @@ export default function Calendar() {
             }
         },
         [dialogs, isAdmin, aiEnabled]
+    );
+
+    // Handle AI text modal submission
+    const handleAiTextSubmit = useCallback(
+        (parsedShift: any) => {
+            // Close the modal
+            setAiModalOpen(false);
+
+            // Create a new shift object with the parsed data
+            const newShift = {
+                ...parsedShift,
+                isNew: true,
+            };
+
+            // Open the shift dialog with the parsed data
+            dialogs.open(ShiftDialog, newShift as any);
+        },
+        [dialogs]
     );
 
     // Function to lighten or darken a color
@@ -976,6 +999,16 @@ export default function Calendar() {
                         <AddIcon /> Add Shift
                     </IconButton>
                 </Container>
+            )}
+
+            {/* AI Shift Text Modal */}
+            {selectedDate && (
+                <AIShiftTextModal
+                    open={aiModalOpen}
+                    onClose={() => setAiModalOpen(false)}
+                    onSubmit={handleAiTextSubmit}
+                    date={selectedDate}
+                />
             )}
         </Box>
     );
