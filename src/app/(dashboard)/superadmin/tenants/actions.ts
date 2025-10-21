@@ -62,21 +62,35 @@ export async function createOrganization(data: Partial<Organization>) {
     headers: await headers(),
   })
 
-
-  return await auth.api.createOrganization({
+  // First create the organization with standard fields
+  const newOrg = await auth.api.createOrganization({
     body: {
       name: data.name!,
       slug: data.slug!,
     },
     headers: await headers(),
   });
+
+  // Then update the AI-specific fields directly using Prisma
+  if (newOrg && newOrg.id) {
+    await prisma.organization.update({
+      where: { id: newOrg.id },
+      data: {
+        aiEnabled: data.aiEnabled,
+        aiDailyLimit: data.aiDailyLimit !== undefined ? Number(data.aiDailyLimit) : undefined,
+      }
+    });
+  }
+
+  return newOrg;
 }
 
 // Update an organization by ID
 export async function updateOrganization(organizationId: string, data: Partial<Organization>) {
   await checkSuperAdminAccess();
 
-  return await auth.api.updateOrganization({
+  // First update the organization using the auth API to handle standard fields
+  await auth.api.updateOrganization({
     body: {
       organizationId,
       data: {
@@ -87,10 +101,14 @@ export async function updateOrganization(organizationId: string, data: Partial<O
     headers: await headers(),
   });
 
-  // return prisma.organization.update({
-  //   where: { id },
-  //   data
-  // });
+  // Then update the AI-specific fields directly using Prisma
+  return prisma.organization.update({
+    where: { id: organizationId },
+    data: {
+      aiEnabled: data.aiEnabled,
+      aiDailyLimit: data.aiDailyLimit !== undefined ? Number(data.aiDailyLimit) : undefined,
+    }
+  });
 }
 
 // Delete an organization by ID

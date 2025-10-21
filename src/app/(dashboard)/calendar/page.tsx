@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useCallback, useState, useRef } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { Box, Container, Grid, IconButton } from '@mui/material';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { useBusinessProfileQuery } from '@/queries/team';
 import { DateTime } from 'luxon';
+import AIToggle from '@/components/calendar/AIToggle';
 
 // Debug function to safely log date objects
 const logDateInfo = (label: string, value: any) => {
@@ -75,6 +76,16 @@ export default function Calendar() {
     // View state
     const [currentView, setCurrentView] = useState('month');
     const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
+
+    // AI toggle state
+    const [aiEnabled, setAiEnabled] = useState(false);
+
+    // Reset AI toggle when navigating away from the page
+    useEffect(() => {
+        return () => {
+            setAiEnabled(false);
+        };
+    }, []);
 
     // Fetch shifts data using the same query as the shifts page, but include location and group data
     const { data: shifts } = trpc.shifts.list.useQuery({
@@ -189,18 +200,26 @@ export default function Calendar() {
             if (!isAdmin) return;
 
             if (action === 'doubleClick') {
-                // Create a new shift object with the selected date information
-                // Set startTime and endTime to null to avoid 12:00am-12:00am default
-                const newShift = {
-                    startTime: null,
-                    endTime: null,
-                    date: start,
-                    isNew: true,
-                };
-                dialogs.open(ShiftDialog, newShift as any);
+                if (aiEnabled) {
+                    // When AI is enabled, we'll open the AI text input modal
+                    // This will be implemented in Story #3
+                    // For now, show an alert as a placeholder
+                    alert('AI Shift Entry is enabled. The AI text input modal will be implemented in the next story.');
+                } else {
+                    // Standard shift creation flow
+                    // Create a new shift object with the selected date information
+                    // Set startTime and endTime to null to avoid 12:00am-12:00am default
+                    const newShift = {
+                        startTime: null,
+                        endTime: null,
+                        date: start,
+                        isNew: true,
+                    };
+                    dialogs.open(ShiftDialog, newShift as any);
+                }
             }
         },
-        [dialogs, isAdmin]
+        [dialogs, isAdmin, aiEnabled]
     );
 
     // Function to lighten or darken a color
@@ -905,8 +924,18 @@ export default function Calendar() {
 
     return (
         <Box>
-            {/* Use the same ShiftFilters component as the shifts page */}
-            <ShiftFilters filters={filters as any} setFilters={setFilters} />
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                {/* Use the same ShiftFilters component as the shifts page */}
+                <ShiftFilters filters={filters as any} setFilters={setFilters} />
+
+                {/* Only show AI toggle for admins */}
+                {isAdmin && (
+                    <AIToggle 
+                        enabled={aiEnabled} 
+                        onChange={setAiEnabled} 
+                    />
+                )}
+            </Box>
 
             <Grid container direction="row" maxWidth="xl">
                 <Grid sx={{ width: '60vw', height: 700 }}>

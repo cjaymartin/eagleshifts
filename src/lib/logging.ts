@@ -15,6 +15,7 @@ export enum LogActionType {
     SHIFT_REQUEST_CREATE = 'SHIFT_REQUEST_CREATE',
     SHIFT_REQUEST_UPDATE = 'SHIFT_REQUEST_UPDATE',
     USER_STATUS_CHANGE = 'USER_STATUS_CHANGE',
+    AI_API_USAGE = 'AI_API_USAGE',
 }
 
 // Define the entity types for logging
@@ -25,6 +26,7 @@ export enum LogEntityType {
     INVITATION = 'INVITATION',
     SHIFT_ASSIGNMENT = 'SHIFT_ASSIGNMENT',
     SHIFT_REQUEST = 'SHIFT_REQUEST',
+    AI = 'AI',
 }
 
 // Interface for log creation
@@ -356,5 +358,31 @@ export async function logUserStatusChange(
         entityType: LogEntityType.USER,
         description: `Changed status for ${targetUserName} to ${status}`,
         metadata,
+    });
+}
+
+/**
+ * Helper function to create a log entry for AI API usage
+ */
+export async function logAIApiUsage(
+    prisma: PrismaClient,
+    organizationId: string,
+    userId: string,
+    feature: string,
+    tokensUsed: number,
+    metadata?: Record<string, any>
+) {
+    return createLog({
+        prisma,
+        organizationId,
+        userId,
+        actionType: LogActionType.AI_API_USAGE,
+        entityType: LogEntityType.AI,
+        description: `Used AI API for ${feature}`,
+        metadata: {
+            ...metadata,
+            tokensUsed,
+            feature,
+        },
     });
 }

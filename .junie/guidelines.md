@@ -57,6 +57,29 @@ When making changes to the codebase, Junie should:
 - Start: `npm run start`
 - Database migrations: Various commands available in package.json
 
+## Database Change Guidelines
+1. **Schema Changes Only**: 
+   - Only make database changes in the `schema.prisma` file
+   - Do not manually create or modify migration files in the `/prisma/migrations` directory
+   - Do not commit new migration files directly
+
+2. **Migration Generation**:
+   - After modifying the `schema.prisma` file, generate migrations programmatically by running:
+     ```
+     npm run db:migrate:dev
+     ```
+   - This ensures migrations are properly generated with appropriate names and content
+
+3. **Migration Workflow**:
+   - Make changes to `schema.prisma`
+   - Run `npm run db:migrate:dev` to generate the migration
+   - Review the generated migration files before committing
+   - Commit both the schema changes and the generated migration files together
+
+4. **Troubleshooting**:
+   - If you encounter migration conflicts, use `npm run db:migrate:dev:resolve` to resolve them
+   - For development environment resets, use `npm run db:migrate:dev:reset` (caution: this will delete all data)
+
 ## Code Style Guidelines
 1. Follow TypeScript best practices
 2. Use React functional components with hooks

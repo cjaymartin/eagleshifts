@@ -13,6 +13,12 @@ const tenantDataSource: DataSource<Organization> = {
         // { field: "id", headerName: "ID" },
         { field: 'name', headerName: 'Name' },
         { field: 'slug', headerName: 'Slug' },
+        {
+            field: 'aiEnabled',
+            headerName: 'AI Feature Enabled',
+            type: 'boolean',
+        },
+        //{ field: 'aiDailyLimit', headerName: 'AI Daily Limit', hideInTable: true },
         // { field: "logo", headerName: "Logo" },
         // { field: "createdAt", headerName: "Created At" },
         // { field: "metadata", headerName: "Metadata" }
@@ -45,7 +51,20 @@ const tenantDataSource: DataSource<Organization> = {
 
     // Validate data before creation or update
     validate: (formValues) => {
-        return { issues: [] };
+        const issues = [];
+
+        // Validate aiDailyLimit
+        if (formValues.aiDailyLimit !== undefined) {
+            const aiDailyLimit = Number(formValues.aiDailyLimit);
+            if (isNaN(aiDailyLimit) || aiDailyLimit < 0) {
+                issues.push({
+                    field: 'aiDailyLimit',
+                    message: 'AI Daily Limit must be a positive number',
+                });
+            }
+        }
+
+        return { issues };
     },
 };
 

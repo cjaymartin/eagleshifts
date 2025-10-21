@@ -14,6 +14,7 @@ import { invitationsRouter } from '@/server/api/routers/invitationsRouter';
 import { shiftDraftRouter } from '@/server/api/routers/shiftDraftRouter';
 import { departmentsRouter } from '@/server/api/routers/departmentsRouter';
 import { checklistsRouter } from '@/server/api/routers/checklistsRouter';
+import { aiRouter } from '@/server/api/routers/aiRouter';
 
 export const appRouter = router({
     shifts: shiftsRouter,
@@ -29,6 +30,7 @@ export const appRouter = router({
     shiftDrafts: shiftDraftRouter,
     departments: departmentsRouter,
     checklists: checklistsRouter,
+    ai: aiRouter,
 
     session: router({
         get: router({

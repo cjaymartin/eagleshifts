@@ -105,6 +105,8 @@ model Organization {
   logo           String?
   createdAt      DateTime             @default(dbgenerated("LOCALTIMESTAMP")) @db.Timestamp(6)
   metadata       String?
+  aiEnabled      Boolean              @default(false)
+  aiDailyLimit   Int                  @default(500)
   members        Member[]
   invitations    Invitation[]
   Shift          Shift[]
