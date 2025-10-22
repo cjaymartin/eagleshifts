@@ -11,6 +11,7 @@ import {
     Box,
 } from '@mui/material';
 import { trpc } from '@/lib/trpc/client';
+import AIShiftConfirmationDialog from './AIShiftConfirmationDialog';
 
 interface AIShiftTextModalProps {
     open: boolean;
@@ -35,14 +36,19 @@ export default function AIShiftTextModal({
     // State for error handling
     const [error, setError] = useState<string | null>(null);
 
+    // State for confirmation dialog
+    const [showConfirmation, setShowConfirmation] = useState(false);
+    const [parsedShiftData, setParsedShiftData] = useState<any>(null);
+
     // Get the parseShiftText mutation
     const parseShiftTextMutation = trpc.ai.parseShiftText.useMutation({
         onSuccess: (data) => {
             // Clear any previous errors
             setError(null);
 
-            // Pass the parsed shift data to the parent component
-            onSubmit(data);
+            // Store the parsed shift data and show the confirmation dialog
+            setParsedShiftData(data);
+            setShowConfirmation(true);
         },
         onError: (err) => {
             // Set the error message
@@ -73,6 +79,12 @@ export default function AIShiftTextModal({
         onClose();
     };
 
+    // Handle confirmation dialog close
+    const handleConfirmationClose = () => {
+        setShowConfirmation(false);
+        setParsedShiftData(null);
+    };
+
     // Example text for the placeholder
     const placeholderText =
         'Enter shift details in plain text. For example:\n' +
@@ -80,59 +92,71 @@ export default function AIShiftTextModal({
         'Or: Shift at Main Office needs 3 people from 2-10pm.';
 
     return (
-        <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
-            <DialogTitle>Enter Shift Details</DialogTitle>
+        <>
+            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+                <DialogTitle>Enter Shift Details</DialogTitle>
 
-            <DialogContent>
-                {/* Show error message if there is one */}
-                {error && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                        {error}
-                    </Alert>
-                )}
+                <DialogContent>
+                    {/* Show error message if there is one */}
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
 
-                <TextField
-                    autoFocus
-                    multiline
-                    rows={6}
-                    fullWidth
-                    variant="outlined"
-                    placeholder={placeholderText}
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    disabled={parseShiftTextMutation.isPending}
-                    margin="normal"
-                />
+                    <TextField
+                        autoFocus
+                        multiline
+                        rows={6}
+                        fullWidth
+                        variant="outlined"
+                        placeholder={placeholderText}
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        disabled={parseShiftTextMutation.isPending}
+                        margin="normal"
+                    />
 
-                {/* Show a loading indicator during processing */}
-                {parseShiftTextMutation.isPending && (
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            mt: 2,
-                        }}
+                    {/* Show a loading indicator during processing */}
+                    {parseShiftTextMutation.isPending && (
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                mt: 2,
+                            }}
+                        >
+                            <CircularProgress size={24} data-testid="loading-indicator" />
+                        </Box>
+                    )}
+                </DialogContent>
+
+                <DialogActions>
+                    <Button
+                        onClick={handleClose}
+                        disabled={parseShiftTextMutation.isPending}
                     >
-                        <CircularProgress size={24} data-testid="loading-indicator" />
-                    </Box>
-                )}
-            </DialogContent>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={!text.trim() || parseShiftTextMutation.isPending}
+                        variant="contained"
+                    >
+                        Submit
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
-            <DialogActions>
-                <Button
-                    onClick={handleClose}
-                    disabled={parseShiftTextMutation.isPending}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleSubmit}
-                    disabled={!text.trim() || parseShiftTextMutation.isPending}
-                    variant="contained"
-                >
-                    Submit
-                </Button>
-            </DialogActions>
-        </Dialog>
+            {/* Confirmation Dialog */}
+            {parsedShiftData && (
+                <AIShiftConfirmationDialog
+                    open={showConfirmation}
+                    onClose={handleConfirmationClose}
+                    parsedShift={parsedShiftData}
+                    entityMatches={parsedShiftData.entityMatches}
+                />
+            )}
+        </>
     );
 }

@@ -470,7 +470,7 @@ export class AIShiftParserService {
 
       // Call OpenAI API with structured output format
       const response = await this.openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo-0125', // Use a mini/nano model, configurable via env var
+        model: process.env.OPENAI_MODEL || 'gpt-5-nano', // Use a mini/nano model, configurable via env var
         messages: [
           {
             role: 'system',
@@ -572,7 +572,7 @@ export class AIShiftParserService {
 
 Key implementation details:
 - Uses the OpenAI API with structured JSON output format
-- Configurable model via environment variable (defaults to gpt-3.5-turbo-0125)
+- Configurable model via environment variable (defaults to gpt-5-nano)
 - Validates API key availability before making requests
 - Provides detailed system prompt to guide the AI's parsing
 - Handles various time formats (9am, 9:30am, 5pm, etc.)
