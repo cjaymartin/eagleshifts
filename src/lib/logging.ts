@@ -372,7 +372,8 @@ export async function logAIApiUsage(
     tokensUsed: number,
     metadata?: Record<string, any>
 ) {
-    return createLog({
+    // Create a general log entry
+    const logEntry = await createLog({
         prisma,
         organizationId,
         userId,
@@ -385,4 +386,79 @@ export async function logAIApiUsage(
             feature,
         },
     });
+
+    // Also create a detailed AI usage log entry
+    try {
+        const requestPayload = metadata?.textLength 
+            ? `Text with ${metadata.textLength} characters` 
+            : metadata?.shiftId 
+                ? `Shift ID: ${metadata.shiftId}` 
+                : undefined;
+
+        await prisma.aIUsageLog.create({
+            data: {
+                organizationId,
+                userId,
+                feature,
+                tokensUsed,
+                requestPayload,
+                responseStatus: 'success', // Assuming success since we're logging after successful API call
+                metadata: metadata || {},
+            },
+        });
+    } catch (error) {
+        // Log the error but don't throw it to prevent impacting core functionality
+        console.error('Failed to create AI usage log entry:', error);
+    }
+
+    return logEntry;
+}
+
+/**
+ * Helper function to create a log entry for AI API usage failure
+ */
+export async function logAIApiFailure(
+    prisma: PrismaClient,
+    organizationId: string,
+    userId: string,
+    feature: string,
+    errorMessage: string,
+    requestPayload?: string,
+    metadata?: Record<string, any>
+) {
+    // Create a general log entry
+    const logEntry = await createLog({
+        prisma,
+        organizationId,
+        userId,
+        actionType: LogActionType.AI_API_USAGE,
+        entityType: LogEntityType.AI,
+        description: `AI API failure for ${feature}: ${errorMessage}`,
+        metadata: {
+            ...metadata,
+            feature,
+            error: errorMessage,
+        },
+    });
+
+    // Also create a detailed AI usage log entry
+    try {
+        await prisma.aIUsageLog.create({
+            data: {
+                organizationId,
+                userId,
+                feature,
+                tokensUsed: 0, // No tokens used for failed requests
+                requestPayload,
+                responseStatus: 'failure',
+                errorMessage,
+                metadata: metadata || {},
+            },
+        });
+    } catch (error) {
+        // Log the error but don't throw it to prevent impacting core functionality
+        console.error('Failed to create AI usage log entry for failure:', error);
+    }
+
+    return logEntry;
 }

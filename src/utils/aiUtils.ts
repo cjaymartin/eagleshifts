@@ -44,21 +44,92 @@ export async function hasReachedDailyLimit(
         organization = org; // Now we know org is not null
     }
 
-    // Count today's API usage
+    // Count today's API usage from the dedicated AIUsageLog table
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const usageCount = await prisma.logEntry.count({
+    const usageCount = await prisma.aIUsageLog.count({
         where: {
             organizationId,
-            actionType: 'AI_API_USAGE',
             timestamp: {
                 gte: today,
             },
         },
     });
 
+    // If no records in AIUsageLog, fall back to the legacy LogEntry table
+    if (usageCount === 0) {
+        const legacyUsageCount = await prisma.logEntry.count({
+            where: {
+                organizationId,
+                actionType: 'AI_API_USAGE',
+                timestamp: {
+                    gte: today,
+                },
+            },
+        });
+
+        return legacyUsageCount >= organization.aiDailyLimit;
+    }
+
     return usageCount >= organization.aiDailyLimit;
+}
+
+/**
+ * Gets the current AI usage for an organization
+ * @param prisma Prisma client instance
+ * @param organizationId The organization ID
+ * @returns Object with current usage count and daily limit
+ */
+export async function getAIUsageStats(
+    prisma: PrismaClient,
+    organizationId: string
+): Promise<{ currentUsage: number; dailyLimit: number }> {
+    // Get the organization's daily limit
+    const organization = await prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { aiDailyLimit: true },
+    });
+
+    if (!organization) {
+        return { currentUsage: 0, dailyLimit: 0 };
+    }
+
+    // Count today's API usage from the dedicated AIUsageLog table
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const usageCount = await prisma.aIUsageLog.count({
+        where: {
+            organizationId,
+            timestamp: {
+                gte: today,
+            },
+        },
+    });
+
+    // If no records in AIUsageLog, fall back to the legacy LogEntry table
+    if (usageCount === 0) {
+        const legacyUsageCount = await prisma.logEntry.count({
+            where: {
+                organizationId,
+                actionType: 'AI_API_USAGE',
+                timestamp: {
+                    gte: today,
+                },
+            },
+        });
+
+        return { 
+            currentUsage: legacyUsageCount, 
+            dailyLimit: organization.aiDailyLimit 
+        };
+    }
+
+    return { 
+        currentUsage: usageCount, 
+        dailyLimit: organization.aiDailyLimit 
+    };
 }
 
 /**

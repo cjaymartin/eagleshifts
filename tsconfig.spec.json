@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "module": "ES2022", // or `ESNext`
+    "target": "es2020",
+    "esModuleInterop": true,
+    "isolatedModules": true
+
+  }
+}

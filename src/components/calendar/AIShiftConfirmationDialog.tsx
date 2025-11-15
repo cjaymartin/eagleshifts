@@ -59,6 +59,8 @@ export default function AIShiftConfirmationDialog({
 }: AIShiftConfirmationDialogProps) {
     const router = useRouter();
 
+    console.log({ parsedShift });
+
     // Form state
     const [title, setTitle] = useState(parsedShift.title);
     const [startTime, setStartTime] = useState(

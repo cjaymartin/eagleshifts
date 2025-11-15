@@ -29,6 +29,7 @@ model User {
   members     Member[]
   invitations Invitation[]
   logs        LogEntry[]
+  aiUsageLogs AIUsageLog[]
 
   @@unique([email])
   @@map("user")
@@ -117,8 +118,9 @@ model Organization {
   locationGroups LocationGroup[]
   departments    Department[]
 
-  logEntries LogEntry[]
-  Checklist  Checklist[]
+  logEntries  LogEntry[]
+  aiUsageLogs AIUsageLog[]
+  Checklist   Checklist[]
 
   @@unique([slug])
   @@map("organization")
@@ -336,6 +338,29 @@ model LogEntry {
   @@index([entityId])
   @@index([timestamp])
   @@map("log")
+}
+
+model AIUsageLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  timestamp      DateTime @default(now())
+  userId         String
+  feature        String   // The AI feature being used (e.g., "shift_text_parsing", "shift_creation")
+  tokensUsed     Int      // Number of tokens used in the request
+  requestPayload String?  // Original text or request data
+  responseStatus String   // "success" or "failure"
+  errorMessage   String?  // Error message if the request failed
+  metadata       Json?    // Additional context data
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([feature])
+  @@index([timestamp])
+  @@map("ai_usage_log")
 }
 
 model UploadGroup {

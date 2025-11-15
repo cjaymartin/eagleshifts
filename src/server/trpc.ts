@@ -88,20 +88,23 @@ export const createRoleMiddleware = (minimumRole: string) => {
 };
 
 // Middleware to check if the user is accessing their own data
-export const enforceUserIsAccessingOwnData = t.middleware(({ ctx, next, meta }) => {
-    if (!ctx.user) {
-        throw new TRPCError({ code: 'UNAUTHORIZED' });
-    }
+export const enforceUserIsAccessingOwnData = t.middleware(
+    ({ ctx, next, meta }) => {
+        if (!ctx.user) {
+            throw new TRPCError({ code: 'UNAUTHORIZED' });
+        }
 
-    // Add a helper function to check if a user is accessing their own data
-    return next({
-        ctx: {
-            ...ctx,
-            isUserData: (userId: string) => userId === ctx.user.id,
-            isMemberData: (memberId: string) => memberId === ctx.user.memberId,
-        },
-    });
-});
+        // Add a helper function to check if a user is accessing their own data
+        return next({
+            ctx: {
+                ...ctx,
+                isUserData: (userId: string) => userId === ctx.user.id,
+                isMemberData: (memberId: string) =>
+                    memberId === ctx.user.memberId,
+            },
+        });
+    }
+);
 
 // Procedures with role requirements
 export const memberProcedure = protectedProcedure.use(
@@ -115,4 +118,25 @@ export const ownerProcedure = protectedProcedure.use(
 );
 
 // Procedure for users accessing their own data
-export const userProcedure = protectedProcedure.use(enforceUserIsAccessingOwnData);
+export const userProcedure = protectedProcedure.use(
+    enforceUserIsAccessingOwnData
+);
+
+// --- Test helper export ----------------------------------------------------
+// A small helper used by unit tests to create an "inner" TRPC context without
+// calling production-only APIs like `headers()` and `auth.api.getSession`.
+export const createInnerTRPCContext = ({
+    user,
+    prisma: prismaOverride,
+    session,
+}: {
+    user?: any;
+    prisma?: any;
+    session?: any;
+} = {}) => {
+    return {
+        user,
+        session,
+        prisma: prismaOverride ?? prisma,
+    } as const;
+};
