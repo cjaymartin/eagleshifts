@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useState, useRef } from 'react';
-import { Box, Container, Grid, IconButton } from '@mui/material';
+import { Box, Container, Grid, IconButton, Switch, FormControlLabel, Typography } from '@mui/material';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -39,6 +40,10 @@ import ShiftViewDialog from '@/components/calendar/ShiftViewDialog';
 import AddIcon from '@mui/icons-material/Add';
 import CalendarAgenda from '@/app/(dashboard)/_components/CalendarAgenda';
 import { useShiftDraftsListQuery } from '@/queries/shiftDrafts';
+import AIShiftInputDialog from '@/components/ai/AIShiftInputDialog';
+import AIShiftReviewDialog from '@/components/ai/AIShiftReviewDialog';
+import { useParseShiftMutation } from '@/queries/ai';
+import { useShiftCreateMutation } from '@/queries/shifts';
 
 // Create a localizer for the calendar
 //const localizer = dayjsLocalizer(dayjs);
@@ -75,6 +80,47 @@ export default function Calendar() {
     // View state
     const [currentView, setCurrentView] = useState('month');
     const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined);
+
+    // AI Shift Creation State
+    const [isAIMode, setIsAIMode] = useState(false);
+    const [isAIInputOpen, setIsAIInputOpen] = useState(false);
+    const [isAIReviewOpen, setIsAIReviewOpen] = useState(false);
+    const [aiSelectedDate, setAISelectedDate] = useState<Date | undefined>(undefined);
+    const [aiParsedData, setAIParsedData] = useState<any>(null);
+
+    // Mutations
+    const parseShiftMutation = useParseShiftMutation();
+    const createShiftMutation = useShiftCreateMutation();
+
+    const handleAIParse = (text: string) => {
+        parseShiftMutation.mutate(
+            { 
+                input: text,
+                defaultDate: aiSelectedDate ? dayjs(aiSelectedDate).format('YYYY-MM-DD') : undefined
+            },
+            {
+                onSuccess: (data) => {
+                    setAIParsedData(data);
+                    setIsAIInputOpen(false);
+                    setIsAIReviewOpen(true);
+                },
+                onError: (error) => {
+                    console.error("AI Parse Error:", error);
+                    // Optionally show a toast or alert here
+                }
+            }
+        );
+    };
+
+    const handleAISave = (shiftData: any) => {
+        createShiftMutation.mutate(shiftData, {
+            onSuccess: () => {
+                setIsAIReviewOpen(false);
+                setAIParsedData(null);
+                // Refresh shifts? The query should auto-invalidate
+            }
+        });
+    };
 
     // Fetch shifts data using the same query as the shifts page, but include location and group data
     const { data: shifts } = trpc.shifts.list.useQuery({
@@ -186,21 +232,27 @@ export default function Calendar() {
             action: string;
         }) => {
             const { start, end, slots, action } = slotInfo;
+            
             if (!isAdmin) return;
 
             if (action === 'doubleClick') {
-                // Create a new shift object with the selected date information
-                // Set startTime and endTime to null to avoid 12:00am-12:00am default
-                const newShift = {
-                    startTime: null,
-                    endTime: null,
-                    date: start,
-                    isNew: true,
-                };
-                dialogs.open(ShiftDialog, newShift as any);
+                if (isAIMode) {
+                    setAISelectedDate(start);
+                    setIsAIInputOpen(true);
+                } else {
+                    // Create a new shift object with the selected date information
+                    // Set startTime and endTime to null to avoid 12:00am-12:00am default
+                    const newShift = {
+                        startTime: null,
+                        endTime: null,
+                        date: start,
+                        isNew: true,
+                    };
+                    dialogs.open(ShiftDialog, newShift as any);
+                }
             }
         },
-        [dialogs, isAdmin]
+        [dialogs, isAdmin, isAIMode, setAISelectedDate, setIsAIInputOpen]
     );
 
     // Function to lighten or darken a color
@@ -909,7 +961,28 @@ export default function Calendar() {
             <ShiftFilters filters={filters as any} setFilters={setFilters} />
 
             <Grid container direction="row" maxWidth="xl">
-                <Grid sx={{ width: '60vw', height: 700 }}>
+                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                 <Box>
+                     <FormControlLabel
+                        control={
+                            <Switch
+                                checked={isAIMode}
+                                onChange={(e) => setIsAIMode(e.target.checked)}
+                                color="primary"
+                            />
+                        }
+                        label={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <AutoAwesomeIcon color={isAIMode ? "primary" : "action"} />
+                                <Typography variant="body2" color={isAIMode ? "primary" : "text.secondary"}>
+                                    AI Mode
+                                </Typography>
+                            </Box>
+                        }
+                    />
+                 </Box>
+            </Box>
+            <Box sx={{ height: 'calc(100vh - 200px)' }}>
                     <BigCalendar
                         onShowMore={() => setCurrentView('agenda')}
                         components={components as any}
@@ -937,17 +1010,36 @@ export default function Calendar() {
                             setCurrentDate(date);
                         }}
                     />
-                </Grid>
+                </Box>
             </Grid>
 
-            {/* Add button for creating new shifts (only for admins) */}
+            {/* Add buttons for creating new shifts (only for admins) */}
             {isAdmin && (
-                <Container>
+                <Container sx={{ display: 'flex', gap: 2, mt: 2 }}>
                     <IconButton onClick={() => dialogs.open(ShiftDialog, null)}>
                         <AddIcon /> Add Shift
                     </IconButton>
+                    <IconButton onClick={() => setIsAIInputOpen(true)} color="primary">
+                        <AutoAwesomeIcon /> Add with AI
+                    </IconButton>
                 </Container>
             )}
+            
+            {/* AI Dialogs */}
+            <AIShiftInputDialog
+                open={isAIInputOpen}
+                onClose={() => setIsAIInputOpen(false)}
+                onParse={handleAIParse}
+                isParsing={parseShiftMutation.isPending}
+                defaultDate={aiSelectedDate}
+            />
+            
+            <AIShiftReviewDialog
+                open={isAIReviewOpen}
+                onClose={() => setIsAIReviewOpen(false)}
+                parsedData={aiParsedData}
+                onSave={handleAISave}
+            />
         </Box>
     );
 }

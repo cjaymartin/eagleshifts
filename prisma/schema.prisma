@@ -415,7 +415,7 @@ model Location {
   id                  String   @id @default(cuid())
   organizationId      String
   name                String
-  address             String
+  address             String?
   latitude            Float?
   longitude           Float?
   groupId             String?

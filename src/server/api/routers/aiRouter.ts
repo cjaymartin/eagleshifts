@@ -7,12 +7,12 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { calculateSimilarity } from '@/utils/stringUtils';
 
 const LLMShiftSchema = z.object({
-    title: z.string().describe("A concise title for the shift (e.g., 'Opening Shift', 'Client Meeting')."),
+    title: z.string().describe("The main subject or name of the shift (e.g., 'First Aid', 'Bartender'). Almost always present."),
     startTime: z.string().nullable().describe("The start time of the shift in ISO 8601 format (HH:mm:ss), or null if not found."),
     endTime: z.string().nullable().describe("The end time of the shift in ISO 8601 format (HH:mm:ss), or null if not found."),
     date: z.string().describe("The date of the shift in ISO 8601 format (YYYY-MM-DD). Use today's date if no date is specified."),
     location: z.string().nullable().describe("The location or venue mentioned in the text."),
-    notes: z.string().nullable().describe("Any remaining descriptive text or details."),
+    notes: z.string().nullable().describe("Secondary details only. Rarely used."),
     slots: z.union([z.number(), z.string()])
         .nullable()
         .describe("The number of people/slots required for the shift."),
@@ -32,12 +32,18 @@ export const aiRouter = router({
     parseShift: memberProcedure
         .input(
             z.object({
-                input: z.string()
+                input: z.string(),
+                defaultDate: z.string().optional().describe("The default date to use for relative dates (YYYY-MM-DD). Defaults to today."),
             })
         )
         .mutation(async ({ ctx, input }) => {
+            const referenceDate = input.defaultDate || new Date().toISOString().split('T')[0];
             const systemPrompt = `You are an expert shift parser. Your task is to extract all relevant shift details from the user's freeform text and strictly output them in the specified JSON format.
-                - If a date is relative (e.g., 'tomorrow', 'next Monday'), use the current date (${new Date().toISOString().split('T')[0]}) as the reference point to resolve it into YYYY-MM-DD.
+                - The input text almost always contains a Title. It is the main subject of the text.
+                - Prioritize extracting a Title over Notes. Only use Notes for extra details that clearly do not belong in other fields.
+                - Avoid generic terms like 'Shift' for the Title unless no other suitable subject is found.
+                - Never use 'extract' as a Title.
+                - If a date is relative (e.g., 'tomorrow', 'next Monday'), use the reference date (${referenceDate}) as the starting point to resolve it into YYYY-MM-DD.
                   - Use 24-hour time for startTime/endTime.`;
 
             let parsedShift: z.infer<typeof ParsedShiftSchema>;

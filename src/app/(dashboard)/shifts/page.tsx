@@ -14,6 +14,8 @@ import {
     TableRow,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import dayjs from 'dayjs';
 import { DateTime } from 'luxon';
 import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
@@ -32,6 +34,10 @@ import {
     useShiftDraftsListQuery,
     useShiftDraftDeleteMutation,
 } from '@/queries/shiftDrafts';
+import AIShiftInputDialog from '@/components/ai/AIShiftInputDialog';
+import AIShiftReviewDialog from '@/components/ai/AIShiftReviewDialog';
+import { useParseShiftMutation } from '@/queries/ai';
+import { useShiftCreateMutation } from '@/queries/shifts';
 
 export default function Shifts() {
     //const { setNew: openAddShiftDialog } = useShiftDialogHelpers();
@@ -48,6 +54,44 @@ export default function Shifts() {
     const { data: businessProfile } = useBusinessProfileQuery();
     const { data: shifts } = trpc.shifts.list.useQuery(filters as any);
     const { data: draftShifts = [] } = useShiftDraftsListQuery();
+
+    // AI Shift Creation State
+    const [isAIInputOpen, setIsAIInputOpen] = useState(false);
+    const [isAIReviewOpen, setIsAIReviewOpen] = useState(false);
+    const [aiParsedData, setAIParsedData] = useState<any>(null);
+
+    // Mutations
+    const parseShiftMutation = useParseShiftMutation();
+    const createShiftMutation = useShiftCreateMutation();
+
+    const handleAIParse = (text: string) => {
+        parseShiftMutation.mutate(
+            { 
+                input: text,
+                // Default to today for shifts page
+                defaultDate: dayjs().format('YYYY-MM-DD')
+            },
+            {
+                onSuccess: (data) => {
+                    setAIParsedData(data);
+                    setIsAIInputOpen(false);
+                    setIsAIReviewOpen(true);
+                },
+                onError: (error) => {
+                    console.error("AI Parse Error:", error);
+                }
+            }
+        );
+    };
+
+    const handleAISave = (shiftData: any) => {
+        createShiftMutation.mutate(shiftData, {
+            onSuccess: () => {
+                setIsAIReviewOpen(false);
+                setAIParsedData(null);
+            }
+        });
+    };
 
     // Get checklist completion status for all shifts in a single batch query
     const shiftIds = shifts?.map((shift) => shift.id) || [];
@@ -176,12 +220,31 @@ export default function Shifts() {
                 </TableContainer>
             </Box>
             {isAdmin && (
-                <Container>
+                <Container sx={{ display: 'flex', gap: 2, mt: 2 }}>
                     <IconButton onClick={() => dialogs.open(ShiftDialog, null)}>
                         <AddIcon /> Add Shift
                     </IconButton>
+                    <IconButton onClick={() => setIsAIInputOpen(true)} color="primary">
+                        <AutoAwesomeIcon /> Add with AI
+                    </IconButton>
                 </Container>
             )}
+            
+            {/* AI Dialogs */}
+            <AIShiftInputDialog
+                open={isAIInputOpen}
+                onClose={() => setIsAIInputOpen(false)}
+                onParse={handleAIParse}
+                isParsing={parseShiftMutation.isPending}
+            />
+            
+            <AIShiftReviewDialog
+                open={isAIReviewOpen}
+                onClose={() => setIsAIReviewOpen(false)}
+                parsedData={aiParsedData}
+                onSave={handleAISave}
+            />
+
         </Box>
     );
 }

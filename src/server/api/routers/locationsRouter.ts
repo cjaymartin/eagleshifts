@@ -186,7 +186,7 @@ export const locationsRouter = router({
         .input(
             z.object({
                 name: z.string(),
-                address: z.string(),
+                address: z.string().optional(),
                 latitude: z.number().optional(),
                 longitude: z.number().optional(),
                 groupId: z.string().optional(),
@@ -247,13 +247,29 @@ export const locationsRouter = router({
             // Create the location
             const location = await ctx.prisma.location.create({
                 data: {
-                    organizationId: ctx.user.organizationId,
+                    organization: {
+                        connect: {
+                            id: ctx.user.organizationId,
+                        },
+                    },
                     name: input.name,
-                    address: input.address,
+                    address: input.address ?? null,
                     latitude: input.latitude,
                     longitude: input.longitude,
-                    groupId: input.groupId,
-                    defaultDepartmentId: input.defaultDepartmentId,
+                    ...(input.groupId ? {
+                        group: {
+                            connect: {
+                                id: input.groupId,
+                            },
+                        },
+                    } : {}),
+                    ...(input.defaultDepartmentId ? {
+                        defaultDepartment: {
+                            connect: {
+                                id: input.defaultDepartmentId,
+                            },
+                        },
+                    } : {}),
                     tags: input.tags ? JSON.stringify(input.tags) : null,
                 },
                 include: {
@@ -275,7 +291,7 @@ export const locationsRouter = router({
             z.object({
                 id: z.string(),
                 name: z.string(),
-                address: z.string(),
+                address: z.string().optional(),
                 latitude: z.number().optional(),
                 longitude: z.number().optional(),
                 groupId: z.string().optional(),
@@ -354,7 +370,7 @@ export const locationsRouter = router({
                 where: { id: input.id },
                 data: {
                     name: input.name,
-                    address: input.address,
+                    address: input.address ?? null,
                     latitude: input.latitude,
                     longitude: input.longitude,
                     groupId: input.groupId,
