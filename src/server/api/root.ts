@@ -1,6 +1,7 @@
 import { router } from '@/server/trpc';
 import { protectedProcedure, publicProcedure } from '@/server/trpc';
 
+import { aiRouter } from './routers/aiRouter';
 import { shiftsRouter } from './routers/shiftsRouter';
 import { usersRouter } from './routers/usersRouter';
 import { availabilityRouter } from '@/server/api/routers/availabilityRouter';
@@ -16,6 +17,7 @@ import { departmentsRouter } from '@/server/api/routers/departmentsRouter';
 import { checklistsRouter } from '@/server/api/routers/checklistsRouter';
 
 export const appRouter = router({
+    ai: aiRouter,
     shifts: shiftsRouter,
     users: usersRouter,
     availability: availabilityRouter,

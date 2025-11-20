@@ -33,6 +33,9 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@hookform/resolvers": "^5.1.1",
+    "@langchain/core": "^1.0.6",
+    "@langchain/ollama": "^1.0.1",
+    "@langchain/openai": "^1.1.1",
     "@mui/icons-material": "^7.1.2",
     "@mui/lab": "^7.0.0-beta.14",
     "@mui/material": "^7.1.2",
@@ -54,6 +57,7 @@
     "file-type": "^21.0.0",
     "html2pdf.js": "^0.10.3",
     "ical-generator": "^6.0.1",
+    "langchain": "^1.0.4",
     "leaflet": "^1.9.4",
     "lodash": "^4.17.21",
     "luxon": "^3.7.1",
@@ -79,7 +83,8 @@
     "util": "^0.12.5",
     "uuid": "^11.1.0",
     "xlsx": "^0.18.5",
-    "zod": "^4.0.5"
+    "zod": "^4.1.12",
+    "zod-to-json-schema": "^3.25.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -101,6 +106,7 @@
     "@types/react-big-calendar": "^1.16.2",
     "@types/react-dom": "^19",
     "cross-env": "^7.0.3",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "identity-obj-proxy": "^3.0.0",
