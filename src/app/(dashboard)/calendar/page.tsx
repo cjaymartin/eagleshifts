@@ -1,7 +1,15 @@
 'use client';
 
 import React, { useCallback, useState, useRef } from 'react';
-import { Box, Container, Grid, IconButton, Switch, FormControlLabel, Typography } from '@mui/material';
+import {
+    Box,
+    Container,
+    Grid,
+    IconButton,
+    Switch,
+    FormControlLabel,
+    Typography,
+} from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -85,7 +93,9 @@ export default function Calendar() {
     const [isAIMode, setIsAIMode] = useState(false);
     const [isAIInputOpen, setIsAIInputOpen] = useState(false);
     const [isAIReviewOpen, setIsAIReviewOpen] = useState(false);
-    const [aiSelectedDate, setAISelectedDate] = useState<Date | undefined>(undefined);
+    const [aiSelectedDate, setAISelectedDate] = useState<Date | undefined>(
+        undefined
+    );
     const [aiParsedData, setAIParsedData] = useState<any>(null);
 
     // Mutations
@@ -94,9 +104,11 @@ export default function Calendar() {
 
     const handleAIParse = (text: string) => {
         parseShiftMutation.mutate(
-            { 
+            {
                 input: text,
-                defaultDate: aiSelectedDate ? dayjs(aiSelectedDate).format('YYYY-MM-DD') : undefined
+                defaultDate: aiSelectedDate
+                    ? dayjs(aiSelectedDate).format('YYYY-MM-DD')
+                    : undefined,
             },
             {
                 onSuccess: (data) => {
@@ -105,9 +117,9 @@ export default function Calendar() {
                     setIsAIReviewOpen(true);
                 },
                 onError: (error) => {
-                    console.error("AI Parse Error:", error);
+                    console.error('AI Parse Error:', error);
                     // Optionally show a toast or alert here
-                }
+                },
             }
         );
     };
@@ -118,7 +130,7 @@ export default function Calendar() {
                 setIsAIReviewOpen(false);
                 setAIParsedData(null);
                 // Refresh shifts? The query should auto-invalidate
-            }
+            },
         });
     };
 
@@ -232,7 +244,7 @@ export default function Calendar() {
             action: string;
         }) => {
             const { start, end, slots, action } = slotInfo;
-            
+
             if (!isAdmin) return;
 
             if (action === 'doubleClick') {
@@ -961,28 +973,53 @@ export default function Calendar() {
             <ShiftFilters filters={filters as any} setFilters={setFilters} />
 
             <Grid container direction="row" maxWidth="xl">
-                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                 <Box>
-                     <FormControlLabel
-                        control={
-                            <Switch
-                                checked={isAIMode}
-                                onChange={(e) => setIsAIMode(e.target.checked)}
-                                color="primary"
-                            />
-                        }
-                        label={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <AutoAwesomeIcon color={isAIMode ? "primary" : "action"} />
-                                <Typography variant="body2" color={isAIMode ? "primary" : "text.secondary"}>
-                                    AI Mode
-                                </Typography>
-                            </Box>
-                        }
-                    />
-                 </Box>
-            </Box>
-            <Box sx={{ height: 'calc(100vh - 200px)' }}>
+                <Box
+                    sx={{
+                        width: '100%',
+                        mb: 2,
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        alignItems: 'center',
+                    }}
+                >
+                    <Box>
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={isAIMode}
+                                    onChange={(e) =>
+                                        setIsAIMode(e.target.checked)
+                                    }
+                                    color="primary"
+                                />
+                            }
+                            label={
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1,
+                                    }}
+                                >
+                                    <AutoAwesomeIcon
+                                        color={isAIMode ? 'primary' : 'action'}
+                                    />
+                                    <Typography
+                                        variant="body2"
+                                        color={
+                                            isAIMode
+                                                ? 'primary'
+                                                : 'text.secondary'
+                                        }
+                                    >
+                                        AI Shift Mode
+                                    </Typography>
+                                </Box>
+                            }
+                        />
+                    </Box>
+                </Box>
+                <Box sx={{ height: 'calc(100vh - 200px)' }}>
                     <BigCalendar
                         onShowMore={() => setCurrentView('agenda')}
                         components={components as any}
@@ -1011,35 +1048,40 @@ export default function Calendar() {
                         }}
                     />
                 </Box>
-            </Grid>
 
-            {/* Add buttons for creating new shifts (only for admins) */}
-            {isAdmin && (
-                <Container sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                    <IconButton onClick={() => dialogs.open(ShiftDialog, null)}>
-                        <AddIcon /> Add Shift
-                    </IconButton>
-                    <IconButton onClick={() => setIsAIInputOpen(true)} color="primary">
-                        <AutoAwesomeIcon /> Add with AI
-                    </IconButton>
-                </Container>
-            )}
-            
-            {/* AI Dialogs */}
-            <AIShiftInputDialog
-                open={isAIInputOpen}
-                onClose={() => setIsAIInputOpen(false)}
-                onParse={handleAIParse}
-                isParsing={parseShiftMutation.isPending}
-                defaultDate={aiSelectedDate}
-            />
-            
-            <AIShiftReviewDialog
-                open={isAIReviewOpen}
-                onClose={() => setIsAIReviewOpen(false)}
-                parsedData={aiParsedData}
-                onSave={handleAISave}
-            />
+                {/* Add buttons for creating new shifts (only for admins) */}
+                {isAdmin && (
+                    <Container sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                        <IconButton
+                            onClick={() => dialogs.open(ShiftDialog, null)}
+                        >
+                            <AddIcon /> Add Shift
+                        </IconButton>
+                        <IconButton
+                            onClick={() => setIsAIInputOpen(true)}
+                            color="primary"
+                        >
+                            <AutoAwesomeIcon /> Add with AI
+                        </IconButton>
+                    </Container>
+                )}
+
+                {/* AI Dialogs */}
+                <AIShiftInputDialog
+                    open={isAIInputOpen}
+                    onClose={() => setIsAIInputOpen(false)}
+                    onParse={handleAIParse}
+                    isParsing={parseShiftMutation.isPending}
+                    defaultDate={aiSelectedDate}
+                />
+
+                <AIShiftReviewDialog
+                    open={isAIReviewOpen}
+                    onClose={() => setIsAIReviewOpen(false)}
+                    parsedData={aiParsedData}
+                    onSave={handleAISave}
+                />
+            </Grid>
         </Box>
     );
 }
