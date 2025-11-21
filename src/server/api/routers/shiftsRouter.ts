@@ -1471,7 +1471,7 @@ export const shiftsRouter = router({
                                 userEmail: member.user.email,
                                 shiftTitle: originalShift.title,
                                 shiftLocation: locationName,
-                                shiftAddress: locationAddress,
+                                shiftAddress: locationAddress || undefined,
                                 shiftDate: originalShift.startTime,
                                 shiftStartTime: originalShift.startTime,
                                 shiftEndTime: originalShift.endTime,

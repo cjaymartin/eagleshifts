@@ -96,7 +96,7 @@ export default function LocationForm({
         if (location) {
             reset({
                 name: location.name,
-                address: location.address,
+                address: location.address || undefined,
                 //latitude: location.latitude,
                 //longitude: location.longitude,
                 groupId: location.groupId || undefined,
