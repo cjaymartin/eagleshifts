@@ -1019,7 +1019,14 @@ export default function Calendar() {
                         />
                     </Box>
                 </Box>
-                <Box sx={{ height: 'calc(100vh - 200px)' }}>
+                <Box
+                    sx={{
+                        height: 'calc(100vh - 200px)',
+                        width: '100%',
+                        mb: 2,
+                        alignItems: 'center',
+                    }}
+                >
                     <BigCalendar
                         onShowMore={() => setCurrentView('agenda')}
                         components={components as any}
