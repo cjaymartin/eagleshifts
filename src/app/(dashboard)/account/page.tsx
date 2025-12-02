@@ -10,61 +10,66 @@ import NotificationsForm from './_components/NotificationsForm';
 import IcalLinkControl from './_components/IcalLinkControl';
 
 export default function AccountPage() {
-  const [activeTab, setActiveTab] = useState('profile');
-  const router = useRouter();
+    const [activeTab, setActiveTab] = useState('profile');
+    const router = useRouter();
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
-    setActiveTab(newValue);
-  };
+    const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
+        setActiveTab(newValue);
+    };
 
-  return (
-    <TabContext value={activeTab}>
-      <Container maxWidth="lg">
-        <Link
-          component="button"
-          onClick={() => router.push('/calendar')}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            mb: 2,
-            fontSize: 18,
-            color: 'primary.main',
-            '&:hover': { textDecoration: 'underline' },
-          }}
-        >
-          <ArrowBackIcon fontSize="small" />
-          Back
-        </Link>
-        
-        <Typography variant="h3" sx={{ mb: 3 }}>Account Settings</Typography>
-        
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-          <TabList onChange={handleTabChange} aria-label="Account settings tabs">
-            <Tab label="Profile" value="profile" />
-            <Tab label="Notifications" value="notifications" />
-          </TabList>
-        </Box>
+    return (
+        <TabContext value={activeTab}>
+            <Container maxWidth="lg">
+                <Link
+                    component="button"
+                    onClick={() => router.push('/calendar')}
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        mb: 2,
+                        fontSize: 18,
+                        color: 'primary.main',
+                        '&:hover': { textDecoration: 'underline' },
+                    }}
+                >
+                    <ArrowBackIcon fontSize="small" />
+                    Back
+                </Link>
 
-        <TabPanel value="profile">
-          <Typography variant="h4" sx={{ mb: 2 }}>
-            My Profile
-          </Typography>
-          <MyProfileForm />
-          
-          <Typography variant="h4" sx={{ mt: 4, mb: 2 }}>
-            iCal Link
-          </Typography>
-          <IcalLinkControl />
-        </TabPanel>
+                <Typography variant="h3" sx={{ mb: 3 }}>
+                    Account Settings
+                </Typography>
 
-        <TabPanel value="notifications">
-          <Typography variant="h4" sx={{ mb: 2 }}>
-            Notification Settings
-          </Typography>
-          <NotificationsForm />
-        </TabPanel>
-      </Container>
-    </TabContext>
-  );
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                    <TabList
+                        onChange={handleTabChange}
+                        aria-label="Account settings tabs"
+                    >
+                        <Tab label="Profile" value="profile" />
+                        <Tab label="Notifications" value="notifications" />
+                    </TabList>
+                </Box>
+
+                <TabPanel value="profile">
+                    <Typography variant="h4" sx={{ mb: 2 }}>
+                        My Profile
+                    </Typography>
+                    <MyProfileForm />
+
+                    <Typography variant="h4" sx={{ mt: 4, mb: 2 }}>
+                        iCal Link
+                    </Typography>
+                    <IcalLinkControl />
+                </TabPanel>
+
+                <TabPanel value="notifications">
+                    <Typography variant="h4" sx={{ mb: 2 }}>
+                        Notification Settings
+                    </Typography>
+                    <NotificationsForm />
+                </TabPanel>
+            </Container>
+        </TabContext>
+    );
 }

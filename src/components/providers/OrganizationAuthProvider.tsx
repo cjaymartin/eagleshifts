@@ -26,8 +26,6 @@ export default async function OrganizationAuthProvider({
         return children;
     }
 
-    console.log('ONE');
-
     const cookieList = await cookies();
 
     // Get the login-organization-slug cookie

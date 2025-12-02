@@ -105,6 +105,7 @@ model Organization {
   logo           String?
   createdAt      DateTime             @default(dbgenerated("LOCALTIMESTAMP")) @db.Timestamp(6)
   metadata       String?
+  workosOrganizationId String? @unique
   members        Member[]
   invitations    Invitation[]
   Shift          Shift[]

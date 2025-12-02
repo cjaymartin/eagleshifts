@@ -1,15 +1,54 @@
 import { TRPCError, initTRPC } from '@trpc/server';
 import superjson from 'superjson';
-import { auth } from '@/lib/auth';
+import { withAuth } from '@workos-inc/authkit-nextjs';
 import { prisma } from '@/lib/prisma';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 
 export const createTRPCContext = async () => {
-    const session = await auth.api.getSession({
-        headers: await headers(),
+    const { user: workosUser } = await withAuth();
+    const cookieStore = await cookies();
+    const activeOrgId = cookieStore.get('wos-active-org-id')?.value;
+
+    console.log('[TRPC Context] WorkOS User:', workosUser?.email);
+    console.log('[TRPC Context] Active Org ID:', activeOrgId);
+
+    if (!workosUser || !activeOrgId) {
+        console.log('[TRPC Context] Missing user or org ID');
+        return {
+            user: undefined,
+            session: undefined,
+            prisma,
+        };
+    }
+
+    // Find Prisma User by email
+    const user = await prisma.user.findUnique({
+        where: { email: workosUser.email },
     });
 
-    if (!session?.user?.id || !session?.session?.activeOrganizationId) {
+    if (!user) {
+        console.log('[TRPC Context] User not found in DB:', workosUser.email);
+        return {
+            user: undefined,
+            session: undefined,
+            prisma,
+        };
+    }
+
+    // Find Organization by WorkOS ID (activeOrgId)
+    // If activeOrgId looks like a WorkOS ID (starts with org_), use workosOrganizationId
+    // Otherwise assume it's a local ID (fallback)
+    const organization = await prisma.organization.findFirst({
+        where: {
+            OR: [
+                { workosOrganizationId: activeOrgId },
+                { id: activeOrgId }
+            ]
+        }
+    });
+
+    if (!organization) {
+        console.log('[TRPC Context] Organization not found:', activeOrgId);
         return {
             user: undefined,
             session: undefined,
@@ -19,12 +58,13 @@ export const createTRPCContext = async () => {
 
     const member = await prisma.member.findFirst({
         where: {
-            userId: session.user.id,
-            organizationId: session.session.activeOrganizationId,
+            userId: user.id,
+            organizationId: organization.id, // Use the local ID here
         },
     });
 
     if (!member) {
+        console.log('[TRPC Context] Member not found for org:', organization.id);
         return {
             user: undefined,
             session: undefined,
@@ -34,15 +74,17 @@ export const createTRPCContext = async () => {
 
     return {
         user: {
-            ...session.user,
+            ...user,
             // Prioritize member name and image if available
-            name: member.name || session.user.name,
-            image: member.image || session.user.image,
+            name: member.name || user.name,
+            image: member.image || user.image,
             role: member.role,
-            organizationId: session.session.activeOrganizationId,
+            organizationId: organization.id, // Return local ID for app compatibility
             memberId: member.id, // Add memberId to the context
         },
-        session: session.session,
+        session: {
+            activeOrganizationId: organization.id, // Return local ID for app compatibility
+        },
         prisma,
     };
 };
