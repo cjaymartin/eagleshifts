@@ -26,12 +26,29 @@ export function OrgPicker({ organizations, currentOrgId }: OrgPickerProps) {
     const router = useRouter();
     const [val, setVal] = React.useState(currentOrgId || '');
 
+    React.useEffect(() => {
+        console.log('[OrgPicker] Mounted with:', {
+            organizationCount: organizations.length,
+            organizations: organizations.map((o) => ({
+                id: o.id,
+                name: o.name,
+            })),
+            currentOrgId,
+        });
+    }, [organizations, currentOrgId]);
+
     const handleChange = async (event: SelectChangeEvent) => {
         const newOrgId = event.target.value;
+        console.log('[OrgPicker] Organization selected:', {
+            orgId: newOrgId,
+            orgName: organizations.find((o) => o.id === newOrgId)?.name,
+        });
         setVal(newOrgId);
 
+        console.log('[OrgPicker] Calling setOrgCookie with:', newOrgId);
         // Set cookie via Server Action (handles redirect)
         await setOrgCookie(newOrgId);
+        console.log('[OrgPicker] setOrgCookie completed');
     };
 
     return (
