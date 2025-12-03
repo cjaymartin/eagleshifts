@@ -1,7 +1,10 @@
 'use client';
 
+import { useAuth } from '@workos-inc/authkit-react';
+import { useWorkOSContext } from '@/components/providers/AuthKitProvider';
 import { useEffect, useState } from 'react';
-import { Paper, Typography, Box, Divider } from '@mui/material';
+import { Paper, Typography, Box, Divider, Alert } from '@mui/material';
+import { Search as SearchIcon } from '@mui/icons-material';
 
 interface DebugInfo {
     workosSessionCookie: string;
@@ -10,6 +13,10 @@ interface DebugInfo {
 }
 
 export function DebugAuth() {
+    const { user: authUser, isLoading } = useAuth();
+    const { widgetToken, user: serverUser } = useWorkOSContext();
+    const user = authUser || serverUser;
+
     const [debugInfo, setDebugInfo] = useState<DebugInfo>({
         workosSessionCookie: '',
         cookieCount: 0,
@@ -56,6 +63,10 @@ export function DebugAuth() {
         });
     }, []);
 
+    // Removed redundant useEffect for setCookies since we use debugInfo
+
+    if (process.env.NODE_ENV === 'production') return null;
+
     return (
         <Paper
             sx={{
@@ -65,20 +76,39 @@ export function DebugAuth() {
                 border: '2px solid #2196f3',
             }}
         >
-            <Typography variant="h6" sx={{ color: '#0d47a1', mb: 1 }}>
-                🔍 Debug Auth Info (Client-Side)
+            <Typography
+                variant="h6"
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    color: '#0d47a1',
+                    mb: 1,
+                }}
+            >
+                <SearchIcon /> Debug Auth Info (Client-Side)
             </Typography>
 
             <Divider sx={{ my: 1 }} />
 
             <Box sx={{ mt: 1 }}>
-                <Typography
-                    variant="body2"
-                    sx={{ mb: 1, fontFamily: 'monospace', color: '#666' }}
-                >
-                    <strong>
-                        ℹ️ Organization tracking now uses WorkOS session
-                    </strong>
+                <Alert severity="info" sx={{ mt: 1, mb: 2 }}>
+                    Organization tracking now uses WorkOS session
+                </Alert>
+
+                <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>
+                    WorkOS Status:
+                </Typography>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                    User:{' '}
+                    {isLoading
+                        ? 'Loading...'
+                        : user
+                          ? `${user.firstName} (${user.email})`
+                          : 'Not logged in'}
+                </Typography>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                    Widget Token: {widgetToken ? '✅ Present' : '❌ Missing'}
                 </Typography>
 
                 <Typography

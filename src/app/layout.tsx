@@ -14,6 +14,7 @@ import { DialogsProvider } from '@toolpad/core';
 import { NotificationsProvider } from '@/components/providers/NotificationsProvider';
 import { TRPCProvider } from '@/lib/trpc/Provider';
 import { seedDatabase } from '@/utils/seedDatabase';
+import { AuthKitProvider } from '@/components/providers/AuthKitProvider';
 
 const roboto = Roboto({
     weight: ['300', '400', '500', '700'],
@@ -37,6 +38,12 @@ export const metadata: Metadata = {
     description: 'Go shift your work',
 };
 
+import { withAuth } from '@workos-inc/authkit-nextjs';
+import { WorkOS } from '@workos-inc/node';
+
+// Initialize WorkOS
+const workos = new WorkOS(process.env.WORKOS_API_KEY);
+
 export default async function RootLayout({
     children,
 }: Readonly<{
@@ -45,42 +52,70 @@ export default async function RootLayout({
     // Call seedDatabase function on server-side
     await seedDatabase();
 
+    // Generate WorkOS Widget Token if user is logged in
+    let widgetToken: string | undefined;
+    let user: any | undefined; // Using any to avoid type mismatch with AuthKit types for now
+
+    try {
+        const auth = await withAuth();
+        user = auth.user;
+        const organizationId = auth.organizationId;
+
+        if (user && organizationId) {
+            widgetToken = await workos.widgets.getToken({
+                userId: user.id,
+                organizationId,
+                scopes: ['widgets:users-table:manage', 'widgets:sso:manage'],
+            });
+        }
+    } catch (e) {
+        console.error('Error generating WorkOS widget token:', e);
+    }
+
     return (
         <html lang="en" className={roboto.variable} suppressHydrationWarning>
             {/*<CssBaseline />*/}
             <body>
-                <ClientLocalizationProvider>
-                    <DialogsProvider>
-                        <NotificationsProvider
-                            slotProps={{
-                                snackbar: {
-                                    anchorOrigin: {
-                                        vertical: 'bottom',
-                                        horizontal: 'left',
+                <AuthKitProvider
+                    clientId={process.env.WORKOS_CLIENT_ID!}
+                    widgetToken={widgetToken}
+                    user={user}
+                >
+                    <ClientLocalizationProvider>
+                        <DialogsProvider>
+                            <NotificationsProvider
+                                slotProps={{
+                                    snackbar: {
+                                        anchorOrigin: {
+                                            vertical: 'bottom',
+                                            horizontal: 'left',
+                                        },
                                     },
-                                },
-                            }}
-                        >
-                            <AppRouterCacheProvider>
-                                <TRPCProvider>
-                                    {/*<ReactQueryProvider>*/}
-                                    <SubdomainProvider>
-                                        <CookiesProvider>
-                                            <React.Suspense
-                                                fallback={<LinearProgress />}
-                                            >
-                                                <SmartAppProvider>
-                                                    {children}
-                                                </SmartAppProvider>
-                                            </React.Suspense>
-                                        </CookiesProvider>
-                                    </SubdomainProvider>
-                                    {/*</ReactQueryProvider>*/}
-                                </TRPCProvider>
-                            </AppRouterCacheProvider>
-                        </NotificationsProvider>
-                    </DialogsProvider>
-                </ClientLocalizationProvider>
+                                }}
+                            >
+                                <AppRouterCacheProvider>
+                                    <TRPCProvider>
+                                        {/*<ReactQueryProvider>*/}
+                                        <SubdomainProvider>
+                                            <CookiesProvider>
+                                                <React.Suspense
+                                                    fallback={
+                                                        <LinearProgress />
+                                                    }
+                                                >
+                                                    <SmartAppProvider>
+                                                        {children}
+                                                    </SmartAppProvider>
+                                                </React.Suspense>
+                                            </CookiesProvider>
+                                        </SubdomainProvider>
+                                        {/*</ReactQueryProvider>*/}
+                                    </TRPCProvider>
+                                </AppRouterCacheProvider>
+                            </NotificationsProvider>
+                        </DialogsProvider>
+                    </ClientLocalizationProvider>
+                </AuthKitProvider>
             </body>
         </html>
     );
