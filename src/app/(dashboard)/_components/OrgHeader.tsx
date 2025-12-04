@@ -1,23 +1,13 @@
 'use client';
 
-import { authClient } from '@/lib/auth-client';
 import { Chip, CircularProgress } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import React from 'react';
+import { useAuthQuery } from '@/queries/users';
 
 export default function OrgHeader() {
     const router = useRouter();
-
-    const session = authClient.useSession();
-
-    const { data: currentOrganization, isPending: isOrgPending } =
-        authClient.useActiveOrganization();
-
-    const isLoading = isOrgPending || session.isPending;
-
-    if (!session) {
-        return null; // or a loading state, or redirect to login
-    }
+    const { data: session, isLoading } = useAuthQuery();
 
     if (isLoading) {
         return (
@@ -29,17 +19,22 @@ export default function OrgHeader() {
         );
     }
 
-    if (!currentOrganization?.name) return <React.Fragment />;
+    if (!session?.organization?.name) {
+        return <React.Fragment />;
+    }
 
-    if (currentOrganization?.slug === 'admin') {
+    // Check if this is the admin organization by name
+    // We use name instead of ID because org IDs vary across environments
+    if (session.organization.name === 'Admin') {
         return (
             <Chip
                 variant="outlined"
                 onClick={() => router.push('/superadmin')}
-                label={currentOrganization.name}
+                label={session.organization.name}
+                sx={{ cursor: 'pointer' }}
             />
         );
     }
 
-    return <Chip label={currentOrganization.name} />;
+    return <Chip label={session.organization.name} />;
 }

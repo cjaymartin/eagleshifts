@@ -34,10 +34,20 @@ export const appRouter = router({
 
     session: router({
         get: router({
-            index: publicProcedure.query(({ ctx }) => {
+            index: publicProcedure.query(async ({ ctx }) => {
+                // If user is authenticated, fetch their organization info
+                let organization = null;
+                if (ctx.user?.organizationId) {
+                    organization = await ctx.prisma.organization.findUnique({
+                        where: { id: ctx.user.organizationId },
+                        select: { id: true, name: true, workosOrganizationId: true }
+                    });
+                }
+
                 return {
                     user: ctx.user,
                     session: ctx.session,
+                    organization,
                 };
             }),
         }),

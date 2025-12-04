@@ -1,29 +1,26 @@
 'use client';
 
 import { AuthKitProvider as WorkOSAuthKitProvider } from '@workos-inc/authkit-react';
-import { ReactNode, createContext, useContext } from 'react';
-
-interface User {
-    id: string;
-    email: string;
-    firstName?: string | null;
-    lastName?: string | null;
-    profilePictureUrl?: string | null;
-}
+import { WorkOsWidgets } from '@workos-inc/widgets';
+import { createContext, useContext } from 'react';
+import type { User } from '@workos-inc/node';
 
 interface AuthKitProviderProps {
-    children: ReactNode;
+    children: React.ReactNode; // Keep ReactNode for children prop
     clientId: string;
     widgetToken?: string;
     user?: User | null;
 }
 
-interface WorkOSContextType {
-    widgetToken?: string;
-    user?: User | null;
+interface WorkOSContextValue {
+    widgetToken: string | null;
+    user: User | null;
 }
 
-const WorkOSContext = createContext<WorkOSContextType>({});
+const WorkOSContext = createContext<WorkOSContextValue>({
+    widgetToken: null,
+    user: null,
+});
 
 export function useWorkOSContext() {
     return useContext(WorkOSContext);
@@ -42,9 +39,11 @@ export function AuthKitProvider({
     });
 
     return (
-        <WorkOSContext.Provider value={{ widgetToken, user }}>
+        <WorkOSContext.Provider
+            value={{ widgetToken: widgetToken || null, user: user || null }}
+        >
             <WorkOSAuthKitProvider clientId={clientId}>
-                {children}
+                <WorkOsWidgets>{children}</WorkOsWidgets>
             </WorkOSAuthKitProvider>
         </WorkOSContext.Provider>
     );

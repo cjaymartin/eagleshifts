@@ -12,9 +12,10 @@ import {
     Divider,
     ListItemIcon,
 } from '@mui/material';
-import { Logout, Person } from '@mui/icons-material';
+import { Logout, Person, Business } from '@mui/icons-material';
 import { useAuth } from '@workos-inc/authkit-react';
 import { useWorkOSContext } from '@/components/providers/AuthKitProvider';
+import Link from 'next/link';
 
 export function WorkOSUserButton() {
     const { user: authUser, signOut } = useAuth();
@@ -127,11 +128,25 @@ export function WorkOSUserButton() {
                     </Typography>
                 </Box>
                 <Divider />
-                <MenuItem onClick={handleClose}>
+                <MenuItem
+                    component={Link}
+                    href="/account"
+                    onClick={handleClose}
+                >
                     <ListItemIcon>
                         <Person fontSize="small" />
                     </ListItemIcon>
-                    Profile
+                    My Account
+                </MenuItem>
+                <MenuItem
+                    component={Link}
+                    href="/business"
+                    onClick={handleClose}
+                >
+                    <ListItemIcon>
+                        <Business fontSize="small" />
+                    </ListItemIcon>
+                    My Business
                 </MenuItem>
                 <MenuItem onClick={handleSignOut}>
                     <ListItemIcon>

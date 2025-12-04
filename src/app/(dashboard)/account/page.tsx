@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation';
 import MyProfileForm from './_components/MyProfileForm';
 import NotificationsForm from './_components/NotificationsForm';
 import IcalLinkControl from './_components/IcalLinkControl';
+import { WorkOSUserProfile } from '@/components/WorkOSUserProfile';
+import { WorkOSUserSessions } from '@/components/WorkOSUserSessions';
 
 export default function AccountPage() {
     const [activeTab, setActiveTab] = useState('profile');
@@ -55,7 +57,17 @@ export default function AccountPage() {
                     <Typography variant="h4" sx={{ mb: 2 }}>
                         My Profile
                     </Typography>
-                    <MyProfileForm />
+
+                    <Box sx={{ mb: 4 }}>
+                        <WorkOSUserProfile />
+                    </Box>
+
+                    <Typography variant="h4" sx={{ mb: 2 }}>
+                        Security & Sessions
+                    </Typography>
+                    <Box sx={{ mb: 4 }}>
+                        <WorkOSUserSessions />
+                    </Box>
 
                     <Typography variant="h4" sx={{ mt: 4, mb: 2 }}>
                         iCal Link

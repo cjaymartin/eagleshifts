@@ -67,6 +67,11 @@ export default function BusinessProfileForm() {
                 severity: 'success',
                 autoHideDuration: 3000,
             });
+
+            // Refresh the page to update the WorkOS organization picker
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         } catch (error: any) {
             notifications.show('Failed to update business profile', {
                 severity: 'error',

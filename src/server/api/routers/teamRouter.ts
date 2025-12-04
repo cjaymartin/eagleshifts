@@ -124,11 +124,27 @@ export const teamRouter = router({
                 });
             }
 
-            // Update organization name
+            // Update organization name in local database
             await ctx.prisma.organization.update({
                 where: { id: ctx.user.organizationId },
                 data: { name: input.name },
             });
+
+            // Sync organization name with WorkOS
+            if (organization.workosOrganizationId) {
+                try {
+                    const { WorkOS } = await import('@workos-inc/node');
+                    const workos = new WorkOS(process.env.WORKOS_API_KEY);
+                    
+                    await workos.organizations.updateOrganization({
+                        organization: organization.workosOrganizationId,
+                        name: input.name,
+                    });
+                } catch (error) {
+                    console.error('Failed to sync organization name with WorkOS:', error);
+                    // Don't fail the entire request if WorkOS sync fails
+                }
+            }
 
             return {
                 success: true,

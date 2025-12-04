@@ -1,21 +1,29 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { Organization } from "@/generated/prisma";
-import {authClient} from "@/lib/auth-client";
+import { withAuth } from '@workos-inc/authkit-nextjs';
+import { WorkOS } from '@workos-inc/node';
+
+const workos = new WorkOS(process.env.WORKOS_API_KEY);
 
 // Authentication check function
 async function checkSuperAdminAccess() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const isGod = session?.user?.email === "cjay.martin@gmail.com";
-
-  if (!isGod) {
+  const { user, organizationId } = await withAuth();
+  
+  if (!user || !organizationId) {
     throw new Error("Unauthorized");
   }
 
-  return session;
+  // Get organization details from WorkOS
+  const organization = await workos.organizations.getOrganization(organizationId);
+
+  // Check if this is the admin organization
+  if (organization.name !== 'Admin') {
+    throw new Error("Unauthorized - must be in Admin organization");
+  }
+
+  return { user, organization };
 }
 
 // Fetch multiple organizations with pagination
@@ -55,20 +63,15 @@ export async function getOneOrganization(id: string) {
 export async function createOrganization(data: Partial<Organization>) {
   await checkSuperAdminAccess();
 
-  await auth.api.checkOrganizationSlug({
-    body: {
-      slug: data.slug!,
-    },
-    headers: await headers(),
-  })
-
-
-  return await auth.api.createOrganization({
-    body: {
+  // Create organization directly in database
+  // Note: WorkOS organization sync should be handled separately if needed
+  return prisma.organization.create({
+    data: {
+      id: data.id || crypto.randomUUID(),
       name: data.name!,
-      slug: data.slug!,
-    },
-    headers: await headers(),
+      slug: data.slug,
+      metadata: data.metadata || null,
+    }
   });
 }
 
@@ -76,21 +79,14 @@ export async function createOrganization(data: Partial<Organization>) {
 export async function updateOrganization(organizationId: string, data: Partial<Organization>) {
   await checkSuperAdminAccess();
 
-  return await auth.api.updateOrganization({
-    body: {
-      organizationId,
-      data: {
-        name: data.name!,
-        slug: data.slug!,
-      }
-    },
-    headers: await headers(),
+  return prisma.organization.update({
+    where: { id: organizationId },
+    data: {
+      name: data.name,
+      slug: data.slug,
+      metadata: data.metadata,
+    }
   });
-
-  // return prisma.organization.update({
-  //   where: { id },
-  //   data
-  // });
 }
 
 // Delete an organization by ID

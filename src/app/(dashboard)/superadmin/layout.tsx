@@ -1,21 +1,39 @@
-import {auth} from "@/lib/auth";
-import {headers} from "next/headers";
-import {redirect} from "next/navigation";
+import { withAuth } from '@workos-inc/authkit-nextjs';
+import { redirect } from 'next/navigation';
+import { WorkOS } from '@workos-inc/node';
 
-export default async function SuperadminLayout({children} : { children: React.ReactNode }) {
-  const session = await auth.api.getSession({
-    headers: await headers() // you need to pass the headers object.
-  });
+const workos = new WorkOS(process.env.WORKOS_API_KEY);
 
-  //VERY TEMPORARY HACK
-  const isGod = session?.user?.email === "cjay.martin@gmail.com";
+export default async function SuperadminLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    const { user, organizationId } = await withAuth();
 
-  console.log("ARE YOU A GOD? ", isGod ? "Yes, les I am" : "No, I am not");
-  if(!isGod) {
-    return redirect("/");
-  }
+    if (!user || !organizationId) {
+        return redirect('/');
+    }
 
-  return <>
-    {children}
-  </>
+    // Get organization details from WorkOS
+    const organization =
+        await workos.organizations.getOrganization(organizationId);
+
+    // Check if this is the admin organization (identified by name)
+    const isAdmin = organization.name === 'Admin';
+
+    console.log('[Superadmin] Access check:', {
+        userId: user.id,
+        userEmail: user.email,
+        orgId: organizationId,
+        orgName: organization.name,
+        isAdmin,
+    });
+
+    if (!isAdmin) {
+        console.log('[Superadmin] Access denied - not in Admin organization');
+        return redirect('/');
+    }
+
+    return <>{children}</>;
 }
