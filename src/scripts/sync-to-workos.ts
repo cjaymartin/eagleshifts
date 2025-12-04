@@ -18,6 +18,12 @@ async function main() {
     for (const org of organizations) {
       try {
         let workosOrgId = org.workosOrganizationId;
+        
+        // If no explicit link, check if the ID itself is a WorkOS ID
+        if (!workosOrgId && org.id.startsWith('org_')) {
+            workosOrgId = org.id;
+        }
+
         let createdOrg;
 
         if (workosOrgId) {
@@ -31,22 +37,25 @@ async function main() {
             }
         }
 
-        if (!workosOrgId) {
-            // Create or get organization in WorkOS using idempotency key
+        if (!createdOrg) {
+            // Create or get organization in WorkOS
             createdOrg = await workos.organizations.createOrganization({
               name: org.name,
-              allowExistingOrganizationName: true,
-              idempotencyKey: org.id // Use our DB ID as idempotency key
             });
             
             log(`Synced Organization: ${org.name} (${createdOrg.id})`);
+            
+            // If the local ID matches the WorkOS ID, we are good.
+            // If not, we MUST save the link in workosOrganizationId
+            if (org.id !== createdOrg.id) {
+                await prisma.organization.update({
+                    where: { id: org.id },
+                    data: { workosOrganizationId: createdOrg.id },
+                });
+                log(`Updated local organization ${org.name} with workosOrganizationId: ${createdOrg.id}`);
+            }
+            
             workosOrgId = createdOrg.id;
-
-            // Update local organization with WorkOS ID
-            await prisma.organization.update({
-                where: { id: org.id },
-                data: { workosOrganizationId: workosOrgId },
-            });
         }
 
         // 2. Sync Members

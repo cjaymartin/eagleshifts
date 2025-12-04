@@ -33,7 +33,7 @@ export async function seedDatabase() {
     try {
         // 2. Check if "Admin" organization already exists
         const existingAdminOrg = await prisma.organization.findFirst({
-            where: { slug: 'admin' },
+            where: { name: 'Admin' },
         });
 
         if (existingAdminOrg) {
@@ -47,7 +47,6 @@ export async function seedDatabase() {
             data: {
                 id: '00000000-0000-0000-0000-000000000000', // Fixed ID for admin organization
                 name: 'Admin',
-                slug: 'admin',
             },
         });
 
@@ -57,7 +56,6 @@ export async function seedDatabase() {
             data: {
                 id: uuidv4(),
                 name: 'Test',
-                slug: 'test',
             },
         });
 

@@ -47,9 +47,15 @@ export const createTRPCContext = async () => {
     });
 
     // Find Organization by WorkOS Organization ID from session
-    console.log('[TRPC Context] Looking up organization by workosOrganizationId:', workosOrgId);
-    const organization = await prisma.organization.findUnique({
-        where: { workosOrganizationId: workosOrgId }
+    // We check both 'id' (for new/migrated orgs) and 'workosOrganizationId' (for legacy orgs)
+    console.log('[TRPC Context] Looking up organization by ID:', workosOrgId);
+    const organization = await prisma.organization.findFirst({
+        where: {
+            OR: [
+                { id: workosOrgId },
+                { workosOrganizationId: workosOrgId }
+            ]
+        }
     });
 
     if (!organization) {
@@ -58,7 +64,7 @@ export const createTRPCContext = async () => {
         
         // Debug: List all organizations to help troubleshoot
         const allOrgs = await prisma.organization.findMany({
-            select: { id: true, name: true, workosOrganizationId: true }
+            select: { id: true, name: true }
         });
         console.error('[TRPC Context] Available organizations in DB:', allOrgs);
         
@@ -71,7 +77,6 @@ export const createTRPCContext = async () => {
     console.log('[TRPC Context] Found organization:', {
         id: organization.id,
         name: organization.name,
-        workosOrganizationId: organization.workosOrganizationId,
     });
 
     console.log('[TRPC Context] Looking up member:', {
