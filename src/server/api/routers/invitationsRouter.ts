@@ -10,6 +10,7 @@ import { TRPCError } from '@trpc/server';
 import { v4 as uuidv4 } from 'uuid';
 import { logTeamInviteSend, logTeamInviteAccept } from '@/lib/logging';
 import { sendInvitationEmail } from '@/lib/email';
+import workos from '@/lib/workos';
 
 export const invitationsRouter = router({
     // Create an invitation and an inactive member
@@ -165,7 +166,7 @@ export const invitationsRouter = router({
                 });
             }
 
-            // Get the inviter's information
+            // Get the inviter's information - try local Member first, then fallback to context user
             const inviter = await ctx.prisma.member.findFirst({
                 where: {
                     userId: ctx.user.id,
@@ -176,28 +177,67 @@ export const invitationsRouter = router({
                 },
             });
 
-            if (!inviter) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Inviter not found',
-                });
-            }
+            // Create inviter info from local member or context user (for WorkOS-only users)
+            const inviterInfo = inviter 
+                ? {
+                    name: inviter.name || inviter.user.name,
+                    email: inviter.user.email,
+                }
+                : {
+                    // Fallback to WorkOS user data from context
+                    name: ctx.user.name || ctx.user.email,
+                    email: ctx.user.email,
+                };
 
-            // Only send the invitation email if sendInvitation is true
+            // Only send the invitation if sendInvitation is true
             if (sendInvitation) {
-                await sendInvitationEmail({
-                    id: invitation.id,
-                    email,
-                    inviter: {
-                        user: {
-                            name: inviter.name || inviter.user.name,
-                            email: inviter.user.email,
+                // Use WorkOS to send the invitation - this creates the invite in WorkOS
+                const workosOrgId = ctx.user.workosOrgId;
+                if (workosOrgId) {
+                    try {
+                        // Map our role to WorkOS role slug
+                        const roleSlugMap: Record<string, string> = {
+                            'owner': 'admin', // WorkOS doesn't have 'owner', use 'admin'
+                            'admin': 'admin',
+                            'member': 'member',
+                        };
+                        
+                        const workosInvitation = await workos.userManagement.sendInvitation({
+                            email,
+                            organizationId: workosOrgId,
+                            expiresInDays: 7,
+                            inviterUserId: ctx.user.workosUserId || undefined,
+                            roleSlug: roleSlugMap[role] || 'member',
+                        });
+                        
+                        console.log('[createInvitation] WorkOS invitation sent:', workosInvitation.id);
+                    } catch (err: any) {
+                        console.error('[createInvitation] WorkOS invitation failed:', err.message);
+                        // Fall back to email-based invitation if WorkOS fails
+                        await sendInvitationEmail({
+                            id: invitation.id,
+                            email,
+                            inviter: {
+                                user: inviterInfo,
+                            },
+                            organization: {
+                                name: organization.name,
+                            },
+                        });
+                    }
+                } else {
+                    // No WorkOS org - use legacy email-based invitation
+                    await sendInvitationEmail({
+                        id: invitation.id,
+                        email,
+                        inviter: {
+                            user: inviterInfo,
                         },
-                    },
-                    organization: {
-                        name: organization.name,
-                    },
-                });
+                        organization: {
+                            name: organization.name,
+                        },
+                    });
+                }
             }
 
             // Log the invitation creation

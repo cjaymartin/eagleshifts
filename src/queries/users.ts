@@ -7,23 +7,36 @@ export function useAuthQuery() {
 }
 
 export function useTeamUsersQuery() {
-    const { data: session } = useAuthQuery();
+    const { data: session, isLoading: isSessionLoading } = useAuthQuery();
     const role = session?.user?.role || 'member';
     const isAdmin = ['admin', 'owner'].includes(role);
 
-    // If user is not an admin, return an empty array without querying the endpoint
+    console.log('[useTeamUsersQuery] Debug:', { 
+        role, 
+        isAdmin, 
+        isSessionLoading, 
+        sessionUser: session?.user 
+    });
+
+    // Always call the hook (rules of hooks), but only enable for admins
+    const query = trpc.users.listWorkOSMembers.useQuery(undefined, {
+        enabled: isAdmin && !isSessionLoading,
+    });
+
+    // Return empty array for non-admins
     if (!isAdmin) {
         return {
             data: [],
             isLoading: false,
             isError: false,
             error: null,
-            status: 'success',
-        } as const;
+            status: 'success' as const,
+        };
     }
 
-    return trpc.users.list.useQuery();
+    return query;
 }
+
 
 export function useInvitationListQuery() {
     return useQuery({

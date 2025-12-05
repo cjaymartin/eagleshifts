@@ -14,6 +14,7 @@ import {
     logTeamInviteSend,
     logTeamInviteAccept,
 } from '@/lib/logging';
+import workos from '@/lib/workos';
 
 export const usersRouter = router({
     // Get user by ID - all authenticated users can read user data
@@ -170,6 +171,328 @@ export const usersRouter = router({
 
         return mappedUsers;
     }),
+
+    // List organization members from WorkOS, merged with local Prisma data
+    listWorkOSMembers: adminProcedure.query(async ({ ctx }) => {
+        const workosOrgId = ctx.user.workosOrgId;
+        
+        if (!workosOrgId) {
+            console.warn('[listWorkOSMembers] No WorkOS org ID, falling back to Prisma-only data');
+            // Fallback to existing list behavior if no WorkOS org
+            const users = await ctx.prisma.user.findMany({
+                where: {
+                    members: {
+                        some: {
+                            organizationId: ctx.user.organizationId,
+                        },
+                    },
+                },
+                include: {
+                    members: {
+                        where: {
+                            organizationId: ctx.user.organizationId,
+                        },
+                    },
+                },
+            });
+            
+            return users.map((user) => {
+                const member = user.members[0];
+                return {
+                    id: member.id,
+                    workosUserId: null,
+                    userId: user.id,
+                    name: member.name || user.name,
+                    email: user.email,
+                    image: member.image || user.image,
+                    role: member.role,
+                    isActivated: member.isActivated,
+                    isAvailableByDefault: member.isAvailableByDefault,
+                    memberId: member.id,
+                };
+            });
+        }
+
+        // Fetch users directly from WorkOS for this organization
+        const workosUsersResponse = await workos.userManagement.listUsers({
+            organizationId: workosOrgId,
+        });
+
+        const workosUsers = workosUsersResponse.data;
+        console.log('[listWorkOSMembers] WorkOS users found:', workosUsers.length);
+
+        // Get local members for app-specific data (availability, iCal, etc)
+        const localMembers = await ctx.prisma.member.findMany({
+            where: {
+                organizationId: ctx.user.organizationId,
+            },
+            include: {
+                user: true,
+            },
+        });
+
+        // Create lookup by email for local members
+        const localMembersByEmail: Record<string, typeof localMembers[0]> = {};
+        for (const member of localMembers) {
+            if (member.user.email) {
+                localMembersByEmail[member.user.email.toLowerCase()] = member;
+            }
+        }
+
+        // Track which local members have been matched to WorkOS users
+        const matchedLocalMemberEmails = new Set<string>();
+
+        // Merge WorkOS users with local data
+        const mergedUsers = workosUsers.map((user) => {
+            const localMember = user.email ? localMembersByEmail[user.email.toLowerCase()] : null;
+            
+            if (localMember && user.email) {
+                matchedLocalMemberEmails.add(user.email.toLowerCase());
+                
+                // If local member exists but isn't activated, they accepted the WorkOS invite
+                // Activate them in the background (fire and forget)
+                if (!localMember.isActivated) {
+                    ctx.prisma.member.update({
+                        where: { id: localMember.id },
+                        data: { 
+                            isActivated: true,
+                            // Update name from WorkOS if local name is placeholder/email-based
+                            name: user.firstName + (user.lastName ? ' ' + user.lastName : ''),
+                        },
+                    }).catch(err => console.error('[listWorkOSMembers] Failed to activate member:', err));
+                }
+            }
+            
+            // Use WorkOS user's name since they've authenticated
+            const workosName = (user.firstName || '') + (user.lastName ? ' ' + user.lastName : '');
+            
+            return {
+                // Use local member ID if available, otherwise use WorkOS user ID
+                id: localMember?.id || user.id,
+                workosUserId: user.id,
+                userId: localMember?.user.id || user.id,
+                // Prefer WorkOS name for activated users
+                name: workosName.trim() || localMember?.name || user.email || '',
+                email: user.email || '',
+                image: localMember?.image || user.profilePictureUrl || null,
+                role: localMember?.role || 'member', // Default to member since listUsers doesn't give role
+                isActivated: true, // WorkOS users are always considered activated
+                isAvailableByDefault: localMember?.isAvailableByDefault ?? true,
+                memberId: localMember?.id || null, // null if no local member record yet
+            };
+        });
+
+        // Add local-only members (not in WorkOS) to the list
+        const localOnlyMembers = localMembers
+            .filter(member => {
+                // Exclude members already matched to WorkOS users
+                if (member.user.email && matchedLocalMemberEmails.has(member.user.email.toLowerCase())) {
+                    return false;
+                }
+                
+                // FILTER: Only include local members if they are explicit "Non-Account Members"
+                // (identified by placeholder email).
+                // Any other local member who is NOT in WorkOS is considered a "zombie" (leaked/stale data)
+                // and should be hidden from the dropdown.
+                const isPlaceholder = member.user.email?.includes('@placeholder.local');
+                return isPlaceholder;
+            })
+            .map(member => ({
+                id: member.id,
+                workosUserId: null,
+                userId: member.user.id,
+                name: member.name || member.user.name || member.user.email,
+                email: member.user.email,
+                image: member.image || member.user.image || null,
+                role: member.role,
+                isActivated: member.isActivated,
+                isAvailableByDefault: member.isAvailableByDefault,
+                memberId: member.id,
+            }));
+
+        const allMembers = [...mergedUsers, ...localOnlyMembers];
+        console.log('[listWorkOSMembers] Total members:', allMembers.length, 
+            '(WorkOS:', mergedUsers.length, ', Local-only:', localOnlyMembers.length, ')');
+        return allMembers;
+    }),
+
+    // List non-account members (local-only members who work shifts but don't have login accounts)
+    listNonAccountMembers: adminProcedure.query(async ({ ctx }) => {
+        const members = await ctx.prisma.member.findMany({
+            where: {
+                organizationId: ctx.user.organizationId,
+                isActivated: false,
+                // Only include members with placeholder email
+                user: {
+                    email: { contains: '@placeholder.local' },
+                },
+            },
+            include: {
+                user: true,
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+
+
+        return members.map(member => ({
+            id: member.id,
+            userId: member.user.id,
+            name: member.name || member.user.name || 'Unknown',
+            role: member.role,
+            isAvailableByDefault: member.isAvailableByDefault,
+            createdAt: member.createdAt,
+        }));
+    }),
+
+    // Create a non-account member (local-only, no email/login)
+    createNonAccountMember: adminProcedure
+        .input(
+            z.object({
+                name: z.string().min(1, 'Name is required'),
+                role: z.enum(['member', 'admin']).default('member'),
+                isAvailableByDefault: z.boolean().default(true),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { name, role, isAvailableByDefault } = input;
+
+            // Create a placeholder user with no real email
+            const placeholderEmail = `no-email-${uuidv4()}@placeholder.local`;
+            
+            const user = await ctx.prisma.user.create({
+                data: {
+                    id: uuidv4(),
+                    email: placeholderEmail,
+                    name: name,
+                    emailVerified: false,
+                    banned: true, // Can't log in
+                    banReason: 'Non-account member',
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                },
+            });
+
+            // Create the member record
+            const member = await ctx.prisma.member.create({
+                data: {
+                    id: uuidv4(),
+                    userId: user.id,
+                    organizationId: ctx.user.organizationId,
+                    role,
+                    name,
+                    isActivated: false, // Not activated until they have a real account
+                    isAvailableByDefault,
+                    createdAt: new Date(),
+                },
+            });
+
+            console.log('[createNonAccountMember] Created:', { memberId: member.id, name });
+
+            return {
+                success: true,
+                member: {
+                    id: member.id,
+                    userId: user.id,
+                    name: member.name,
+                    role: member.role,
+                    isAvailableByDefault: member.isAvailableByDefault,
+                },
+            };
+        }),
+
+    // Invite a non-account member (add email and send WorkOS invitation)
+    inviteNonAccountMember: adminProcedure
+        .input(
+            z.object({
+                memberId: z.string(),
+                email: z.string().email('Valid email is required'),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { memberId, email } = input;
+
+            // Find the non-account member
+            const member = await ctx.prisma.member.findFirst({
+                where: {
+                    id: memberId,
+                    organizationId: ctx.user.organizationId,
+                    isActivated: false,
+                },
+                include: {
+                    user: true,
+                },
+            });
+
+            if (!member) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Non-account member not found',
+                });
+            }
+
+            // Check if email is already in use by another user
+            const existingUser = await ctx.prisma.user.findUnique({
+                where: { email: email.toLowerCase() },
+            });
+
+            if (existingUser && existingUser.id !== member.userId) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'This email is already associated with another account',
+                });
+            }
+
+            // Update the placeholder user with the real email
+            await ctx.prisma.user.update({
+                where: { id: member.userId },
+                data: {
+                    email: email.toLowerCase(),
+                    banned: false, // Allow login now
+                    banReason: null,
+                },
+            });
+
+            // Send WorkOS invitation
+            const workosOrgId = ctx.user.workosOrgId;
+            if (workosOrgId) {
+                try {
+                    const roleSlugMap: Record<string, string> = {
+                        'owner': 'admin',
+                        'admin': 'admin',
+                        'member': 'member',
+                    };
+
+                    const workosInvitation = await workos.userManagement.sendInvitation({
+                        email: email.toLowerCase(),
+                        organizationId: workosOrgId,
+                        expiresInDays: 7,
+                        inviterUserId: ctx.user.workosUserId || undefined,
+                        roleSlug: roleSlugMap[member.role] || 'member',
+                    });
+
+                    console.log('[inviteNonAccountMember] WorkOS invitation sent:', workosInvitation.id);
+
+                    return {
+                        success: true,
+                        message: 'Invitation sent successfully',
+                        workosInvitationId: workosInvitation.id,
+                    };
+                } catch (err: any) {
+                    console.error('[inviteNonAccountMember] WorkOS invitation failed:', err.message);
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: `Failed to send invitation: ${err.message}`,
+                    });
+                }
+            } else {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Organization is not connected to WorkOS',
+                });
+            }
+        }),
 
     updateDefaultAvailability: adminProcedure
         .input(
@@ -472,7 +795,7 @@ export const usersRouter = router({
                         });
                     }
 
-                    // Get the inviter's information
+                    // Get the inviter's information - try local Member first, fallback to context
                     const inviter = await ctx.prisma.member.findFirst({
                         where: {
                             userId: ctx.user.id,
@@ -483,12 +806,16 @@ export const usersRouter = router({
                         },
                     });
 
-                    if (!inviter) {
-                        throw new TRPCError({
-                            code: 'NOT_FOUND',
-                            message: 'Inviter not found',
-                        });
-                    }
+                    // Create inviter info from local member or context user (for WorkOS-only users)
+                    const inviterInfo = inviter 
+                        ? {
+                            name: inviter.name || inviter.user.name,
+                            email: inviter.user.email,
+                        }
+                        : {
+                            name: ctx.user.name || ctx.user.email,
+                            email: ctx.user.email,
+                        };
 
                     // Send the invitation email
                     const { sendInvitationEmail } = await import('@/lib/email');
@@ -496,10 +823,7 @@ export const usersRouter = router({
                         id: invitationId,
                         email: actualEmail,
                         inviter: {
-                            user: {
-                                name: inviter.name || inviter.user.name,
-                                email: inviter.user.email,
-                            },
+                            user: inviterInfo,
                         },
                         organization: {
                             name: organization.name,

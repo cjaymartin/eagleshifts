@@ -55,6 +55,85 @@ export const createTRPCContext = async () => {
             },
         });
     }
+    
+    // ========== AUTO-MERGE: Link non-account members when email matches ==========
+    // If user has no local member, check if there's an unactivated member with matching email
+    // This handles the case where someone was added as a "non-account member" and later signed up
+    if (!localMember && localOrg && workosUser.email) {
+        const unactivatedMemberWithEmail = await prisma.member.findFirst({
+            where: {
+                organizationId: localOrg.id,
+                isActivated: false,
+                user: {
+                    email: workosUser.email.toLowerCase(),
+                },
+            },
+            include: {
+                user: true,
+            },
+        });
+        
+        if (unactivatedMemberWithEmail) {
+            // Found a non-account member with matching email - merge it!
+            console.log('[TRPC Context] Auto-merging non-account member:', {
+                memberId: unactivatedMemberWithEmail.id,
+                email: workosUser.email,
+            });
+            
+            try {
+                // If we have a localUser, link the member to them
+                // Otherwise, update the placeholder user with WorkOS data
+                if (localUser) {
+                    // Update member to point to the real user
+                    await prisma.member.update({
+                        where: { id: unactivatedMemberWithEmail.id },
+                        data: {
+                            userId: localUser.id,
+                            isActivated: true,
+                            name: workosUser.firstName + ' ' + (workosUser.lastName || ''),
+                        },
+                    });
+                    
+                    // Clean up the placeholder user (if different from localUser)
+                    if (unactivatedMemberWithEmail.userId !== localUser.id) {
+                        await prisma.user.delete({
+                            where: { id: unactivatedMemberWithEmail.userId },
+                        }).catch(() => {}); // Ignore if it fails (may have other refs)
+                    }
+                    
+                    localMember = await prisma.member.findUnique({
+                        where: { id: unactivatedMemberWithEmail.id },
+                    });
+                } else {
+                    // Update the placeholder user and activate member
+                    await prisma.user.update({
+                        where: { id: unactivatedMemberWithEmail.userId },
+                        data: {
+                            name: workosUser.firstName + ' ' + (workosUser.lastName || ''),
+                            banned: false,
+                            banReason: null,
+                        },
+                    });
+                    
+                    await prisma.member.update({
+                        where: { id: unactivatedMemberWithEmail.id },
+                        data: {
+                            isActivated: true,
+                            name: workosUser.firstName + ' ' + (workosUser.lastName || ''),
+                        },
+                    });
+                    
+                    localMember = await prisma.member.findUnique({
+                        where: { id: unactivatedMemberWithEmail.id },
+                    });
+                }
+                
+                console.log('[TRPC Context] Auto-merge complete:', { memberId: localMember?.id });
+            } catch (err: any) {
+                console.error('[TRPC Context] Auto-merge failed:', err.message);
+            }
+        }
+    }
 
     // ========== BUILD CONTEXT USER ==========
     // Use WorkOS data as base, enhance with local data if available

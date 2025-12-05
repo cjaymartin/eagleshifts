@@ -113,22 +113,18 @@ export default function TeamMemberAutocomplete(
     }, [exclude]);
 
     const memberOptions = useMemo(() => {
-        if (!teamUsers || !userLookup) return [];
+        console.log('[TeamMemberAutocomplete] teamUsers:', teamUsers);
+        if (!teamUsers) return [];
 
-        // Flatten all members from all users
-        const allMembers = teamUsers.flatMap((user) =>
-            (user.members || []).map((member) => ({
-                ...member,
-                user,
-            }))
-        );
-
-        return allMembers
+        // listWorkOSMembers now returns flat member objects directly
+        // Each item has: id, workosUserId, userId, name, email, role, isActivated, isAvailableByDefault, memberId
+        return teamUsers
             .filter((member) => !excludeLookup[member.id])
             .map((member) => {
                 const isAvailable =
                     userAvailabilityListLookup?.[member.id]?.isAvailable ??
-                    false;
+                    member.isAvailableByDefault ??
+                    true;
 
                 // Check if member has shifts on the same day
                 const hasShifts = memberShiftsLookup[member.id] || false;
@@ -145,7 +141,7 @@ export default function TeamMemberAutocomplete(
 
                 return {
                     ...member,
-                    label: member.name || member.user.name,
+                    label: member.name || member.email || 'Unknown',
                     isAvailable,
                     hasShifts,
                     availabilityStatus,
@@ -155,7 +151,6 @@ export default function TeamMemberAutocomplete(
         excludeLookup,
         teamUsers,
         userAvailabilityListLookup,
-        userLookup,
         memberShiftsLookup,
     ]);
 
@@ -167,76 +162,83 @@ export default function TeamMemberAutocomplete(
         return availData?.isAvailable ?? true;
     }
 
+    const { data: session, isLoading: isSessionLoading } =
+        trpc.session.get.index.useQuery();
+    const role = session?.user?.role || 'member';
+    const isAdmin = ['admin', 'owner'].includes(role);
+
     const label = props.label || 'Team Member';
     return (
-        <Autocomplete
-            {...acProps}
-            onChange={(_, v) => {
-                if (props.onChange) {
-                    props.onChange((v as { id: string }) ?? null);
-                }
-            }}
-            options={memberOptions}
-            renderOption={(props, rawOption, state) => {
-                const option = rawOption as (typeof memberOptions)[0];
+        <>
+            <Autocomplete
+                {...acProps}
+                onChange={(_, v) => {
+                    if (props.onChange) {
+                        props.onChange((v as { id: string }) ?? null);
+                    }
+                }}
+                options={memberOptions}
+                renderOption={(props, rawOption, state) => {
+                    const option = rawOption as (typeof memberOptions)[0];
 
-                // Determine typography and icon based on availability status
-                let Typ;
-                let availIcon;
+                    // Determine typography and icon based on availability status
+                    let Typ;
+                    let availIcon;
 
-                console.log({ option });
+                    console.log({ option });
 
-                switch (option.availabilityStatus) {
-                    case 'available':
-                        Typ = AvailableTextTypography;
-                        availIcon = (
-                            <ListItemIcon key={props.key + '-icon'}>
-                                <EventAvailable color="available" />
-                            </ListItemIcon>
-                        );
-                        break;
-                    case 'tentative':
-                        Typ = TentativeTextTypography;
-                        availIcon = (
-                            <ListItemIcon key={props.key + '-icon'}>
-                                <Event color={'tentative' as any} />
-                            </ListItemIcon>
-                        );
-                        break;
-                    case 'unavailable':
-                    default:
-                        Typ = UnavailableTextTypography;
-                        availIcon = (
-                            <ListItemIcon key={props.key + '-icon'}>
-                                <EventBusy
-                                    key={props.key + '-icon'}
-                                    color="unavailable"
-                                />
-                            </ListItemIcon>
-                        );
-                        break;
-                }
-                return (
-                    <MenuItem {...props} key={props.key} value={option.id}>
-                        {availIcon}
-                        <ListItemText
-                            key={props.key + '-text'}
-                            color={option.availabilityStatus}
-                        >
-                            <Typ>{option.label}</Typ>
-                        </ListItemText>
-                    </MenuItem>
-                );
-            }}
-            // getOptionLabel={(option) => option?.label || ''}
-            // isOptionEqualToValue={(option, value) => option.id === value}
-            renderInput={(params) => (
-                <TextField
-                    {...params}
-                    label={props.value ? ' ' : label}
-                    placeholder={label}
-                />
-            )}
-        />
+                    switch (option.availabilityStatus) {
+                        case 'available':
+                            Typ = AvailableTextTypography;
+                            availIcon = (
+                                <ListItemIcon key={props.key + '-icon'}>
+                                    <EventAvailable color="available" />
+                                </ListItemIcon>
+                            );
+                            break;
+                        case 'tentative':
+                            Typ = TentativeTextTypography;
+                            availIcon = (
+                                <ListItemIcon key={props.key + '-icon'}>
+                                    <Event color={'tentative' as any} />
+                                </ListItemIcon>
+                            );
+                            break;
+                        case 'unavailable':
+                        default:
+                            Typ = UnavailableTextTypography;
+                            availIcon = (
+                                <ListItemIcon key={props.key + '-icon'}>
+                                    <EventBusy
+                                        key={props.key + '-icon'}
+                                        color="unavailable"
+                                    />
+                                </ListItemIcon>
+                            );
+                            break;
+                    }
+                    return (
+                        <MenuItem {...props} key={props.key} value={option.id}>
+                            {availIcon}
+                            <ListItemText
+                                key={props.key + '-text'}
+                                color={option.availabilityStatus}
+                            >
+                                <Typ>{option.label}</Typ>
+                            </ListItemText>
+                        </MenuItem>
+                    );
+                }}
+                // getOptionLabel={(option) => option?.label || ''}
+                // isOptionEqualToValue={(option, value) => option.id === value}
+                renderInput={(params) => (
+                    <TextField
+                        {...params}
+                        label={props.value ? ' ' : label}
+                        placeholder={label}
+                    />
+                )}
+            />
+        </>
     );
 }
