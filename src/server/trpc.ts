@@ -2,22 +2,12 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import superjson from 'superjson';
 import { withAuth } from '@workos-inc/authkit-nextjs';
 import { prisma } from '@/lib/prisma';
+import workos from '@/lib/workos';
 
 export const createTRPCContext = async () => {
-    console.log('[TRPC Context] === START ===');
     const { user: workosUser, organizationId: workosOrgId } = await withAuth();
 
-    console.log('[TRPC Context] WorkOS User:', {
-        id: workosUser?.id,
-        email: workosUser?.email,
-        firstName: workosUser?.firstName,
-    });
-    console.log('[TRPC Context] WorkOS Organization ID from session:', workosOrgId);
-
     if (!workosUser || !workosOrgId) {
-        console.log('[TRPC Context] ⚠️ Missing user or org ID - returning undefined context');
-        console.log('[TRPC Context] Has workosUser:', !!workosUser);
-        console.log('[TRPC Context] Has workosOrgId:', !!workosOrgId);
         return {
             user: undefined,
             session: undefined,
@@ -25,31 +15,29 @@ export const createTRPCContext = async () => {
         };
     }
 
-    // Find Prisma User by email
-    console.log('[TRPC Context] Looking up user in DB by email:', workosUser.email);
-    const user = await prisma.user.findUnique({
+    // ========== WORKOS-FIRST: Get role from WorkOS membership ==========
+    let workosRole = 'member'; // Default to member
+    try {
+        const memberships = await workos.userManagement.listOrganizationMemberships({
+            userId: workosUser.id,
+            organizationId: workosOrgId,
+        });
+        
+        if (memberships.data.length > 0 && memberships.data[0].role?.slug) {
+            workosRole = memberships.data[0].role.slug;
+        }
+    } catch (err: any) {
+        console.error('[TRPC Context] Error fetching WorkOS membership:', err.message);
+    }
+
+    // ========== OPTIONAL: Try to find local DB records ==========
+    // These are optional - we'll use WorkOS data if local records don't exist
+    
+    const localUser = await prisma.user.findUnique({
         where: { email: workosUser.email },
     });
 
-    if (!user) {
-        console.error('[TRPC Context] ⚠️ User not found in DB:', workosUser.email);
-        console.error('[TRPC Context] This user exists in WorkOS but not in local database!');
-        return {
-            user: undefined,
-            session: undefined,
-            prisma,
-        };
-    }
-    console.log('[TRPC Context] Found user in DB:', {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-    });
-
-    // Find Organization by WorkOS Organization ID from session
-    // We check both 'id' (for new/migrated orgs) and 'workosOrganizationId' (for legacy orgs)
-    console.log('[TRPC Context] Looking up organization by ID:', workosOrgId);
-    const organization = await prisma.organization.findFirst({
+    const localOrg = await prisma.organization.findFirst({
         where: {
             OR: [
                 { id: workosOrgId },
@@ -58,84 +46,43 @@ export const createTRPCContext = async () => {
         }
     });
 
-    if (!organization) {
-        console.error('[TRPC Context] ⚠️ Organization NOT found!');
-        console.error('[TRPC Context] WorkOS org ID from session:', workosOrgId);
-        
-        // Debug: List all organizations to help troubleshoot
-        const allOrgs = await prisma.organization.findMany({
-            select: { id: true, name: true }
+    let localMember: any = null;
+    if (localUser && localOrg) {
+        localMember = await prisma.member.findFirst({
+            where: {
+                userId: localUser.id,
+                organizationId: localOrg.id,
+            },
         });
-        console.error('[TRPC Context] Available organizations in DB:', allOrgs);
-        
-        return {
-            user: undefined,
-            session: undefined,
-            prisma,
-        };
     }
-    console.log('[TRPC Context] Found organization:', {
-        id: organization.id,
-        name: organization.name,
-    });
 
-    console.log('[TRPC Context] Looking up member:', {
-        userId: user.id,
-        organizationId: organization.id,
-    });
-    const member = await prisma.member.findFirst({
-        where: {
-            userId: user.id,
-            organizationId: organization.id, // Use the local ID here
-        },
-    });
-
-    if (!member) {
-        console.error('[TRPC Context] ⚠️ Member not found!');
-        console.error('[TRPC Context] User', user.email, 'is not a member of org', organization.name);
+    // ========== BUILD CONTEXT USER ==========
+    // Use WorkOS data as base, enhance with local data if available
+    const contextUser = {
+        // Core identity from WorkOS
+        id: localUser?.id || workosUser.id,
+        email: workosUser.email,
+        name: localMember?.name || localUser?.name || workosUser.firstName + ' ' + (workosUser.lastName || ''),
+        image: localMember?.image || localUser?.image || workosUser.profilePictureUrl,
         
-        // Debug: List user's memberships
-        const userMembers = await prisma.member.findMany({
-            where: { userId: user.id },
-            include: { organization: { select: { id: true, name: true } } }
-        });
-        console.error('[TRPC Context] User memberships:', userMembers.map(m => ({
-            orgId: m.organizationId,
-            orgName: m.organization.name,
-            role: m.role,
-        })));
+        // Role from WorkOS (source of truth)
+        role: workosRole,
         
-        return {
-            user: undefined,
-            session: undefined,
-            prisma,
-        };
-    }
-    console.log('[TRPC Context] Found member:', {
-        id: member.id,
-        role: member.role,
-        name: member.name,
-    });
-
-    console.log('[TRPC Context] ✅ Successfully created context for:', {
-        user: user.email,
-        organization: organization.name,
-        role: member.role,
-    });
-    console.log('[TRPC Context] === END ===');
+        // Organization from local DB or WorkOS
+        organizationId: localOrg?.id || workosOrgId,
+        
+        // Member ID (optional, only if local member exists)
+        memberId: localMember?.id || undefined,
+        
+        // WorkOS IDs for reference
+        workosUserId: workosUser.id,
+        workosOrgId: workosOrgId,
+    };
     
     return {
-        user: {
-            ...user,
-            // Prioritize member name and image if available
-            name: member.name || user.name,
-            image: member.image || user.image,
-            role: member.role,
-            organizationId: organization.id, // Return local ID for app compatibility
-            memberId: member.id, // Add memberId to the context
-        },
+        user: contextUser,
         session: {
-            activeOrganizationId: organization.id, // Return local ID for app compatibility
+            activeOrganizationId: localOrg?.id || workosOrgId,
         },
         prisma,
     };

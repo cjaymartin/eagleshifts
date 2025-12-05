@@ -11,6 +11,7 @@ import {
 export interface OrganizationData {
     id: string;
     name: string;
+    assignCurrentUserAsAdmin?: boolean;
     [key: string]: any;
     [key: symbol]: any;
 }
@@ -19,6 +20,11 @@ const tenantDataSource: DataSource<OrganizationData> = {
     fields: [
         // { field: "id", headerName: "ID" },
         { field: 'name', headerName: 'Name' },
+        { 
+            field: 'assignCurrentUserAsAdmin', 
+            headerName: 'Assign Me as Admin', 
+            type: 'boolean',
+        },
         // { field: "logo", headerName: "Logo" },
         // { field: "createdAt", headerName: "Created At" },
         // { field: "metadata", headerName: "Metadata" }
@@ -44,7 +50,10 @@ const tenantDataSource: DataSource<OrganizationData> = {
     createOne: async (data: Partial<OrganizationData>) => {
         console.log('[DataSource.createOne] Called with data:', data);
         if (!data.name) throw new Error("Name is required");
-        const result = await createOrganization({ name: data.name });
+        const result = await createOrganization({ 
+            name: data.name,
+            assignCurrentUserAsAdmin: data.assignCurrentUserAsAdmin ?? true 
+        });
         console.log('[DataSource.createOne] Returned:', result);
         return result as any;
     },
@@ -53,7 +62,10 @@ const tenantDataSource: DataSource<OrganizationData> = {
     updateOne: async (id: any, data: Partial<OrganizationData>) => {
         console.log('[DataSource.updateOne] Called with id:', id, 'data:', data);
         if (!data.name) throw new Error("Name is required");
-        const result = await updateOrganization(id, { name: data.name });
+        const result = await updateOrganization(id, { 
+            name: data.name,
+            assignCurrentUserAsAdmin: data.assignCurrentUserAsAdmin ?? true 
+        });
         console.log('[DataSource.updateOne] Returned:', result);
         return result as any;
     },

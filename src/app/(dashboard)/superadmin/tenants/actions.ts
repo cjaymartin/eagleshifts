@@ -89,9 +89,9 @@ export async function getOneOrganization(id: string) {
 }
 
 // Create a new organization
-export async function createOrganization(data: { name: string }) {
+export async function createOrganization(data: { name: string; assignCurrentUserAsAdmin?: boolean }) {
   console.log('[createOrganization] Called with data:', data);
-  await checkSuperAdminAccess();
+  const { user } = await checkSuperAdminAccess();
   
   // Prevent creating protected organization names
   if (isProtectedOrg(data.name)) {
@@ -100,13 +100,47 @@ export async function createOrganization(data: { name: string }) {
   
   const result = await workos.organizations.createOrganization({ name: data.name });
   console.log('[createOrganization] Created organization:', result);
+  
+  // Add current user as admin if requested
+  if (data.assignCurrentUserAsAdmin !== false) {
+    console.log('[createOrganization] Adding current user as admin to organization');
+    try {
+      // Check if user already has membership
+      const memberships = await workos.userManagement.listOrganizationMemberships({
+        userId: user.id,
+        organizationId: result.id
+      });
+      
+      if (memberships.data.length === 0) {
+        // Create organization membership
+        const membership = await workos.userManagement.createOrganizationMembership({
+          userId: user.id,
+          organizationId: result.id,
+        });
+        console.log('[createOrganization] Created membership:', membership);
+        
+        // Update role to admin
+        const updatedMembership = await workos.userManagement.updateOrganizationMembership(
+          membership.id,
+          { roleSlug: 'admin' }
+        );
+        console.log('[createOrganization] Updated membership to admin:', updatedMembership);
+      } else {
+        console.log('[createOrganization] User already has membership in this organization');
+      }
+    } catch (error: any) {
+      console.error('[createOrganization] Failed to add user as admin:', error.message);
+      // Don't fail the entire request if membership creation fails
+    }
+  }
+  
   return result;
 }
 
 // Update an organization by ID
-export async function updateOrganization(id: string, data: { name: string }) {
+export async function updateOrganization(id: string, data: { name: string; assignCurrentUserAsAdmin?: boolean }) {
   console.log('[updateOrganization] Called with id:', id, 'data:', data);
-  await checkSuperAdminAccess();
+  const { user } = await checkSuperAdminAccess();
   
   const org = await workos.organizations.getOrganization(id);
   console.log('[updateOrganization] Fetched current org:', org);
@@ -134,6 +168,61 @@ export async function updateOrganization(id: string, data: { name: string }) {
     name: data.name 
   });
   console.log('[updateOrganization] Updated organization:', result);
+  
+  // Add current user as admin if requested and there are no existing admins/owners
+  if (data.assignCurrentUserAsAdmin !== false) {
+    console.log('[updateOrganization] Checking for existing admin/owner members');
+    try {
+      // List all memberships for the organization
+      const allMemberships = await workos.userManagement.listOrganizationMemberships({
+        organizationId: id
+      });
+      
+      // Check if there are any admin or owner members
+      const hasAdmin = allMemberships.data.some(m => 
+        m.role?.slug === 'admin' || m.role?.slug === 'owner'
+      );
+      
+      if (!hasAdmin) {
+        console.log('[updateOrganization] No admin/owner found, adding current user as admin');
+        
+        // Check if user already has membership
+        const userMemberships = await workos.userManagement.listOrganizationMemberships({
+          userId: user.id,
+          organizationId: id
+        });
+        
+        if (userMemberships.data.length === 0) {
+          // Create organization membership
+          const membership = await workos.userManagement.createOrganizationMembership({
+            userId: user.id,
+            organizationId: id,
+          });
+          console.log('[updateOrganization] Created membership:', membership);
+          
+          // Update role to admin
+          const updatedMembership = await workos.userManagement.updateOrganizationMembership(
+            membership.id,
+            { roleSlug: 'admin' }
+          );
+          console.log('[updateOrganization] Updated membership to admin:', updatedMembership);
+        } else {
+          // User already has membership, just update the role
+          const updatedMembership = await workos.userManagement.updateOrganizationMembership(
+            userMemberships.data[0].id,
+            { roleSlug: 'admin' }
+          );
+          console.log('[updateOrganization] Updated existing membership to admin:', updatedMembership);
+        }
+      } else {
+        console.log('[updateOrganization] Admin/owner already exists, skipping auto-assign');
+      }
+    } catch (error: any) {
+      console.error('[updateOrganization] Failed to check/add admin:', error.message);
+      // Don't fail the entire request if membership creation fails
+    }
+  }
+  
   return result;
 }
 

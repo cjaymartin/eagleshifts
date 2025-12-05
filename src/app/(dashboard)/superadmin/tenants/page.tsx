@@ -14,6 +14,30 @@ export default function TenantPage() {
                 slots={{
                     pageContainer: (x) => x.children, //hide page container because we have one
                 }}
+                initialState={{
+                    columns: {
+                        columnVisibilityModel: {
+                            assignCurrentUserAsAdmin: false,
+                        },
+                    },
+                }}
+                slotProps={{
+                    list: {
+                        dataGrid: {
+                            columnVisibilityModel: {
+                                assignCurrentUserAsAdmin: false,
+                            },
+                        },
+
+                        initialState: {
+                            columns: {
+                                columnVisibilityModel: {
+                                    assignCurrentUserAsAdmin: false,
+                                },
+                            },
+                        },
+                    },
+                }}
             />
         </div>
     );
