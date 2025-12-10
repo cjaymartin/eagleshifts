@@ -157,18 +157,7 @@ export function useDeleteInvitationMutation() {
     });
 }
 
-export function useImitateUserMutation() {
-    return trpc.users.imitate.useMutation({
-        onSuccess: (data) => {
-            // Handle the imitation session
-            // This could involve setting a cookie or storing the session token
-            //console.log('Imitation successful:', data);
-            // In a real implementation, you might redirect or update the UI
-            // For now, we'll just reload the page
-            //window.location.href = '/';
-        },
-    });
-}
+
 
 export function useRejectInvitationMutation() {
     const queryClient = useQueryClient();
@@ -191,31 +180,4 @@ export function useRejectInvitationMutation() {
     });
 }
 
-export function useIsImitatingQuery() {
-    return useQuery({
-        queryKey: ['isImitating'],
-        queryFn: async () => {
-            try {
-                const response = await fetch('/api/auth/is-imitating', {
-                    method: 'POST',
-                    // headers: {
-                    //     'Content-Type': 'application/json',
-                    // },
-                    credentials: 'include', // Include cookies in the request
-                }).catch(() => ({
-                    ok: false,
-                }));
 
-                if (!response.ok) {
-                    return false;
-                }
-
-                const data = await (response as any)?.json();
-                return data.isImitating;
-            } catch (error) {
-                console.error('Error checking imitation status:', error);
-                return false;
-            }
-        },
-    });
-}

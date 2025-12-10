@@ -599,7 +599,7 @@ export const usersRouter = router({
             }
         }),
 
-    updateDefaultAvailability: adminProcedure
+    updateDefaultAvailability: userProcedure
         .input(
             z.object({
                 memberId: z.string(),
@@ -608,6 +608,18 @@ export const usersRouter = router({
         )
         .mutation(async ({ ctx, input }) => {
             const { memberId, isAvailableByDefault } = input;
+
+            // Check if the user is updating their own availability
+            if (
+                !ctx.isMemberData(memberId) &&
+                ctx.user.role !== 'admin' &&
+                ctx.user.role !== 'owner'
+            ) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'You can only update your own default availability',
+                });
+            }
 
             // Update the member's isAvailableByDefault field
             const updatedMember = await ctx.prisma.member.update({
@@ -1043,69 +1055,5 @@ export const usersRouter = router({
             };
         }),
 
-    // Imitate a user (for admins/owners only)
-    imitate: adminProcedure
-        .input(
-            z.object({
-                memberId: z.string(),
-            })
-        )
-        .mutation(async ({ ctx, input }) => {
-            const { memberId } = input;
 
-            // Get the member to check permissions
-            const member = await ctx.prisma.member.findFirst({
-                where: {
-                    id: memberId,
-                    organizationId: ctx.user.organizationId,
-                },
-                include: {
-                    user: true,
-                },
-            });
-
-            if (!member) {
-                throw new Error('Member not found');
-            }
-
-            // Create a new session for the imitated user
-            const session = await ctx.prisma.session.create({
-                data: {
-                    id: uuidv4(),
-                    token: uuidv4(),
-                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                    userId: member.userId,
-                    impersonatedBy: ctx.user.id, // Mark as impersonated
-                    activeOrganizationId: ctx.user.organizationId,
-                    ipAddress:
-                        ((ctx as any).req?.headers[
-                            'x-forwarded-for'
-                        ] as string) || 'unknown',
-                    userAgent:
-                        ((ctx as any).req?.headers['user-agent'] as string) ||
-                        'unknown',
-                },
-            });
-
-            console.log({ session });
-
-            const cookievalue = await signCookie(
-                session.token,
-                process.env.BETTER_AUTH_SECRET!
-            );
-
-            const cookieData = await cookies();
-
-            return {
-                success: true,
-                message: `Imitating user ${member.name || member.user.name || member.user.email}`,
-                session: {
-                    id: session.id,
-                    token: session.token,
-                },
-                cookie: cookievalue,
-            };
-        }),
 });

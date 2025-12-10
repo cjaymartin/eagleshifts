@@ -7,7 +7,6 @@ import Box from '@mui/material/Box';
 import NextLink from 'next/link';
 
 import { branding } from '@/config/branding';
-import { useIsImitatingQuery } from '@/queries/users';
 
 //borrowed from toolpad
 const LogoContainer = styled('div')({
@@ -22,7 +21,6 @@ const LogoContainer = styled('div')({
 
 export default function MultitenantAppTitle() {
     const theme = useTheme();
-    const { data: isImitating } = useIsImitatingQuery();
 
     return (
         <Stack direction="row" alignItems="center" spacing={2}>
@@ -50,17 +48,6 @@ export default function MultitenantAppTitle() {
             <Box>
                 <OrgHeader />
             </Box>
-            {isImitating && (
-                <Box>
-                    <Alert
-                        severity="info"
-                        color="warning"
-                        sx={{ borderRadius: 3, wordWrap: 'none' }}
-                    >
-                        Imitating User!
-                    </Alert>
-                </Box>
-            )}
         </Stack>
     );
 }

@@ -20,6 +20,7 @@
 - [x] WorkOS callback route handler
 - [x] Cookie-based active organization ID management
 - [x] `workosOrganizationId` field on Prisma `Organization` model for mapping
+- [x] **Impersonate User Feature Removed**: Deleted legacy `imitate` plugin and routes.
 
 ---
 
@@ -88,7 +89,14 @@
 4. **Role management** - Use WorkOS Organization Membership API
 5. **Remove members** - Use WorkOS Remove User from Organization API
 
-### Phase 3: Data Model Decisions
+### Phase 3: Data Integrity & Seeding
+
+1. **Update Seed Script**:
+    - Update `src/utils/seedDatabase.ts` to reflect the current state of affairs.
+    - Ensure it creates WorkOS-compatible users (synced state).
+    - Remove legacy seed data (passwords, sessions).
+
+### Phase 4: Data Model Decisions
 
 **Key Questions to Resolve:**
 
@@ -139,3 +147,48 @@
 - [Remove User from Organization](https://workos.com/docs/user-management/organization-membership/remove-member)
 - [Create User](https://workos.com/docs/user-management/users/create-user)
 - [Get User](https://workos.com/docs/user-management/users/get-user)
+
+---
+
+## 🗑️ Legacy Artifacts & Cleanup Recommendations
+
+The following Prisma models and database tables are remnants of the previous authentication system (`better-auth` / `next-auth`) and should be removed or cleaned up.
+
+### 1. Unused Tables (Safe to Delete)
+
+These tables are no longer referenced in the active codebase and can be dropped from the schema and database.
+
+- **`Account`**: Previously used for storing OAuth provider accounts (Google, etc.).
+    - _Status_: 1 legacy account found (Google).
+    - _Recommendation_: **Delete**. WorkOS handles identity linking.
+- **`Verification`**: Previously used for email verification tokens.
+    - _Status_: Unused.
+    - _Recommendation_: **Delete**.
+- **`TwoFactor`**: Previously used for 2FA secrets.
+    - _Status_: Unused.
+    - _Recommendation_: **Delete**.
+
+### 2. Tables with Partial/Broken Usage
+
+- **`Session`**:
+    - _Current Usage_: Referenced only in `src/lib/auth/plugins/imitate.ts` and `team/imitate/route.ts` for the "Impersonate User" feature.
+    - _Issue_: The current `createTRPCContext` relies **exclusively** on WorkOS authentication (`withAuth`) and ignores the local `Session` table. This means the current "Imitate" functionality is likely broken or ineffective for TRPC procedures.
+    - _Recommendation_: **Delete table** and reimplement Impersonation using [WorkOS Impersonation](https://workos.com/docs/user-management/impersonation) or a compatible approach.
+
+### 3. `User` Model Cleanup
+
+The `User` model is still required to link local data (like `Member`) to WorkOS users, but it contains many legacy fields.
+
+- **Keep**: `id`, `email`, `name`, `image`, `createdAt`, `updatedAt`, `emailVerified` (synced from WorkOS).
+- **Remove/Deprecate**:
+    - `password` (Auth is now WorkOS)
+    - `twoFactorEnabled` (Handled by WorkOS)
+    - `banExpires` (Banning handled by WorkOS or `banned` flag)
+    - `sessions` (Relation to Session table)
+    - `accounts` (Relation to Account table)
+    - `twofactors` (Relation to TwoFactor table)
+
+### 4. Legacy Data
+
+- **Non-Account Members**: There is 1 "placeholder" member (non-account).
+    - _Recommendation_: **Keep**. These are valid for users who are assigned shifts but haven't logged in yet. Ensure the "Invite" flow works to convert them to full WorkOS users.

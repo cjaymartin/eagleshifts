@@ -26,7 +26,7 @@ import {
 import { cookies, headers } from 'next/headers';
 import crypto from 'crypto';
 import z from 'zod';
-import { imitate } from './auth/plugins/imitate';
+
 
 console.log({
     google: {
@@ -52,7 +52,6 @@ export const auth = betterAuth({
         },
     },
     plugins: [
-        imitate(),
         organization({
             allowUserToCreateOrganization: (user) => {
                 console.log('ALLOW USER TO CREATE ORGANIZATION', user);

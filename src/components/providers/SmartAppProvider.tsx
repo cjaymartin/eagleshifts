@@ -5,7 +5,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { usePathname } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
 import { branding } from '@/config/branding';
-import { useAuthQuery, useIsImitatingQuery } from '@/queries/users';
+import { useAuthQuery } from '@/queries/users';
 import { useShiftRequestsListQuery } from '@/queries/requests';
 import theme from '@/lib/DefaultTheme';
 import {
@@ -34,7 +34,6 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
     >([]);
     const pathname = usePathname();
     const { data: session, isPending } = useAuthQuery();
-    const { data: isImitating } = useIsImitatingQuery();
 
     // Get pending requests count for admin badge
     const isAdmin = ['admin', 'owner'].includes(session?.user?.role ?? 'guest');
@@ -147,11 +146,7 @@ function SessionAwareProvider({ children }: { children: React.ReactNode }) {
             window.location.href = '/auth/login';
         },
         signOut: async () => {
-            if (isImitating) {
-                window.location.href = '/api/auth/stop-imitating';
-            } else {
-                window.location.href = '/auth/logout';
-            }
+            window.location.href = '/auth/logout';
         },
     };
 

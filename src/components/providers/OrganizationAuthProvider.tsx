@@ -62,10 +62,9 @@ export default async function OrganizationAuthProvider({
     }
 
     console.log('ONE3');
-    // Check if the user is being imitated by an admin
-    const isImitated = false; //session.impersonatedBy !== undefined;
 
     // If the user is not being imitated, check if they are an activated member
+    /*
     if (!isImitated && loginOrganizationSlug) {
         // Find the member record for this user in the organization
         const member = await prisma.member.findFirst({
@@ -85,6 +84,7 @@ export default async function OrganizationAuthProvider({
             return redirect('/auth/login/organization/not_activated');
         }
     }
+    */
     console.log('ONE4');
 
     // If there's no loginOrganizationSlug, we need to sign out and redirect
@@ -120,6 +120,7 @@ export default async function OrganizationAuthProvider({
     console.log('ONE5');
 
     // Check if the user has an outstanding invitation
+    /*
     const invitation = await prisma.invitation.findFirst({
         where: {
             email: session.user.email,
@@ -131,6 +132,9 @@ export default async function OrganizationAuthProvider({
             organization: true,
         },
     });
+    */
+    const invitation = null;
+    /*
     if (invitation) {
         //accept the invitation
         await auth.api.acceptInvitation({
@@ -154,6 +158,7 @@ export default async function OrganizationAuthProvider({
             }
         );
     }
+    */
 
     await auth.api
         .setActiveOrganization({
