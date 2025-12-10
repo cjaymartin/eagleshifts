@@ -52,7 +52,7 @@ export function useInvitationListQuery() {
 
 export function useTeamUsersLookupQuery() {
     const { data: teamUsers } = useTeamUsersQuery();
-    const baseQueryKey = getQueryKey(trpc.users.list, undefined, 'query');
+    const baseQueryKey = getQueryKey(trpc.users.listWorkOSMembers, undefined, 'query');
 
     return useQuery({
         queryKey: [...baseQueryKey, 'lookup'],
@@ -71,7 +71,7 @@ export function useTeamUsersLookupQuery() {
 
 export function useTeamUserByIdQuery(userId: string) {
     const { data: teamUserLookup } = useTeamUsersLookupQuery();
-    const baseQueryKey = getQueryKey(trpc.users.list, undefined, 'query');
+    const baseQueryKey = getQueryKey(trpc.users.listWorkOSMembers, undefined, 'query');
 
     return useQuery({
         queryKey: [...baseQueryKey, ':id', userId],

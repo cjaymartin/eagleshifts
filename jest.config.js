@@ -10,6 +10,8 @@ const config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    'superjson': '<rootDir>/tests/__mocks__/superjson.js',
+    '@workos-inc/authkit-nextjs': '<rootDir>/tests/__mocks__/authkit-nextjs.js',
   },
 
   // Transform files with ts-jest
@@ -41,11 +43,12 @@ const config = {
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
+    '<rootDir>/tests/__mocks__/',
   ],
 
   // Transform ignore patterns
   transformIgnorePatterns: [
-    '/node_modules/(?!(dayjs|react-leaflet|react-big-calendar)/)',
+    '/node_modules/(?!(dayjs|react-leaflet|react-big-calendar|superjson)/)',
   ],
 };
 

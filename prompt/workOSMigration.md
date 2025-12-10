@@ -104,6 +104,11 @@
 - Or migrate all member data to WorkOS user metadata?
 - Relationship handling for: Availability, ShiftAssignment, ShiftRequest, ShiftDraft, Uploads, ChecklistItemCompletion
 
+### Phase 5: Workflow & UX Improvements
+
+- [ ] **Force Login**: Logged-out users should immediately land on the login page.
+- [ ] **Org Persistence**: Users who have logged in recently should default to the org they logged into last time.
+
 ---
 
 ## 🔗 Prisma/WorkOS Data Relationships
@@ -131,6 +136,8 @@
 - `ChecklistItemCompletion` - Completed checklist items
 
 ---
+
+Impersonation
 
 ## ⚠️ Constraints
 
