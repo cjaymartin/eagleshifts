@@ -87,8 +87,8 @@ export default function Availability() {
     useEffect(() => {
         if (selectedUserId && teamUsers.length > 0) {
             const user = teamUsers.find((user) => user.id === selectedUserId);
-            if (user && user.members && user.members.length > 0) {
-                setSelectedMemberId(user.members[0].id);
+            if (user) {
+                setSelectedMemberId(user.memberId);
             }
         }
     }, [selectedUserId, teamUsers]);

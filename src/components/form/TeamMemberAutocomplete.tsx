@@ -113,7 +113,6 @@ export default function TeamMemberAutocomplete(
     }, [exclude]);
 
     const memberOptions = useMemo(() => {
-        console.log('[TeamMemberAutocomplete] teamUsers:', teamUsers);
         if (!teamUsers) return [];
 
         // listWorkOSMembers now returns flat member objects directly
@@ -141,6 +140,10 @@ export default function TeamMemberAutocomplete(
 
                 return {
                     ...member,
+                    // Use memberId (Prisma ID) as the ID for the option if available,
+                    // otherwise fall back to id (which might be WorkOS ID or Prisma ID depending on source)
+                    // This ensures that downstream components like ShiftAssignmentTool receive the Prisma ID
+                    id: member.memberId || member.id,
                     label: member.name || member.email || 'Unknown',
                     isAvailable,
                     hasShifts,

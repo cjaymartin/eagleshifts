@@ -10013,10 +10013,10 @@ tr46@^5.1.0:
   dependencies:
     punycode "^2.3.1"
 
-trpc-client-devtools-link@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/trpc-client-devtools-link/-/trpc-client-devtools-link-0.1.1.tgz#dc318245fc9e9035cbbba33621ece17a2d02a781"
-  integrity sha512-/KXczcvdbd0TVjj4Tm3irFi3hyxYwUtJ038v0rN9taxmFkkTO2nHnu/aKXBLFUopxmFuHQuIzBN7Nse3eWVT1w==
+trpc-client-devtools-link@0.2.1-next:
+  version "0.2.1-next"
+  resolved "https://registry.yarnpkg.com/trpc-client-devtools-link/-/trpc-client-devtools-link-0.2.1-next.tgz#4bc0f56be9e75f35008dfdc20cb64786ce1ce60c"
+  integrity sha512-juHl8SSsVywR7U98KqcRb7/dYVnTcnZNboRF3l87zwtFcbVWz60R2dSAMrjD7jY2qAZ7VJYUbx1gvDKC2SaJvw==
   dependencies:
     superjson "^1.9.1"
 

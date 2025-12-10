@@ -37,6 +37,12 @@
     - Availability dropdown
     - Assigned To filter
 
+### Bug Fixes & Improvements
+
+- [x] **Availability Display Bug**: Fixed incorrect property access (`user.members[0].id`) in Availability page.
+- [x] **Missing Invited Users**: Updated `listWorkOSMembers` to fetch pending invitations and auto-create local members.
+- [x] **Zombie Users**: Filtered out local members not present in WorkOS (unless they are explicit Non-Account Members).
+
 ---
 
 ## 🚧 In Progress

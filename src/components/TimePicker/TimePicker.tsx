@@ -17,7 +17,11 @@ export interface TimePickerProps {
     showIncrement?: boolean;
     label?: string;
     timezone?: string; // IANA or offset TZ string
+    error?: boolean;
+    helperText?: React.ReactNode;
 }
+
+// ... (rest of the file until TimePicker component definition)
 
 // Utility to generate time options in 12h format for the given timezone
 function generateTimeOptions(interval: number, timezone: string): string[] {
@@ -98,6 +102,8 @@ export const TimePicker: React.FC<TimePickerProps> = (props) => {
         showIncrement = false,
         label,
         timezone = 'UTC',
+        error,
+        helperText,
     } = props;
 
     // Use today as the base date for time picking
@@ -173,7 +179,8 @@ export const TimePicker: React.FC<TimePickerProps> = (props) => {
                     {...params}
                     label={label}
                     placeholder={placeholder}
-                    // No helperText for timezone
+                    error={error}
+                    helperText={helperText}
                     InputProps={{
                         ...params.InputProps,
                         startAdornment: (

@@ -172,7 +172,6 @@ export const usersRouter = router({
         return mappedUsers;
     }),
 
-    // List organization members from WorkOS, merged with local Prisma data
     listWorkOSMembers: adminProcedure.query(async ({ ctx }) => {
         const workosOrgId = ctx.user.workosOrgId;
         
@@ -219,7 +218,6 @@ export const usersRouter = router({
         });
 
         const workosUsers = workosUsersResponse.data;
-        console.log('[listWorkOSMembers] WorkOS users found:', workosUsers.length);
 
         // Get local members for app-specific data (availability, iCal, etc)
         const localMembers = await ctx.prisma.member.findMany({
@@ -238,6 +236,113 @@ export const usersRouter = router({
                 localMembersByEmail[member.user.email.toLowerCase()] = member;
             }
         }
+
+        // Auto-create local members for WorkOS users if they don't exist
+        // This ensures that all WorkOS users have a corresponding local Member record (and ID)
+        await Promise.all(workosUsers.map(async (wUser) => {
+            const email = wUser.email?.toLowerCase();
+            if (email && !localMembersByEmail[email]) {
+                try {
+                    console.log('[listWorkOSMembers] Auto-creating local member for WorkOS user:', email);
+                    
+                    // Check if user exists (might be in another org)
+                    let dbUser = await ctx.prisma.user.findUnique({ where: { email } });
+                    if (!dbUser) {
+                        dbUser = await ctx.prisma.user.create({
+                            data: {
+                                id: uuidv4(),
+                                email,
+                                name: (wUser.firstName || '') + (wUser.lastName ? ' ' + wUser.lastName : ''),
+                                emailVerified: true, // WorkOS users are verified
+                                banned: false,
+                                createdAt: new Date(),
+                                updatedAt: new Date(),
+                                image: wUser.profilePictureUrl,
+                            },
+                        });
+                    }
+
+                    // Create member
+                    const newMember = await ctx.prisma.member.create({
+                        data: {
+                            id: uuidv4(),
+                            userId: dbUser.id,
+                            organizationId: ctx.user.organizationId,
+                            role: 'member', // Default role
+                            name: dbUser.name,
+                            isActivated: true, // WorkOS users are activated
+                            isAvailableByDefault: true,
+                            createdAt: new Date(),
+                            image: wUser.profilePictureUrl,
+                        },
+                        include: {
+                            user: true,
+                        },
+                    });
+
+                    // Add to local map so it's picked up by the merge logic
+                    localMembersByEmail[email] = newMember;
+                } catch (err) {
+                    console.error('[listWorkOSMembers] Failed to auto-create member for WorkOS user:', email, err);
+                }
+            }
+        }));
+
+        // Fetch pending invitations to ensure they appear in the list
+        const invitationsResponse = await workos.userManagement.listInvitations({
+            organizationId: workosOrgId,
+        });
+        const pendingInvitations = invitationsResponse.data.filter(inv => inv.state === 'pending');
+        const invitedEmails = new Set(pendingInvitations.map(inv => inv.email.toLowerCase()));
+
+        // Auto-create local members for pending invitations if they don't exist
+        // This ensures they have a memberId and can be selected in the Availability page
+        await Promise.all(pendingInvitations.map(async (inv) => {
+            const email = inv.email.toLowerCase();
+            if (!localMembersByEmail[email]) {
+                try {
+                    // Check if user exists (might be in another org)
+                    let user = await ctx.prisma.user.findUnique({ where: { email } });
+                    if (!user) {
+                        user = await ctx.prisma.user.create({
+                            data: {
+                                id: uuidv4(),
+                                email,
+                                name: email.split('@')[0], // Default name from email
+                                emailVerified: false,
+                                banned: false,
+                                createdAt: new Date(),
+                                updatedAt: new Date(),
+                            },
+                        });
+                    }
+
+                    // Create member
+                    const newMember = await ctx.prisma.member.create({
+                        data: {
+                            id: uuidv4(),
+                            userId: user.id,
+                            organizationId: ctx.user.organizationId,
+                            role: 'member', // Default role
+                            name: user.name,
+                            isActivated: false, // Not activated yet
+                            isAvailableByDefault: true,
+                            createdAt: new Date(),
+                        },
+                        include: {
+                            user: true,
+                        },
+                    });
+
+                    // Add to local lists so they are included in the return
+                    localMembers.push(newMember);
+                    localMembersByEmail[email] = newMember;
+                    console.log('[listWorkOSMembers] Auto-created local member for invitation:', email);
+                } catch (err) {
+                    console.error('[listWorkOSMembers] Failed to auto-create member for invitation:', email, err);
+                }
+            }
+        }));
 
         // Track which local members have been matched to WorkOS users
         const matchedLocalMemberEmails = new Set<string>();
@@ -291,11 +396,13 @@ export const usersRouter = router({
                 }
                 
                 // FILTER: Only include local members if they are explicit "Non-Account Members"
-                // (identified by placeholder email).
+                // (identified by placeholder email) OR if they have a pending invitation.
                 // Any other local member who is NOT in WorkOS is considered a "zombie" (leaked/stale data)
                 // and should be hidden from the dropdown.
                 const isPlaceholder = member.user.email?.includes('@placeholder.local');
-                return isPlaceholder;
+                const isInvited = member.user.email && invitedEmails.has(member.user.email.toLowerCase());
+                
+                return isPlaceholder || isInvited;
             })
             .map(member => ({
                 id: member.id,
@@ -311,8 +418,6 @@ export const usersRouter = router({
             }));
 
         const allMembers = [...mergedUsers, ...localOnlyMembers];
-        console.log('[listWorkOSMembers] Total members:', allMembers.length, 
-            '(WorkOS:', mergedUsers.length, ', Local-only:', localOnlyMembers.length, ')');
         return allMembers;
     }),
 

@@ -25,18 +25,16 @@ export default function NewTeamMemberRow(props: NewTeamMemberRowProps) {
             <TableCell colSpan={3}>
                 <Grid container>
                     <Grid size={6}>
-                        {!!date && (
-                            <TeamMemberAutocomplete
-                                value={member}
-                                onChange={(member) => {
-                                    setMember(member ?? null);
-                                }}
-                                // variant="standard"
-                                size="small"
-                                exclude={exclude}
-                                date={date}
-                            />
-                        )}
+                        <TeamMemberAutocomplete
+                            value={member}
+                            onChange={(member) => {
+                                setMember(member ?? null);
+                            }}
+                            // variant="standard"
+                            size="small"
+                            exclude={exclude}
+                            date={date!}
+                        />
                     </Grid>
                     <Grid>
                         {member && (

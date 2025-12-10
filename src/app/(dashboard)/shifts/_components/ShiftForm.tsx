@@ -173,7 +173,7 @@ const shiftFormSchema = z
                 }
             },
         }),
-        slots: z
+        slots: z.coerce
             .number({
                 error: (issue) => {
                     if (issue.code === 'invalid_type') {
@@ -1259,6 +1259,11 @@ export default function ShiftForm(props: ShiftFormProps) {
                                                         businessProfile?.timezone ||
                                                         'UTC'
                                                     }
+                                                    error={!!fieldState.error}
+                                                    helperText={
+                                                        fieldState.error
+                                                            ?.message
+                                                    }
                                                 />
                                             );
                                         }}
@@ -1285,6 +1290,11 @@ export default function ShiftForm(props: ShiftFormProps) {
                                                         shift?.timezone ||
                                                         businessProfile?.timezone ||
                                                         'UTC'
+                                                    }
+                                                    error={!!fieldState.error}
+                                                    helperText={
+                                                        fieldState.error
+                                                            ?.message
                                                     }
                                                 />
                                             );
@@ -1410,7 +1420,9 @@ export default function ShiftForm(props: ShiftFormProps) {
                                         disabled={isSubmitting}
                                         onClick={onSaveDraft}
                                     >
-                                        Save to Draft
+                                        {shift?.isDraft
+                                            ? 'Update Draft'
+                                            : 'Save to Draft'}
                                     </Button>
                                 )}
                                 {isAdmin && !readOnly && (
