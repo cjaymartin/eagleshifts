@@ -38,6 +38,13 @@
     - Availability dropdown
     - Assigned To filter
 
+### Backend Cleanup (Phase 1 Completion)
+
+- [x] Extracted `syncWorkOSMembersToLocal` helper function from `listWorkOSMembers`
+- [x] Removed deprecated `list` procedure (unused)
+- [x] Updated frontend query keys to reference `listWorkOSMembers`
+- [x] Added integration tests for `usersRouter` (`tests/integration/usersRouter.test.ts`)
+
 ### Bug Fixes & Improvements
 
 - [x] **Availability Display Bug**: Fixed incorrect property access (`user.members[0].id`) in Availability page.
@@ -50,12 +57,6 @@
 
 ### Team Management Features (Phase 2)
 
-**Direct User Creation** (no invite flow):
-
-- [ ] Create custom form → WorkOS Create User API
-- [ ] Add user to organization via WorkOS API
-- [ ] Create local Member record for app-specific data
-
 **Role Management**:
 
 - [ ] Update to use WorkOS Organization Membership API
@@ -64,30 +65,16 @@
 
 ## 📋 Next Steps
 
-### Phase 1: Member Data Source Abstraction
+### ~~Phase 1: Member Data Source Abstraction~~ ✅ COMPLETE
 
-1. Create a unified team member service/hook that:
-
-    - Fetches users from WorkOS organization
-    - Provides consistent interface for all components
-    - Handles caching/performance
-
-2. Update each affected component:
-    - [ ] Team Member dropdown (shift create/edit)
-    - [ ] Assigned To filter dropdown
-    - [ ] Availability dropdown
-    - [ ] My Team page listing
+See "Backend Cleanup" section above.
 
 ### Phase 2: My Team Page Functionality
 
 1. **List members** - Use WorkOS List Organization Users API
 2. **Invite flow** - Use WorkOS Invitation API
-3. **Direct user creation** (no invite):
-    - Cannot use WorkOS User Management widget
-    - Need custom form → WorkOS Create User API
-    - Then add user to organization
-4. **Role management** - Use WorkOS Organization Membership API
-5. **Remove members** - Use WorkOS Remove User from Organization API
+3. **Role management** - Use WorkOS Organization Membership API
+4. **Remove members** - Use WorkOS Remove User from Organization API
 
 ### Phase 3: Data Integrity & Seeding
 
@@ -108,6 +95,14 @@
 
 - [ ] **Force Login**: Logged-out users should immediately land on the login page.
 - [ ] **Org Persistence**: Users who have logged in recently should default to the org they logged into last time.
+
+### Phase 6: Direct User Creation
+
+**Direct User Creation** (no invite flow):
+
+- [ ] Create custom form → WorkOS Create User API
+- [ ] Add user to organization via WorkOS API
+- [ ] Create local Member record for app-specific data
 
 ---
 
