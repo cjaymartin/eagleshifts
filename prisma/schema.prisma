@@ -250,6 +250,7 @@ model Availability {
   // Relationships
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  workosUserId String?
 
   @@map("availability")
 }
@@ -266,6 +267,7 @@ model shiftAssignment {
   shift    Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  workosUserId String?
 
   @@map("shift_assignment")
 }
@@ -282,6 +284,7 @@ model ShiftRequest {
   shift    Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  workosUserId String?
 
   @@map("shift_request")
 }
@@ -310,6 +313,7 @@ model ShiftDraft {
   location     Location?    @relation(fields: [locationId], references: [id])
   department   Department?  @relation(fields: [departmentId], references: [id])
   member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  workosUserId String?
 
   @@map("shift_draft")
 }
@@ -372,6 +376,8 @@ model Upload {
   uploader                Member                    @relation("Uploader", fields: [uploaderId], references: [id], onDelete: Cascade)
   deleterId               String?
   deleter                 Member?                   @relation("Deleter", fields: [deleterId], references: [id])
+  uploaderWorkosUserId    String?
+  deleterWorkosUserId     String?
   ChecklistItemCompletion ChecklistItemCompletion[]
 
   @@map("upload")
@@ -486,6 +492,7 @@ model ChecklistItemCompletion {
   checklistItem   ChecklistItem @relation(fields: [checklistItemId], references: [id], onDelete: Cascade)
   memberId        String
   member          Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  workosUserId    String?
   shiftId         String
   shift           Shift         @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   uploadId        String?

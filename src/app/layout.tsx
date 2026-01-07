@@ -52,7 +52,7 @@ export default async function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    // Call seedDatabase function on server-side
+    // Call seedDatabase function on server-side (dev only)
     await seedDatabase();
 
     // Generate WorkOS Widget Token if user is logged in

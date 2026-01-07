@@ -8,7 +8,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { useAuthQuery } from '@/queries/users';
+import { useAuthQuery, useTeamUsersLookupQuery } from '@/queries/users';
 import { useDialogs } from '@toolpad/core';
 import ShiftDialog from '@/app/(dashboard)/shifts/_components/ShiftDialog';
 import ShiftViewDialog from '@/components/calendar/ShiftViewDialog';
@@ -85,7 +85,24 @@ export function ShiftRow(props: ShiftRowProps) {
         deleteShift(shift);
     }
 
-    const filledSlots = shift.shiftAssignments?.length || 0;
+    const { data: userLookup } = useTeamUsersLookupQuery();
+
+    const activeAssignments =
+        shift.shiftAssignments?.filter((assignment) => {
+            // If userLookup is not ready, we default to showing them to avoid 0 flash,
+            // UNLESS we are debugging locally, then maybe we want to be strict?
+            // But for "2/1" bug, we suspect they are showing when they shouldn't.
+            if (!userLookup) return true;
+
+            const member = userLookup[assignment.memberId];
+            // If member not found in lookup, they are likely deleted or hard-deleted.
+            if (!member) return false;
+
+            return !(member as any).isDeleted;
+        }) || [];
+
+    const filledSlots = activeAssignments.length;
+    const totalAssignments = shift.shiftAssignments?.length || 0;
 
     return (
         <React.Fragment>
@@ -124,7 +141,6 @@ export function ShiftRow(props: ShiftRowProps) {
                     </div>
                 )}
             </TableCell>
-
             {/*{!props.isDepartmentFilterActive && (*/}
             {/*    <TableCell>*/}
             {/*        {shift.department ? (*/}
@@ -175,7 +191,6 @@ export function ShiftRow(props: ShiftRowProps) {
             {/*        )}*/}
             {/*    </TableCell>*/}
             {/*)}*/}
-
             <TableCell>
                 {shift.startTime &&
                     dayjs(shift.startTime).tz(timezone).format('YYYY-MM-DD')}

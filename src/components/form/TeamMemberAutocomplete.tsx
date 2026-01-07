@@ -144,10 +144,14 @@ export default function TeamMemberAutocomplete(
                     // otherwise fall back to id (which might be WorkOS ID or Prisma ID depending on source)
                     // This ensures that downstream components like ShiftAssignmentTool receive the Prisma ID
                     id: member.memberId || member.id,
-                    label: member.name || member.email || 'Unknown',
+                    label:
+                        (member.name || member.email || 'Unknown') +
+                        ((member as any).isDeleted ? ' (Inactive)' : ''),
                     isAvailable,
                     hasShifts,
-                    availabilityStatus,
+                    availabilityStatus: (member as any).isDeleted
+                        ? 'unavailable'
+                        : availabilityStatus,
                 };
             });
     }, [

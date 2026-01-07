@@ -386,22 +386,32 @@ export const usersRouter = router({
                 const isPlaceholder = member.user.email?.includes('@placeholder.local');
                 const isInvited = member.user.email && invitedEmails.has(member.user.email.toLowerCase());
                 
-                return isPlaceholder || isInvited;
+                return isPlaceholder || isInvited || true; // Include everyone, but mark zombies as deleted
             })
-            .map(member => ({
-                id: member.id,
-                workosUserId: null,
-                userId: member.user.id,
-                name: member.name || member.user.name || member.user.email,
-                email: member.user.email,
-                image: member.image || member.user.image || null,
-                role: member.role,
-                isActivated: member.isActivated,
-                isAvailableByDefault: member.isAvailableByDefault,
-                memberId: member.id,
-            }));
+            .map(member => {
+                 const isPlaceholder = member.user.email?.includes('@placeholder.local');
+                 const isInvited = member.user.email && invitedEmails.has(member.user.email.toLowerCase());
+                 
+                 // If not a placeholder and not invited, and we are here (meaning not matched to WorkOS), then it is a zombie/deleted user
+                 const isDeleted = !isPlaceholder && !isInvited;
+                 
+                 return {
+                    id: member.id,
+                    workosUserId: null,
+                    userId: member.user.id,
+                    name: member.name || member.user.name || member.user.email,
+                    email: member.user.email,
+                    image: member.image || member.user.image || null,
+                    role: member.role,
+                    isActivated: member.isActivated,
+                    isAvailableByDefault: member.isAvailableByDefault,
+                    memberId: member.id,
+                    isDeleted, 
+                };
+            });
 
-        const allMembers = [...mergedUsers, ...localOnlyMembers];
+        const mergedUsersWithDeletedFlag = mergedUsers.map(u => ({ ...u, isDeleted: false }));
+        const allMembers = [...mergedUsersWithDeletedFlag, ...localOnlyMembers];
         return allMembers;
     }),
 

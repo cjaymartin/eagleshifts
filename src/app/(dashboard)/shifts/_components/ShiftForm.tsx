@@ -906,9 +906,17 @@ export default function ShiftForm(props: ShiftFormProps) {
         ? assignments.some((a: any) => a.memberId === memberId)
         : false;
 
+    // Filter out inactive members from slot counting
+    // Note: userLookup contains all members including "deleted" ones (flagged isDeleted=true)
+    const activeAssignments = assignments.filter((a: any) => {
+        const member = userLookup?.[a.memberId];
+        return !member || !(member as any).isDeleted;
+    });
+
     const slots = getValues('slots') || 1;
     const hasAvailableSlots =
-        assignments.length === 0 || assignments.length < Number(slots);
+        activeAssignments.length === 0 ||
+        activeAssignments.length < Number(slots);
 
     // Get the user's shift requests
     const { data: userRequests = [] } = useShiftRequestsListQuery();
@@ -1306,7 +1314,7 @@ export default function ShiftForm(props: ShiftFormProps) {
                             <Grid container spacing={2} alignItems="center">
                                 <Grid size={{ xs: 'auto' }}>
                                     <Typography variant="h6">
-                                        {assignments?.length || 0}
+                                        {activeAssignments?.length || 0}
                                     </Typography>
                                 </Grid>
                                 <Grid size={{ xs: 'auto' }}>

@@ -15,7 +15,7 @@ import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { ShiftAssignmentToolAssignmentRow } from '@/app/(dashboard)/shifts/_components/ShiftAssignmentTool';
-import { useMemberByIdQuery, useAuthQuery } from '@/queries/users';
+import { useTeamUserByIdQuery, useAuthQuery } from '@/queries/users';
 
 export type ShiftAssignmentToolRowProps = {
     row: ShiftAssignmentToolAssignmentRow;
@@ -37,13 +37,14 @@ export default function ShiftAssignmentToolRow({
     const isAdmin = ['admin', 'owner'].includes(role);
 
     // If this is the current user's row, use session data instead of fetching
-    const { data: fetchedMember, isPending } = useMemberByIdQuery(
-        (isCurrentUserRow ? undefined : row?.memberId) as any
+    // Use cached team lookup for other users to get isActive status
+    const { data: fetchedMember, isLoading: isPending } = useTeamUserByIdQuery(
+        (isCurrentUserRow ? '' : row?.memberId) as any
     );
 
     // Use session data for current user, or fetched data for other users
     const member = isCurrentUserRow
-        ? { id: currentUser.memberId, name: currentUser.name }
+        ? { id: currentUser.memberId, name: currentUser.name, isDeleted: false }
         : fetchedMember;
 
     const [rawOpen, setOpen] = useState(false);
@@ -72,7 +73,16 @@ export default function ShiftAssignmentToolRow({
                     '& > *': { borderBottom: 'unset' },
                 }}
             >
-                <TableCell>{member.name}</TableCell>
+                <TableCell
+                    sx={{
+                        color: (member as any).isDeleted
+                            ? 'text.disabled'
+                            : 'inherit',
+                    }}
+                >
+                    {member.name}
+                    {(member as any).isDeleted && ' (Inactive)'}
+                </TableCell>
                 <TableCell width="small">
                     <OutcomeSelect
                         value={row.outcome || 'waiting'}

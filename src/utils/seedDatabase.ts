@@ -14,10 +14,16 @@ type ChecklistItem = {
  * Seeds the database with initial data for development purposes.
  * This function should be called from a server root page.
  *
+ * IMPORTANT: This seed script creates WorkOS-compatible User and Member records.
+ * - Organizations are created with `workosOrganizationId: null` (no actual WorkOS sync)
+ * - Users are created without legacy auth fields (passwords, sessions, twoFactor)
+ * - The `listWorkOSMembers` procedure will fall back to Prisma-only data for these orgs
+ * - In production, organizations are created via WorkOS and users sync via `syncWorkOSMembersToLocal`
+ *
  * It will:
  * 1. Check if we're in development environment (NOOP if production)
  * 2. Check if "Admin" organization already exists (NOOP if it does)
- * 3. Create Admin and Test organizations
+ * 3. Create Admin and Test organizations (with null workosOrganizationId)
  * 4. Add a user for cjay.martin@gmail.com as owner of both organizations
  * 5. Create realistic locations in Massachusetts
  * 6. Add employee team members
@@ -47,6 +53,7 @@ export async function seedDatabase() {
             data: {
                 id: '00000000-0000-0000-0000-000000000000', // Fixed ID for admin organization
                 name: 'Admin',
+                workosOrganizationId: null, // No WorkOS sync for seeded orgs
             },
         });
 
@@ -56,6 +63,7 @@ export async function seedDatabase() {
             data: {
                 id: uuidv4(),
                 name: 'Test',
+                workosOrganizationId: null, // No WorkOS sync for seeded orgs
             },
         });
 

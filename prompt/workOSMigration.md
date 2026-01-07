@@ -69,27 +69,40 @@
 
 See "Backend Cleanup" section above.
 
-### Phase 2: My Team Page Functionality
+### ~~Phase 2: My Team Page Functionality~~ ✅ COMPLETE
 
 1. **List members** - Use WorkOS List Organization Users API
 2. **Invite flow** - Use WorkOS Invitation API
 3. **Role management** - Use WorkOS Organization Membership API
 4. **Remove members** - Use WorkOS Remove User from Organization API
 
-### Phase 3: Data Integrity & Seeding
+### ~~Phase 3: Data Integrity & Seeding~~ ✅ COMPLETE
 
 1. **Update Seed Script**:
-    - Update `src/utils/seedDatabase.ts` to reflect the current state of affairs.
-    - Ensure it creates WorkOS-compatible users (synced state).
-    - Remove legacy seed data (passwords, sessions).
+    - Updated `src/utils/seedDatabase.ts` with WorkOS-compatible documentation
+    - Added `workosOrganizationId: null` to seeded organizations
+    - Confirmed no legacy auth data (passwords, sessions) - already clean
+    - *Note*: Auto-sync mechanism was implemented but then removed in favor of Phase 4's "Loose Coupling" strategy.
 
-### Phase 4: Data Model Decisions
 
-**Key Questions to Resolve:**
+### Phase 4: Data Model Redesign (Loose Coupling)
 
-- Keep `Member` table for app-specific fields (icalSlug, isAvailableByDefault, phoneNumber, metadata)?
-- Or migrate all member data to WorkOS user metadata?
-- Relationship handling for: Availability, ShiftAssignment, ShiftRequest, ShiftDraft, Uploads, ChecklistItemCompletion
+**Goal**: Minimize local data storage and rely on WorkOS as the source of truth. Remove strict foreign key dependencies on the local `Member` table where possible.
+
+**Strategy**:
+1.  **Remove Auto-Sync**: Stop trying to sync all WorkOS users to local `Member` records automatically.
+2.  **Reference by WorkOS User ID**: Update related tables (`Availability`, `ShiftAssignment`, etc.) to store `workosUserId` instead of (or in addition to) `memberId`.
+3.  **Optional Member Profile**: Keep `Member` table only for users who need app-specific settings (e.g., `isAvailableByDefault`, `icalSlug`), but make the relationship loose.
+4.  **Schema Updates**:
+    - Add `workosUserId` to `ShiftAssignment`, `Availability`, `ShiftRequest`, `ShiftDraft`, `Upload`, `ChecklistItemCompletion`.
+    - Make `memberId` nullable or remove it in favor of `workosUserId`.
+    - Remove `User` table eventually? (Or keep as cache?)
+
+**Tasks**:
+- [ ] Add `workosUserId` column to dependent tables
+- [ ] Update TRPC routers to query by `workosUserId`
+- [ ] Refactor `usersRouter` to fetch from WorkOS directly without relying on local `Member` existence
+- [ ] Remove `syncWorkOSMembersToLocal` usage from critical paths
 
 ### Phase 5: Workflow & UX Improvements
 

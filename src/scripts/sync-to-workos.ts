@@ -1,6 +1,15 @@
 import { prisma } from '@/lib/prisma';
 import workos from '@/lib/workos';
 
+/**
+ * Syncs local Prisma users/organizations to WorkOS.
+ * 
+ * TODO: Remove this script (and runWorkOSSyncOnce.ts, and the call in layout.tsx)
+ * once the WorkOS migration is settled and all users are synced.
+ * 
+ * Called automatically from layout.tsx via runWorkOSSyncOnce() - runs once per
+ * server instance in production only.
+ */
 async function main() {
   console.log('Starting sync to WorkOS...');
   const logs: string[] = [];
